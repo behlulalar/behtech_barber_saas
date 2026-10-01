@@ -23,6 +23,20 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
    - **İstisna:** Kullanıcı açıkça "bunu sen yap" derse, o bölümü ben
      yazarım. Bu izin sadece o an için geçerlidir, sonraki bölümler yine
      öğrenme modunda ilerler.
+   - **Kod verme kuralı (2026-09-27'de netleşti, iki aşırı uçtan sonra):**
+     Ne (a) kullanıcının satır satır kopyalayabileceği, kendi sistemine özel
+     (kendi değişken/fonksiyon adlarıyla) tam kod bloğu ver, ne de (b) hiçbir
+     somut ipucu vermeden "bulun" deyip bırak — ikisi de denendi, ikisi de
+     başarısız oldu (biri "hiçbir şey öğrenmedim" dedirtti, diğeri kullanıcıyı
+     gerçekten kilitleyip sinirlendirdi). Doğru orta yol: kütüphanenin genel
+     kullanım kalıbını/syntax'ını **soyut, kullanıcının kendi projesine ait
+     olmayan bir örnekle** göster (farklı değişken adları, farklı senaryo)
+     — kullanıcı bu kalıbı kendi satırına **kendisi çevirecek**. Fonksiyon/
+     class isimlerini bilmiyorsa (ör. `create_async_engine` gibi kütüphaneye
+     özgü, tahmin edilemeyecek isimler) doğrudan söylemek sorun değil —
+     sorun, kullanıcının kendi dosyasına yazacağı **nihai satırı** onun
+     yerine yazmak. Kullanıcı gerçekten kilitlenip sinirlenirse (küfür/öfke
+     dahil) hemen orta yolu bırakıp doğrudan yardımcı ol, ısrar etme.
    - Frontend tarafı bu kuralın dışında tutulabilir — kullanıcı burada daha
      çok yönlendirme/üretim istiyor, backend kadar katı değil.
 
@@ -65,10 +79,17 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
   tekrar anlatmaya gerek yok, doğrudan multi-tenant'a özgü kalıplara
   (tenant_id, composite unique constraint, her sorguda tenant filtresi
   disiplini) odaklanılmalı.
-- **Python:** Orta seviye — fonksiyon/class/decorator kavramlarına hakim.
-  FastAPI'ye özgü kavramlar (Depends/dependency injection, Pydantic,
-  async/await) sıfırdan ve dikkatli anlatılmalı, temel Python sözdizimi
-  anlatılmasına gerek yok.
+- **Python:** Orta seviye — fonksiyon/class/decorator kavramlarına hakim,
+  temel sözdizimi anlatılmasına gerek yok.
+- **Backend/API geliştirme: SIFIR deneyim.** Kullanıcı daha önce hiç backend
+  yazmadı. Bu, "Python biliyor" ile karıştırılmamalı — bir web sunucusunun
+  nasıl çalıştığı, request/response döngüsü, connection pool/session gibi
+  kavramlar, "neden buna ihtiyacımız var" sorusunun cevabı dahil, **en
+  temelden** anlatılmalı. Bir konuyu anlatırken doğrudan "şunu yapacaksın"
+  demek yerine önce **hangi problemi çözdüğünü** somut bir senaryoyla
+  (mümkünse günlük hayattan bir benzetmeyle) açıklamalı, sonra çözümün
+  nasıl işlediğine geçilmeli. Sıralı kavram listesi vermek yetersiz —
+  kullanıcı bunu net şekilde belirtti (bkz. 2026-09-27 geri bildirimi).
 
 ## Kapsam Dışı Bırakılan Özellikler
 
@@ -91,7 +112,37 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       kesinleşmedi (Wapio yerine Evolution API değerlendiriliyor), bu yüzden
       `tenant_settings`'e WhatsApp alanları eklenmedi — karar verildiğinde
       migration ile eklenecek.
-- [ ] Proje iskeleti (FastAPI + klasör yapısı + venv + git init) — şu anki adım
+- [x] Proje iskeleti (FastAPI + klasör yapısı + venv + git init) — tamamlandı
+      GitHub: https://github.com/behlulalar/behtech_barber_saas
+      Yerel PostgreSQL: `behtech_saas` veritabanı, `behtech_saas_user`
+      kullanıcısı, `schema.sql` çalıştırıldı (13 tablo mevcut).
+      `app/core/config.py` (pydantic-settings) ve `app/core/database.py`
+      (async engine, session factory, Base, get_db-tarzı fonksiyon) yazıldı
+      ve test edildi.
+- [x] SQLAlchemy modelleri (`app/models/`) — TAMAMLANDI, 13/13 tablo.
+      `tenant.py`, `staff.py`, `customer.py` (class adı `Customers`, çoğul
+      kalmış), `service.py` (class adı `Service`, tekil), `appointment.py`
+      (en kapsamlı: 4 FK, 2. enum `AppointmentStatus`, 3 sütunlu composite
+      UNIQUE, `Date`/`Time` ayrı tipler), `working_hours.py`, `time_off.py`,
+      `staff_service.py`, `payment_method.py` (`JSONB` tipi tanıtıldı),
+      `verification_code.py` (istisnai olarak ben yazdım — kullanıcı
+      yorulduğunu belirtti), `webhook_cooldown.py`, `platform_admin.py`,
+      `tenant_settings.py` (istisnai olarak ben yazdım — tenant_id hem PK
+      hem FK deseni + `Text` tipi).
+      Tüm modeller `Base.metadata.tables` üzerinden toplu doğrulandı (13/13
+      tablo doğru kayıtlı). Önemli tekrarlayan öğrenme noktaları: Python'ın
+      kendi `enum`/`datetime` tipleri ile SQLAlchemy'nin SQL tipleri
+      (`Enum`, `Date`, `Time`, `DateTime`) arasındaki fark ve isim
+      çakışmaları (`Enum as SAEnum` alias'ı), `Mapped[]` içine her zaman
+      Python tipi, `mapped_column()` içine her zaman SQL tipi yazılması
+      kuralı, `true`/`false` (SQLAlchemy SQL ifadeleri, `server_default`
+      için) ile Python'ın `True`/`False` (ör. `unique=True` gibi düz
+      parametreler için) karıştırılmaması.
+      Not: Her modeli tek başına `CreateTable(...).compile(...)` ile test
+      ederken, foreign key verdiği tablonun modeli de import edilmiş
+      olmalı yoksa "NullType" hatası alınır (ilişkili modelleri birlikte
+      import etmek gerekiyor) — bu bir bug değil, test şeklinin doğal
+      sonucu.
 - [ ] Auth & tenant çözümleme (subdomain'den tenant'ı çıkarma, JWT'ye tenant_id ekleme)
 - [ ] İş mantığının taşınması (randevu/OTP/webhook/backup)
 - [ ] SaaS-owner (platform admin) paneli
