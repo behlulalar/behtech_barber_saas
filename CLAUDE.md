@@ -184,15 +184,27 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       `TenantOut`, `model_config = ConfigDict(from_attributes=True)` ile
       ORM nesnelerinden okunabiliyor). `/tenants` route'una
       `response_model=list[TenantOut]` eklendi, test edildi.
-- [~] Auth & tenant çözümleme — devam ediyor. `app/core/security.py`
-      tamamlandı: `hash_password`/`verify_password` (passlib + bcrypt,
-      `bcrypt==4.0.1`'e sabitlendi — passlib 1.7.4, bcrypt>=4.1 ile
-      uyumsuz, kaldırılmış bir `__about__` attribute'una bakıyor, bu
-      yüzden hata veriyordu), `create_access_token`/`decode_access_token`
-      (pyjwt, `exp` claim'i `settings.access_token_expire_minutes`'ten
-      hesaplanıyor). İkisi de test edildi, doğru çalışıyor. Sırada: login
-      route'u, `get_current_staff` dependency'si, subdomain'den tenant
-      çözümleme.
+- [~] Auth & tenant çözümleme — devam ediyor.
+      `app/core/security.py` tamamlandı: `hash_password`/`verify_password`
+      (passlib + bcrypt, `bcrypt==4.0.1`'e sabitlendi), `create_access_token`/
+      `decode_access_token` (pyjwt).
+      `POST /auth/login` çalışıyor (`app/schemas/auth.py`:
+      `LoginRequest`/`TokenResponse`) — request body'de geçici olarak
+      `tenant_slug` alanı var (subdomain çözümlemesi henüz kurulmadı,
+      o kurulunca bu alan kaldırılıp otomatik hale gelecek). Tenant'ı
+      slug'a göre, sonra personeli phone+tenant_id'ye göre buluyor,
+      `scalar_one_or_none()` + `HTTPException` kullanılıyor.
+      ÖNEMLİ BUG BULUNDU VE DÜZELTİLDİ: SQLAlchemy'nin `Enum(...)` tipi
+      varsayılan olarak DB'deki string'i Python enum'unun **değerine**
+      değil **ismine** göre eşleştiriyor (`RoleType.STAFF`'ın ismi
+      `STAFF`, değeri `staff` — DB'de `staff` küçük harfle duruyor).
+      Hem `staff.py` (`RoleType`) hem `appointment.py`
+      (`AppointmentStatus`) için `SAEnum(...)`'a
+      `values_callable=lambda enum_class: [m.value for m in enum_class]`
+      eklendi. Gerçek bir test tenant+staff ile uçtan uca doğrulandı
+      (doğru/yanlış şifre, var olmayan tenant). Sırada: `get_current_staff`
+      dependency'si (JWT'den kullanıcıyı çözmek, korumalı route'lar için),
+      subdomain'den tenant çözümleme (şu an `tenant_slug` elle veriliyor).
 - [ ] İş mantığının taşınması (randevu/OTP/webhook/backup)
 - [ ] SaaS-owner (platform admin) paneli
 - [ ] React frontend

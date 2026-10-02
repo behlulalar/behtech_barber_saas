@@ -23,7 +23,9 @@ class Appointment(Base):
     service_id: Mapped[int] = mapped_column(ForeignKey("services.id", ondelete="CASCADE"))
     appointment_date: Mapped[date] = mapped_column(Date)
     appointment_time: Mapped[time] = mapped_column(Time)
-    status: Mapped[AppointmentStatus] = mapped_column(SAEnum(AppointmentStatus, name="appointment_status"))
+    status: Mapped[AppointmentStatus] = mapped_column(
+        SAEnum(AppointmentStatus, name="appointment_status", values_callable=lambda enum_class: [member.value for member in enum_class])
+    )
     payment_method: Mapped[str | None] = mapped_column(String)
     reminder_sent: Mapped[bool] = mapped_column(Boolean, server_default=false())
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())

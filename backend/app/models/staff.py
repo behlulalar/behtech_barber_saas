@@ -24,7 +24,10 @@ class Staff(Base):
     surname: Mapped[str] = mapped_column(String(255))
     phone: Mapped[str] = mapped_column(String(10))
     password: Mapped[str] = mapped_column(String(255))
-    role: Mapped[RoleType | None ] = mapped_column(SAEnum(RoleType, name="role_type"), default=RoleType.STAFF)
+    role: Mapped[RoleType | None ] = mapped_column(
+        SAEnum(RoleType, name="role_type", values_callable=lambda enum_class: [member.value for member in enum_class]),
+        default=RoleType.STAFF,
+    )
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
 
     __table_args__ = (
