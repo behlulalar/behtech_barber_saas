@@ -143,6 +143,20 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       olmalı yoksa "NullType" hatası alınır (ilişkili modelleri birlikte
       import etmek gerekiyor) — bu bir bug değil, test şeklinin doğal
       sonucu.
+- [x] Alembic kurulumu — TAMAMLANDI. `env.py` modellere (`Base.metadata`,
+      `app/models/__init__.py` ile tüm 13 model tek importla yükleniyor)
+      ve `.env`'deki `DATABASE_URL`'e bağlandı (asyncpg → psycopg2 çevirisi
+      ile, Alembic sync çalıştığı için `config.set_main_option(...)`
+      kullanıldı). İlk migration (`7efb0e9dab46`) oluşturulup uygulandı —
+      sadece `tenant_settings.notification_banner_enabled` için `NOT NULL`
+      ekledi (model ile schema.sql arasındaki tek gerçek fark buydu).
+      Modellere eksik olan 10 performans index'i (`Index(...)`,
+      `__table_args__` içinde) eklendi — eklenmeseydi ilk autogenerate
+      onları veritabanından silecekti, önemli bir ders oldu. Doğrulama:
+      ikinci bir autogenerate denemesi tamamen boş migration üretti
+      (`pass`/`pass`) — modeller ve veritabanı artık birebir aynı.
+- [ ] FastAPI uygulamasının asıl iskeleti (`main.py`, ilk route, `Depends`
+      ile `get_db` kullanımı) — şu anki adım
 - [ ] Auth & tenant çözümleme (subdomain'den tenant'ı çıkarma, JWT'ye tenant_id ekleme)
 - [ ] İş mantığının taşınması (randevu/OTP/webhook/backup)
 - [ ] SaaS-owner (platform admin) paneli

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import DateTime, String, func , ForeignKey, UniqueConstraint
+from sqlalchemy import DateTime, String, func , ForeignKey, UniqueConstraint, Index
 from app.core.database import Base
 from datetime import datetime
 
@@ -16,4 +16,5 @@ class Customers(Base):
 
     __table_args__ = (
         UniqueConstraint("phone", "tenant_id"),
+        Index("idx_customers_tenant_id", "tenant_id"),
     )

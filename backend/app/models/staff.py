@@ -1,4 +1,4 @@
-from sqlalchemy import DateTime, String, func , ForeignKey, UniqueConstraint
+from sqlalchemy import DateTime, String, func , ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from app.core.database import Base
@@ -29,4 +29,5 @@ class Staff(Base):
 
     __table_args__ = (
         UniqueConstraint("phone", "tenant_id"),
+        Index("idx_staff_tenant_id", "tenant_id"),
     )

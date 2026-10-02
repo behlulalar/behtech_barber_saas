@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import Time,  func, ForeignKey, UniqueConstraint, DateTime, CheckConstraint
+from sqlalchemy import Time,  func, ForeignKey, UniqueConstraint, DateTime, CheckConstraint, Index
 from app.core.database import Base
 from datetime import datetime, time
 
@@ -20,4 +20,5 @@ class WorkingHours(Base):
     __table_args__ = (
         CheckConstraint("day_of_week >= 0 AND day_of_week <= 6"),
         UniqueConstraint("staff_id", "day_of_week"),
+        Index("idx_working_hours_tenant_id", "tenant_id"),
     )

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import DateTime, Date,  func, ForeignKey, String
+from sqlalchemy import DateTime, Date,  func, ForeignKey, String, Index
 from app.core.database import Base
 from datetime import date, datetime
 
@@ -16,4 +16,8 @@ class TimeOff(Base):
     end_date: Mapped[date] = mapped_column(Date)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
     reason: Mapped[str | None] = mapped_column(String(255))
+
+    __table_args__ = (
+        Index("idx_time_off_tenant_id", "tenant_id"),
+    )
     

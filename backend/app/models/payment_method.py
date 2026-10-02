@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import DateTime, func, ForeignKey, UniqueConstraint, String, Boolean, true
+from sqlalchemy import DateTime, func, ForeignKey, UniqueConstraint, String, Boolean, true, Index
 from app.core.database import Base
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSONB
@@ -17,6 +17,7 @@ class PaymentMethod(Base):
 
     __table_args__ = (
         UniqueConstraint("name", "tenant_id"),
+        Index("idx_payment_methods_tenant_id", "tenant_id"),
     )
 
 
