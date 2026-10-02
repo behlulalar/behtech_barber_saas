@@ -166,10 +166,19 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       olmadan da JSON'a çevrildiği görüldü — ama bunun `password` gibi
       hassas alanları da dışarı sızdırabileceği fark edildi, bu yüzden
       sıradaki adım Pydantic şemaları.
-- [ ] Pydantic şemaları (`app/schemas/`) — API'ye giren/çıkan veri
-      şekillerini kontrol etmek, hassas alanları (`password` gibi)
-      gizlemek — şu anki adım
-- [ ] Auth & tenant çözümleme (subdomain'den tenant'ı çıkarma, JWT'ye tenant_id ekleme)
+- [x] Pydantic şemaları (`app/schemas/`) — TAMAMLANDI (ilk örnek:
+      `TenantOut`, `model_config = ConfigDict(from_attributes=True)` ile
+      ORM nesnelerinden okunabiliyor). `/tenants` route'una
+      `response_model=list[TenantOut]` eklendi, test edildi.
+- [~] Auth & tenant çözümleme — devam ediyor. `app/core/security.py`
+      tamamlandı: `hash_password`/`verify_password` (passlib + bcrypt,
+      `bcrypt==4.0.1`'e sabitlendi — passlib 1.7.4, bcrypt>=4.1 ile
+      uyumsuz, kaldırılmış bir `__about__` attribute'una bakıyor, bu
+      yüzden hata veriyordu), `create_access_token`/`decode_access_token`
+      (pyjwt, `exp` claim'i `settings.access_token_expire_minutes`'ten
+      hesaplanıyor). İkisi de test edildi, doğru çalışıyor. Sırada: login
+      route'u, `get_current_staff` dependency'si, subdomain'den tenant
+      çözümleme.
 - [ ] İş mantığının taşınması (randevu/OTP/webhook/backup)
 - [ ] SaaS-owner (platform admin) paneli
 - [ ] React frontend
