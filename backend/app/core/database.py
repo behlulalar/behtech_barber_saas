@@ -7,7 +7,7 @@ SessionFactory = async_sessionmaker(engine)
 
 Base = declarative_base()
 
-async def kaynak_fonksiyonu():
+async def get_db():
     kaynak = SessionFactory()
     yield kaynak 
     await kaynak.close()

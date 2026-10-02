@@ -155,8 +155,20 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       onları veritabanından silecekti, önemli bir ders oldu. Doğrulama:
       ikinci bir autogenerate denemesi tamamen boş migration üretti
       (`pass`/`pass`) — modeller ve veritabanı artık birebir aynı.
-- [ ] FastAPI uygulamasının asıl iskeleti (`main.py`, ilk route, `Depends`
-      ile `get_db` kullanımı) — şu anki adım
+- [x] FastAPI uygulamasının asıl iskeleti — TAMAMLANDI. `app/main.py`:
+      `FastAPI()` nesnesi, `/health` (basit), `/tenants` (gerçek DB
+      sorgusu, `Depends(get_db)` + `select(Tenant)` + `await db.execute()`
+      + `.scalars().all()`). `database.py`'deki fonksiyonun gerçek adının
+      `kaynak_fonksiyonu` kaldığı fark edildi (önceki derslerde hep
+      `get_db` denmişti ama isim hiç değiştirilmemişti) — `get_db` olarak
+      yeniden adlandırıldı. `uvicorn --reload` ile uçtan uca test edildi
+      (gerçek Postgres satırıyla), ham ORM nesnesinin Pydantic şeması
+      olmadan da JSON'a çevrildiği görüldü — ama bunun `password` gibi
+      hassas alanları da dışarı sızdırabileceği fark edildi, bu yüzden
+      sıradaki adım Pydantic şemaları.
+- [ ] Pydantic şemaları (`app/schemas/`) — API'ye giren/çıkan veri
+      şekillerini kontrol etmek, hassas alanları (`password` gibi)
+      gizlemek — şu anki adım
 - [ ] Auth & tenant çözümleme (subdomain'den tenant'ı çıkarma, JWT'ye tenant_id ekleme)
 - [ ] İş mantığının taşınması (randevu/OTP/webhook/backup)
 - [ ] SaaS-owner (platform admin) paneli
