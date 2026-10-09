@@ -184,7 +184,7 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       `TenantOut`, `model_config = ConfigDict(from_attributes=True)` ile
       ORM nesnelerinden okunabiliyor). `/tenants` route'una
       `response_model=list[TenantOut]` eklendi, test edildi.
-- [~] Auth & tenant çözümleme — devam ediyor.
+- [x] Auth & tenant çözümleme — TAMAMLANDI.
       `app/core/security.py` tamamlandı: `hash_password`/`verify_password`
       (passlib + bcrypt, `bcrypt==4.0.1`'e sabitlendi), `create_access_token`/
       `decode_access_token` (pyjwt).
@@ -213,8 +213,17 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       edildi (`StaffOut` şeması, `password` alanı dışarı sızmıyor).
       Gerçek tenant/staff ile uçtan uca doğrulandı: token'sız istek →401,
       sahte token →401, geçerli token → doğru kullanıcı bilgisi.
-      Sırada: subdomain'den tenant çözümleme (şu an `tenant_slug` login
-      request body'sinde elle veriliyor).
+      Subdomain'den tenant çözümleme de TAMAMLANDI: `deps.py`'ye
+      `get_current_tenant` eklendi — FastAPI'nin `Request` nesnesiyle
+      `Host` header'ı okunuyor, port varsa kırpılıyor, `settings.base_domain`
+      suffix'i çıkarılıp subdomain (`slug`) elde ediliyor, `Tenant`
+      tablosunda aranıyor (host hatalıysa 400, tenant yoksa 404).
+      `LoginRequest`'ten `tenant_slug` alanı kaldırıldı, `login` route'u
+      artık `Depends(get_current_tenant)` kullanıyor. `curl`'de `Host`
+      header'ı elle verilerek (gerçek DNS olmadan) üç senaryo doğrulandı:
+      doğru subdomain → başarılı login, var olmayan subdomain → 404,
+      subdomain yok (çıplak domain) → 400.
+      **Auth & tenant çözümleme fazı tamamen bitti.**
 - [ ] İş mantığının taşınması (randevu/OTP/webhook/backup)
 - [ ] SaaS-owner (platform admin) paneli
 - [ ] React frontend

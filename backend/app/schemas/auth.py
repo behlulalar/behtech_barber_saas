@@ -4,7 +4,6 @@ class LoginRequest(BaseModel):
 
     phone: str
     password: str
-    tenant_slug: str
 
 class TokenResponse(BaseModel):
 
