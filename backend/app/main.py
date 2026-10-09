@@ -11,6 +11,8 @@ from app.core.security import verify_password, create_access_token
 from app.core.deps import get_current_staff, get_current_tenant
 from app.schemas.service import ServiceOut
 from app.models.service import Service
+from datetime import date 
+from app.models.appointment import Appointment, AppointmentStatus
 
 
 
@@ -54,3 +56,10 @@ async def services_route(tenant: Tenant = Depends(get_current_tenant), db: Sessi
     result = await db.execute(select(Service).where(Service.tenant_id == tenant.id, Service.is_active == True))
     all_services = result.scalars().all()
     return all_services
+
+@app.get("/booked-times")
+async def booked_times_route(staff_id: int, date: date, tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)):
+    result = await db.execute(select(Appointment.appointment_time).where(Appointment.tenant_id == tenant.id, Appointment.staff_id == staff_id, Appointment.appointment_date == date, Appointment.status != AppointmentStatus.CANCELLED))
+    all_appointments = result.scalars().all()
+    return all_appointments
+    

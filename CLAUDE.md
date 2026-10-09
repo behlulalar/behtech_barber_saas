@@ -225,14 +225,24 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       subdomain yok (çıplak domain) → 400.
       **Auth & tenant çözümleme fazı tamamen bitti.**
 - [~] İş mantığının taşınması — devam ediyor. Alt sıra: (1) herkese açık
-      listeleme ✅, (2) müsaitlik kontrolü, (3) randevu oluşturma,
-      (4) OTP akışı, (5) webhook/yedekleme.
+      listeleme ✅, (2) müsaitlik kontrolü (basit versiyon) ✅,
+      (3) tam müsait-saat hesaplama (working_hours+time_off ile birlikte),
+      (4) randevu oluşturma, (5) OTP akışı, (6) webhook/yedekleme.
       (1) TAMAMLANDI: `GET /staff` ve `GET /services`, ikisi de
       `Depends(get_current_tenant)` ile scope'lanıyor. `services`
-      ayrıca `is_active == True` ile filtreleniyor (pasif hizmetler
-      müşteri tarafında görünmemeli). `app/schemas/service.py`
-      (`ServiceOut`) eklendi. Gerçek tenant/staff/services verisiyle
-      test edildi (pasif hizmetin filtrelendiği doğrulandı).
+      ayrıca `is_active == True` ile filtreleniyor. `app/schemas/service.py`
+      (`ServiceOut`) eklendi.
+      (2) TAMAMLANDI (basit versiyon — sadece dolu saatleri döndürüyor,
+      eski sistemdeki `/api/booked-times` gibi; "tüm müsait saatler"
+      hesaplamasını frontend'e ya da ayrı bir adıma bıraktık): `GET
+      /booked-times?staff_id=&date=`. Query parametreleri (body/Depends
+      değil, düz tip belirtimiyle FastAPI otomatik algılıyor) ilk kez
+      kullanıldı. `select(Appointment.appointment_time)` ile tüm nesne
+      yerine tek sütun çekme kullanıldı. `Appointment.status !=
+      AppointmentStatus.CANCELLED` filtresi var (iptal edilmiş randevular
+      dolu saat sayılmıyor). `response_model` yok (hassas alan içermeyen
+      düz bir liste). Gerçek veriyle test edildi (confirmed görünüyor,
+      cancelled görünmüyor).
 - [ ] SaaS-owner (platform admin) paneli
 - [ ] React frontend
 - [ ] Mevcut verinin geçişi
