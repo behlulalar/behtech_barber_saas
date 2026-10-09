@@ -202,9 +202,19 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       (`AppointmentStatus`) için `SAEnum(...)`'a
       `values_callable=lambda enum_class: [m.value for m in enum_class]`
       eklendi. Gerçek bir test tenant+staff ile uçtan uca doğrulandı
-      (doğru/yanlış şifre, var olmayan tenant). Sırada: `get_current_staff`
-      dependency'si (JWT'den kullanıcıyı çözmek, korumalı route'lar için),
-      subdomain'den tenant çözümleme (şu an `tenant_slug` elle veriliyor).
+      (doğru/yanlış şifre, var olmayan tenant).
+      `app/core/deps.py` eklendi: `get_current_staff` dependency'si —
+      `OAuth2PasswordBearer` ile `Authorization: Bearer ...` header'ından
+      token'ı otomatik çekiyor, `decode_access_token` ile çözüyor
+      (`jwt.InvalidTokenError` `try`/`except` ile yakalanıp 401'e
+      çevriliyor — bozuk/sahte token başta 500 hatası veriyordu, bunu
+      yakaladık), `sub` claim'inden `staff_id`'yi bulup veritabanından
+      `Staff`'ı çekiyor. `GET /auth/me` ile korumalı ilk route test
+      edildi (`StaffOut` şeması, `password` alanı dışarı sızmıyor).
+      Gerçek tenant/staff ile uçtan uca doğrulandı: token'sız istek →401,
+      sahte token →401, geçerli token → doğru kullanıcı bilgisi.
+      Sırada: subdomain'den tenant çözümleme (şu an `tenant_slug` login
+      request body'sinde elle veriliyor).
 - [ ] İş mantığının taşınması (randevu/OTP/webhook/backup)
 - [ ] SaaS-owner (platform admin) paneli
 - [ ] React frontend

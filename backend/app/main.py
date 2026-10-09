@@ -6,7 +6,9 @@ from app.models.staff import Staff
 from sqlalchemy import select
 from app.schemas.tenant import TenantOut
 from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.staff import StaffOut
 from app.core.security import verify_password, create_access_token
+from app.core.deps import get_current_staff
 
 
 app = FastAPI()
@@ -38,5 +40,9 @@ async def login(data: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_access_token({"sub": str(staff.id), "tenant_id": staff.tenant_id})
     return TokenResponse(access_token=token, token_type="bearer")
+
+@app.get("/auth/me", response_model=StaffOut)
+async def read_current_staff(current_staff: Staff = Depends(get_current_staff)):
+    return current_staff
 
 
