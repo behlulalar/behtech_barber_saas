@@ -227,7 +227,19 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
 - [~] İş mantığının taşınması — devam ediyor. Alt sıra: (1) herkese açık
       listeleme ✅, (2) müsaitlik kontrolü (basit versiyon) ✅,
       (3) tam müsait-saat hesaplama (working_hours+time_off ile birlikte),
-      (4) randevu oluşturma, (5) OTP akışı, (6) webhook/yedekleme.
+      (4) randevu oluşturma — alt alt sıra: (4a) müşteri bul/oluştur ✅,
+      (4b) çakışma+günlük limit kontrolü, (4c) asıl INSERT,
+      (5) OTP akışı, (6) webhook/yedekleme.
+      (4a) TAMAMLANDI: `app/services/customer_services.py` →
+      `get_or_create_customer()`. İlk kez veritabanına **yazma** işlemi
+      (`db.add()`, `await db.commit()`, `await db.refresh()`) öğrenildi —
+      `add` sadece session'a "takip et" der, `commit` kalıcı yazar,
+      `refresh` veritabanının ürettiği alanları (`id`, `created_at`)
+      Python nesnesine geri doldurur. `app/services/` klasörü ilk kez
+      kullanıldı — route'lardan bağımsız, tekrar kullanılabilir iş
+      mantığı için. Script ile test edildi: aynı telefon+tenant ile iki
+      kez çağrıldığında ikinci seferde yeni kayıt oluşturmadığı (aynı id
+      döndüğü) doğrulandı.
       (1) TAMAMLANDI: `GET /staff` ve `GET /services`, ikisi de
       `Depends(get_current_tenant)` ile scope'lanıyor. `services`
       ayrıca `is_active == True` ile filtreleniyor. `app/schemas/service.py`
