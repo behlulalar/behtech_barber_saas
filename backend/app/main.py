@@ -9,6 +9,9 @@ from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.staff import StaffOut
 from app.core.security import verify_password, create_access_token
 from app.core.deps import get_current_staff, get_current_tenant
+from app.schemas.service import ServiceOut
+from app.models.service import Service
+
 
 
 app = FastAPI()
@@ -40,4 +43,14 @@ async def login(data: LoginRequest, tenant: Tenant = Depends(get_current_tenant)
 async def read_current_staff(current_staff: Staff = Depends(get_current_staff)):
     return current_staff
 
+@app.get("/staff", response_model=list[StaffOut])
+async def staff_route(tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)):
+    result = await db.execute(select(Staff).where(Staff.tenant_id == tenant.id))
+    all_staff = result.scalars().all()
+    return all_staff
 
+@app.get("/services", response_model=list[ServiceOut])
+async def services_route(tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)):
+    result = await db.execute(select(Service).where(Service.tenant_id == tenant.id, Service.is_active == True))
+    all_services = result.scalars().all()
+    return all_services

@@ -224,7 +224,15 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       doğru subdomain → başarılı login, var olmayan subdomain → 404,
       subdomain yok (çıplak domain) → 400.
       **Auth & tenant çözümleme fazı tamamen bitti.**
-- [ ] İş mantığının taşınması (randevu/OTP/webhook/backup)
+- [~] İş mantığının taşınması — devam ediyor. Alt sıra: (1) herkese açık
+      listeleme ✅, (2) müsaitlik kontrolü, (3) randevu oluşturma,
+      (4) OTP akışı, (5) webhook/yedekleme.
+      (1) TAMAMLANDI: `GET /staff` ve `GET /services`, ikisi de
+      `Depends(get_current_tenant)` ile scope'lanıyor. `services`
+      ayrıca `is_active == True` ile filtreleniyor (pasif hizmetler
+      müşteri tarafında görünmemeli). `app/schemas/service.py`
+      (`ServiceOut`) eklendi. Gerçek tenant/staff/services verisiyle
+      test edildi (pasif hizmetin filtrelendiği doğrulandı).
 - [ ] SaaS-owner (platform admin) paneli
 - [ ] React frontend
 - [ ] Mevcut verinin geçişi
