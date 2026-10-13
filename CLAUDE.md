@@ -227,9 +227,28 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
 - [~] İş mantığının taşınması — devam ediyor. Alt sıra: (1) herkese açık
       listeleme ✅, (2) müsaitlik kontrolü (basit versiyon) ✅,
       (3) tam müsait-saat hesaplama (working_hours+time_off ile birlikte),
-      (4) randevu oluşturma — alt alt sıra: (4a) müşteri bul/oluştur ✅,
-      (4b) çakışma+günlük limit kontrolü ✅, (4c) asıl INSERT,
-      (5) OTP akışı, (6) webhook/yedekleme.
+      (4) randevu oluşturma — TAMAMLANDI: (4a) müşteri bul/oluştur ✅,
+      (4b) çakışma+günlük limit kontrolü ✅, (4c) asıl INSERT ✅.
+      (5) OTP akışı, (6) webhook/yedekleme kaldı.
+      (4c) TAMAMLANDI: `POST /appointments` (`app/schemas/appointment.py`:
+      `AppointmentCreate`/`AppointmentOut`). Route sırayla
+      `get_or_create_customer` → `check_daily_limit` → `check_slot_available`
+      → `Appointment(...)` + `add`/`commit`/`refresh` çağırıyor — ilk kez
+      birden fazla servis fonksiyonu bir route'ta birleştirildi.
+      ÖNEMLİ BUG BULUNDU VE DÜZELTİLDİ: `SessionFactory`'de
+      `expire_on_commit` varsayılan `True` olduğu için, `commit()`'ten
+      sonra nesnelerin alanları "expired" sayılıyordu; route `return`
+      ettikten sonra FastAPI'nin `response_model` için nesneye erişmesi
+      arka planda bir DB round-trip tetikliyordu ama o an async
+      "greenlet" bağlamı aktif olmadığı için `MissingGreenlet` hatası
+      (`500`) alınıyordu — ilginç olan, DB yazması (`commit`) aslında
+      **başarılı** oluyordu, sadece cevap hazırlanırken patlıyordu
+      (sessizce "hayalet" kayıtlar oluşabiliyordu). Çözüm:
+      `database.py`'de `async_sessionmaker(engine, expire_on_commit=False)`.
+      4 senaryo gerçek veriyle doğrulandı: başarılı randevu, çakışan
+      saat →409, farklı saatte 2. randevu →başarılı, aynı gün 3.
+      randevu (limit aşımı) →400.
+      **İş mantığı fazının randevu oluşturma kısmı tamamen bitti.**
       (4b) TAMAMLANDI: `app/services/appointment_services.py` →
       `check_daily_limit()` (customer_id+tarih başına
       `settings.daily_appointment_limit`'i aşan randevu varsa 400) ve

@@ -13,6 +13,10 @@ from app.schemas.service import ServiceOut
 from app.models.service import Service
 from datetime import date 
 from app.models.appointment import Appointment, AppointmentStatus
+from app.schemas.appointment import AppointmentCreate, AppointmentOut
+from app.services.appointment_services import check_daily_limit, check_slot_available
+from app.models.customer import Customers
+from app.services.customer_services import get_or_create_customer
 
 
 
@@ -63,3 +67,31 @@ async def booked_times_route(staff_id: int, date: date, tenant: Tenant = Depends
     all_appointments = result.scalars().all()
     return all_appointments
     
+@app.post("/appointments", response_model = AppointmentOut )
+async def appointment_create(
+    data: AppointmentCreate,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+):
+    customer = await get_or_create_customer(
+        db, tenant.id, data.phone, data.name, data.surname
+    )
+
+    await check_daily_limit(db, tenant.id, customer.id, data.appointment_date)
+
+    await check_slot_available(db, data.staff_id, data.appointment_date, data.appointment_time)
+
+
+    new_appointment = Appointment(
+        tenant_id=tenant.id,
+        customer_id=customer.id,
+        staff_id=data.staff_id,
+        service_id=data.service_id,
+        appointment_date=data.appointment_date,
+        appointment_time=data.appointment_time,
+        status=AppointmentStatus.PENDING,
+    )
+    db.add(new_appointment)
+    await db.commit()
+    await db.refresh(new_appointment)
+    return new_appointment
