@@ -1,11 +1,13 @@
 import type { Service, Staff } from '../types/api'
 
 class ApiError extends Error {
-  constructor(
-    public status: number,
-    public detail: string,
-  ) {
+  status: number
+  detail: string
+
+  constructor(status: number, detail: string) {
     super(detail)
+    this.status = status
+    this.detail = detail
   }
 }
 
@@ -31,6 +33,8 @@ export const api = {
   getServices: () => request<Service[]>('/services'),
   getBookedTimes: (staffId: number, date: string) =>
     request<string[]>(`/booked-times?staff_id=${staffId}&date=${date}`),
+  getAvailability: (staffId: number, serviceId: number, date: string) =>
+    request<string[]>(`/availability?staff_id=${staffId}&service_id=${serviceId}&date=${date}`),
   sendCode: (phone: string) =>
     request<{ message: string; kod: string }>('/auth/send-code', {
       method: 'POST',
