@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Pencil, Plus, Power, Search, Store } from 'lucide-react'
+import { Check, Copy, ExternalLink, Link2, Pencil, Plus, Power, Search, Store } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { Badge } from '../../components/ui/Badge'
 import { Button, IconButton } from '../../components/ui/Button'
@@ -29,11 +29,144 @@ function slugError(slug: string): string | null {
   return null
 }
 
+/* ------------------------------ Bağlantılar ------------------------------ */
+
+const LINKS = [
+  { path: '/', label: 'Müşteri sitesi', hint: 'İşletmenin tanıtım sayfası' },
+  { path: '/randevu', label: 'Randevu al', hint: 'Müşterilerle paylaşılacak randevu bağlantısı' },
+  { path: '/randevularim', label: 'Randevularım', hint: 'Müşterinin randevularını görüp iptal ettiği sayfa' },
+  { path: '/panel/giris', label: 'Yönetim paneli', hint: 'İşletme sahibi ve personelin giriş adresi' },
+] as const
+
+function productionBase(slug: string) {
+  return `https://${slug}.behtechlabs.com`
+}
+
+// Geliştirmede Vite proxy'si tenant'ı `<slug>.localhost` adresinden çözer (bkz. vite.config.ts).
+function localBase(slug: string) {
+  const port = window.location.port ? `:${window.location.port}` : ''
+  return `${window.location.protocol}//${slug}.localhost${port}`
+}
+
+function displayUrl(url: string) {
+  return url.replace(/^https?:\/\//, '').replace(/\/$/, '')
+}
+
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const toast = useToast()
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast.error('Kopyalanamadı, adresi elle seçip kopyalayın')
+    }
+  }
+
+  return (
+    <IconButton label={copied ? 'Kopyalandı' : `${label} adresini kopyala`} onClick={copy}>
+      {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
+    </IconButton>
+  )
+}
+
+function LinkRow({ url, label, hint }: { url: string; label: string; hint: string }) {
+  return (
+    <li className="flex items-center gap-2 border-b border-line py-2.5 last:border-b-0">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-cream">{label}</p>
+        <p className="text-sm break-words text-muted-strong">
+          {displayUrl(url)
+            .split('/')
+            .map((part, i) => (
+              // Uzun adres kelime ortasından değil, "/" sonrasından satır atlasın.
+              <span key={i}>
+                {i > 0 && (
+                  <>
+                    /<wbr />
+                  </>
+                )}
+                {part}
+              </span>
+            ))}
+        </p>
+        <p className="text-xs text-muted">{hint}</p>
+      </div>
+      <CopyButton value={url} label={label} />
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`${label} sayfasını yeni sekmede aç`}
+        title="Yeni sekmede aç"
+        className="inline-flex size-11 shrink-0 items-center justify-center rounded-sm text-muted-strong transition-colors hover:bg-cream/5 hover:text-cream"
+      >
+        <ExternalLink className="size-4" />
+      </a>
+    </li>
+  )
+}
+
+function LinksModal({ tenant, onClose }: { tenant: PlatformTenant | null; onClose: () => void }) {
+  const slug = tenant?.slug ?? ''
+  return (
+    <Modal
+      open={!!tenant}
+      onClose={onClose}
+      title={tenant ? `${tenant.name} bağlantıları` : 'Bağlantılar'}
+      description="Adresleri kopyalayıp işletme sahibiyle paylaşabilirsiniz."
+      footer={
+        <Button variant="secondary" onClick={onClose}>
+          Kapat
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-5 pb-2">
+        {tenant && !tenant.is_active && (
+          <p className="rounded-md border border-line-strong bg-surface p-3 text-sm text-muted-strong">
+            Bu işletme pasif; aktifleştirilene kadar bu adresler çalışmaz.
+          </p>
+        )}
+        <section>
+          <h3 className="eyebrow mb-1">Canlı adresler</h3>
+          <ul>
+            {LINKS.map((l) => (
+              <LinkRow key={l.path} url={productionBase(slug) + l.path} label={l.label} hint={l.hint} />
+            ))}
+          </ul>
+        </section>
+        {import.meta.env.DEV && (
+          <section>
+            <h3 className="eyebrow mb-1">Yerel geliştirme</h3>
+            <p className="mb-1 text-xs text-muted">Chrome, Edge veya Firefox'ta açın; Safari *.localhost adreslerini çözmez.</p>
+            <ul>
+              {LINKS.map((l) => (
+                <LinkRow key={l.path} url={localBase(slug) + l.path} label={l.label} hint={l.hint} />
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+    </Modal>
+  )
+}
+
 /* ------------------------------ Oluştur ------------------------------ */
 
 const EMPTY = { name: '', slug: '', owner_name: '', owner_surname: '', owner_phone: '', owner_password: '' }
 
-function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function CreateModal({
+  open,
+  onClose,
+  onCreated,
+}: {
+  open: boolean
+  onClose: () => void
+  onCreated: (tenant: PlatformTenant) => void
+}) {
   const qc = useQueryClient()
   const toast = useToast()
   const [form, setForm] = useState(EMPTY)
@@ -59,6 +192,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
       qc.invalidateQueries({ queryKey: ['platform'] })
       toast.success(`${t.name} oluşturuldu`)
       close()
+      onCreated(t)
     },
     onError: (err) => setServerError(errorMessage(err)),
   })
@@ -218,6 +352,7 @@ export default function TenantsPage() {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<PlatformTenant | null>(null)
   const [deactivating, setDeactivating] = useState<PlatformTenant | null>(null)
+  const [linksFor, setLinksFor] = useState<PlatformTenant | null>(null)
 
   const toggle = useMutation({
     mutationFn: (t: PlatformTenant) => platformApi.updateTenant(t.id, { is_active: !t.is_active }),
@@ -254,6 +389,9 @@ export default function TenantsPage() {
 
   const actions = (t: PlatformTenant) => (
     <div className="flex items-center justify-end gap-1">
+      <IconButton label={`${t.name} bağlantıları`} onClick={() => setLinksFor(t)}>
+        <Link2 className="size-4" />
+      </IconButton>
       <IconButton label={`${t.name} düzenle`} onClick={() => setEditing(t)}>
         <Pencil className="size-4" />
       </IconButton>
@@ -271,15 +409,16 @@ export default function TenantsPage() {
       cell: (t) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-cream">{t.name}</p>
-          <a
-            href={`https://${t.slug}.behtechlabs.com`}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex min-h-11 items-center gap-1 break-all text-xs font-normal text-muted hover:text-copper-bright md:pointer-fine:min-h-0"
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setLinksFor(t)
+            }}
+            className="inline-flex min-h-11 items-center gap-1 break-all text-left text-xs font-normal text-muted hover:text-copper-bright md:pointer-fine:min-h-0"
           >
-            {t.slug}.behtechlabs.com <ExternalLink className="size-3 shrink-0" aria-hidden="true" />
-          </a>
+            {t.slug}.behtechlabs.com <Link2 className="size-3 shrink-0" aria-hidden="true" />
+          </button>
         </div>
       ),
     },
@@ -359,7 +498,8 @@ export default function TenantsPage() {
         />
       )}
 
-      <CreateModal open={creating} onClose={() => setCreating(false)} />
+      <CreateModal open={creating} onClose={() => setCreating(false)} onCreated={setLinksFor} />
+      <LinksModal tenant={linksFor} onClose={() => setLinksFor(null)} />
       <EditModal key={editing?.id ?? 'none'} tenant={editing} onClose={() => setEditing(null)} />
       <ConfirmDialog
         open={!!deactivating}
