@@ -34,11 +34,30 @@ def _tenant_out_query():
     appointment_count = (
         select(func.count(Appointment.id)).where(Appointment.tenant_id == Tenant.id).correlate(Tenant).scalar_subquery()
     )
-    return select(Tenant, staff_count.label("staff_count"), appointment_count.label("appointment_count"))
+    # Sahip: işletmenin ilk eklenen super_admin'i (birden fazla olabilir).
+    owner = (
+        select(Staff.id)
+        .where(Staff.tenant_id == Tenant.id, Staff.role == RoleType.SUPER_ADMIN)
+        .order_by(Staff.id)
+        .limit(1)
+        .correlate(Tenant)
+        .scalar_subquery()
+    )
+    return (
+        select(
+            Tenant,
+            staff_count.label("staff_count"),
+            appointment_count.label("appointment_count"),
+            Staff.name.label("owner_name"),
+            Staff.surname.label("owner_surname"),
+            Staff.phone.label("owner_phone"),
+        )
+        .outerjoin(Staff, Staff.id == owner)
+    )
 
 
 def _row_to_out(row) -> TenantOut:
-    tenant, staff_count, appointment_count = row
+    tenant, staff_count, appointment_count, owner_name, owner_surname, owner_phone = row
     return TenantOut(
         id=tenant.id,
         name=tenant.name,
@@ -47,6 +66,8 @@ def _row_to_out(row) -> TenantOut:
         created_at=tenant.created_at,
         staff_count=staff_count,
         appointment_count=appointment_count,
+        owner_name=" ".join(p for p in (owner_name, owner_surname) if p) or None,
+        owner_phone=owner_phone,
     )
 
 

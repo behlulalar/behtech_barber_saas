@@ -14,3 +14,5 @@ class TenantOut(BaseModel):
     created_at: datetime | None = None
     staff_count: int = 0
     appointment_count: int = 0
+    owner_name: str | None = None
+    owner_phone: str | None = None

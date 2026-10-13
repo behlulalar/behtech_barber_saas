@@ -284,6 +284,9 @@ export interface PlatformTenant {
   created_at: string
   staff_count: number
   appointment_count: number
+  /** İlk eklenen super_admin; yoksa null. */
+  owner_name: string | null
+  owner_phone: string | null
 }
 
 export interface PlatformTenantCreate {

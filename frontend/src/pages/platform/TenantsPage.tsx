@@ -13,7 +13,7 @@ import { Table, type Column } from '../../components/ui/Table'
 import { Tabs } from '../../components/ui/Tabs'
 import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
-import { formatNumber, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
+import { formatNumber, formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
 import type { PlatformTenant } from '../../types/api'
 
 type Filter = 'all' | 'active' | 'inactive'
@@ -378,7 +378,12 @@ export default function TenantsPage() {
       if (filter === 'active' && !t.is_active) return false
       if (filter === 'inactive' && t.is_active) return false
       if (!needle) return true
-      return t.name.toLocaleLowerCase('tr-TR').includes(needle) || t.slug.includes(needle)
+      return (
+        t.name.toLocaleLowerCase('tr-TR').includes(needle) ||
+        t.slug.includes(needle) ||
+        (t.owner_name ?? '').toLocaleLowerCase('tr-TR').includes(needle) ||
+        (t.owner_phone ?? '').includes(normalizePhone(needle) || needle)
+      )
     })
   }, [all, filter, q])
 
@@ -423,6 +428,27 @@ export default function TenantsPage() {
       ),
     },
     {
+      key: 'owner',
+      header: 'Sahip',
+      cell: (t) =>
+        t.owner_name || t.owner_phone ? (
+          <div className="min-w-0">
+            {t.owner_name && <p className="truncate text-cream">{t.owner_name}</p>}
+            {t.owner_phone && (
+              <a
+                href={`tel:0${t.owner_phone}`}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex min-h-11 items-center text-sm whitespace-nowrap text-muted-strong tabular-nums hover:text-copper-bright md:pointer-fine:min-h-0"
+              >
+                {formatPhone(t.owner_phone)}
+              </a>
+            )}
+          </div>
+        ) : (
+          <span className="text-muted">—</span>
+        ),
+    },
+    {
       key: 'status',
       header: 'Durum',
       cell: (t) => <Badge tone={t.is_active ? 'success' : 'neutral'}>{t.is_active ? 'Aktif' : 'Pasif'}</Badge>,
@@ -461,7 +487,7 @@ export default function TenantsPage() {
           <Input
             type="search"
             aria-label="İşletme ara"
-            placeholder="Ad veya adres ara"
+            placeholder="Ad, adres veya telefon ara"
             leading={<Search className="size-4" />}
             value={q}
             onChange={(e) => setQ(e.target.value)}
