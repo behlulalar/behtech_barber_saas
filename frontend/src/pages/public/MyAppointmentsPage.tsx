@@ -293,7 +293,7 @@ function AppointmentCard({ a, onCancel, muted }: { a: AppointmentPublicOut; onCa
         aria-hidden="true"
       >
         <span className="font-display text-2xl leading-none md:text-3xl">{d.getDate()}</span>
-        <span className="mt-1 text-[11px] font-medium uppercase tracking-wider">{MONTH.format(d)}</span>
+        <span className="mt-1 text-xs font-medium uppercase tracking-wider">{MONTH.format(d)}</span>
       </div>
 
       <div className="min-w-0 flex-1">

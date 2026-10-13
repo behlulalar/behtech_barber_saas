@@ -31,7 +31,7 @@ export function Switch({ checked, onChange, label, description, disabled, classN
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:opacity-45',
+          'relative inline-flex h-6 w-11 shrink-0 before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-[""] items-center rounded-full border transition-colors disabled:opacity-45',
           checked ? 'border-copper bg-copper' : 'border-line-strong bg-surface',
         )}
       >

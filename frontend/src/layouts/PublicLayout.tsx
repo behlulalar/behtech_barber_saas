@@ -2,6 +2,7 @@ import { Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { buttonStyles } from '../components/ui/Button'
+import { useScrollLock } from '../components/ui/useDialog'
 import { useCustomerAuth } from '../lib/auth'
 import { cn } from '../lib/cn'
 import { useTenant } from '../lib/queries'
@@ -38,20 +39,13 @@ export default function PublicLayout() {
   }, [name])
 
   // Menü açıkken arka plan kaydırmasını kilitle.
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [open])
+  useScrollLock(open)
 
   return (
     <div className="flex min-h-svh flex-col bg-ink">
       <header className="pt-safe sticky top-0 z-40 border-b border-line bg-ink/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 md:h-[72px] md:px-10">
-          <Link to="/" className="min-w-0 leading-none">
+          <Link to="/" className="flex min-h-11 min-w-0 items-center leading-none">
             <span className="block truncate font-display text-xl font-semibold tracking-wide text-cream">
               {name ?? ' '}
             </span>
@@ -59,7 +53,7 @@ export default function PublicLayout() {
 
           <nav aria-label="Ana menü" className="hidden items-center gap-8 md:flex">
             {LINKS.map((l) => (
-              <NavLink key={l.to} to={l.to} className="text-sm font-medium text-muted-strong transition-colors hover:text-cream">
+              <NavLink key={l.to} to={l.to} className="inline-flex min-h-11 items-center text-sm font-medium text-muted-strong transition-colors hover:text-cream">
                 {l.label}
               </NavLink>
             ))}
@@ -109,7 +103,7 @@ export default function PublicLayout() {
             {tenant.data?.business_address && <p className="mt-1.5 break-words text-sm text-muted">{tenant.data.business_address}</p>}
           </div>
           <div className="flex flex-col gap-2 text-sm text-muted md:items-end">
-            <Link to="/panel/giris" className="inline-flex min-h-11 items-center hover:text-cream md:min-h-0">
+            <Link to="/panel/giris" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">
               Personel girişi
             </Link>
             <p>© {new Date().getFullYear()} · behtechlabs.com altyapısıyla</p>

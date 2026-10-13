@@ -58,7 +58,7 @@ export function Tabs<T extends string>({ items, value, onChange, label = 'Sekmel
             >
               {item.label}
               {item.count !== undefined && (
-                <span className={cn('rounded-xs px-1.5 py-0.5 text-[11px] tabular-nums', active ? 'bg-copper/15 text-copper-bright' : 'bg-cream/5 text-muted')}>
+                <span className={cn('rounded-xs px-1.5 py-0.5 text-xs tabular-nums', active ? 'bg-copper/15 text-copper-bright' : 'bg-cream/5 text-muted')}>
                   {item.count}
                 </span>
               )}
@@ -92,7 +92,7 @@ export function SegmentedControl<T extends string>({ items, value, onChange, lab
             aria-checked={active}
             onClick={() => onChange(item.value)}
             className={cn(
-              'min-h-10 rounded-xs px-4 text-sm font-medium transition-colors',
+              'min-h-11 rounded-xs px-4 text-sm font-medium transition-colors',
               active ? 'bg-copper text-ink' : 'text-muted-strong hover:text-cream',
             )}
           >

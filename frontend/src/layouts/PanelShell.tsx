@@ -104,7 +104,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra }: Panel
         <header className="pt-safe sticky top-0 z-30 border-b border-panel-line bg-panel/95 backdrop-blur-sm lg:hidden">
           <div className="flex h-14 items-center justify-between gap-3 px-4">
             <div className="min-w-0">
-              <p className="eyebrow !text-[10px]">{eyebrow}</p>
+              <p className="eyebrow">{eyebrow}</p>
               <p className="mt-1 truncate font-display text-base font-medium leading-none text-cream">{current?.label ?? brand}</p>
             </div>
             <button
@@ -135,7 +135,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra }: Panel
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors active:bg-cream/5',
+                    'flex min-h-14 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors active:bg-cream/5',
                     isActive ? 'text-copper-bright' : 'text-muted',
                   )
                 }
@@ -147,7 +147,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra }: Panel
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted active:bg-cream/5"
+              className="flex min-h-14 flex-col items-center justify-center gap-1 text-xs font-medium text-muted active:bg-cream/5"
             >
               <Menu className="size-5" aria-hidden="true" />
               Menü

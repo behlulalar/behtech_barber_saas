@@ -63,6 +63,20 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
    Frontend tasarımı **özgün olmalı**, tipik/şablon "yapay zeka görünümlü"
    tasarımlardan kaçınılmalı.
 
+## Ajanlarla Yapılan Toplu İş (2026-10-13) — öğrenme kuralına bilinçli istisna
+
+Kullanıcının açık talebiyle ("frontend tasarımıyla birlikte backend bağlantı
+işini tekte bitir"), Opus 5.5 orkestrasyonunda 8 Sonnet 5 alt ajanıyla:
+backend `/api` önekli router'lara bölündü (`app/api/public.py`,
+`admin.py`, `platform.py`), personel paneli API'leri, müşteri OTP
+token'lı randevu akışı, platform admin API'leri, güvenlik düzeltmeleri,
+demo seed script'i ve React frontend'in tamamı (müşteri, personel paneli,
+platform paneli, mobil uyum) yazıldı. **Bu kısımlar kullanıcının elle
+yazdığı kod DEĞİL** — LinkedIn "build in public" yazılarında bu ayrım
+dürüstçe korunmalı. Kullanıcı bundan sonra yeni backend özelliklerinde
+tekrar öğrenme moduna dönebilir; ajanların yazdığı kodu okuyup anlamak da
+iyi bir çalışma malzemesi.
+
 ## Kararlaştırılan Mimari
 
 - **Backend framework:** FastAPI (Pydantic + SQLAlchemy async + Alembic migration)
@@ -394,7 +408,19 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       geliştirmede container'dan host'a erişim için `host.docker.internal`
       kullanılması gerekecek, `localhost` değil), gerçek bir mesajla
       test edilip asıl işleme mantığı tamamlanacak.
-- [ ] React frontend
+- [x] React frontend — TAMAMLANDI (2026-10-13, ajanlarla; bkz. yukarıdaki istisna
+      bölümü). Müşteri sitesi (`/`, `/randevu`, `/randevularim` — OTP'li),
+      personel paneli (`/panel/*`), platform paneli (`/platform/*`). Uçtan uca
+      fonksiyonel test + güvenlik/izolasyon testi + 8 viewport'ta Chromium ve
+      WebKit mobil denetimi yapıldı. Bu turda eklenen backend sağlamlaştırmaları:
+      OTP 5 yanlış denemede kilit + 60 sn tekrar gönderme aralığı
+      (`verification_codes.attempts` migration'ı), randevu oluştururken berber
+      satırı kilitleniyor (`lock_staff_schedule` — örtüşen eşzamanlı randevuları
+      engeller), ayarlar görselleri ≤1,5 MB raster data URL, public availability
+      bugünün geçmiş saatlerini gizliyor.
+      **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
+      "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
+      iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.
 - [x] Mevcut verinin geçişi — TAMAMLANDI. `backend/scripts/migrate_old_data.py`
       (bağımsız script, FastAPI'nin parçası değil). Eski sistemin gerçek
       veritabanı (`sefa_db`, yerel Postgres) — küçük hacimli, 3 staff,

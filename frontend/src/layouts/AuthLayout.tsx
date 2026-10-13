@@ -17,7 +17,7 @@ export default function AuthLayout({ eyebrow, title, subtitle, children, footer,
     <div className="pt-safe pb-safe flex min-h-dvh flex-col items-center justify-center bg-ink px-4 py-10">
       <div className="w-full max-w-sm">
         {brand && (
-          <Link to="/" className="mb-8 block text-center font-display text-lg font-medium text-muted-strong hover:text-cream">
+          <Link to="/" className="mb-8 flex min-h-11 items-center justify-center text-center font-display text-lg font-medium text-muted-strong hover:text-cream">
             {brand}
           </Link>
         )}

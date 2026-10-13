@@ -96,7 +96,7 @@ export default function DashboardPage() {
         <section aria-label="Bugünün programı" className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between gap-3">
             <h2 className="font-display text-xl font-medium text-cream">Bugünün programı</h2>
-            <Link to="/panel/randevular" className="inline-flex min-h-11 items-center text-sm font-medium text-copper-bright hover:underline">
+            <Link to="/panel/randevular" className="inline-flex min-h-11 min-w-11 items-center justify-end text-sm font-medium text-copper-bright hover:underline">
               Tümü
             </Link>
           </div>
@@ -142,7 +142,7 @@ export default function DashboardPage() {
                     <button type="button" onClick={() => flow.open(a)} className="flex min-h-14 w-full min-w-0 items-center gap-3 py-2 text-left">
                       <div className="w-14 shrink-0">
                         <p className="font-display text-lg leading-none tabular-nums text-cream">{formatTime(a.appointment_time)}</p>
-                        <p className="mt-1 text-[11px] text-muted">{a.appointment_date === today ? 'Bugün' : formatDateShort(a.appointment_date)}</p>
+                        <p className="mt-1 text-xs text-muted">{a.appointment_date === today ? 'Bugün' : formatDateShort(a.appointment_date)}</p>
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-cream">{fullName(a.customer)}</p>

@@ -276,7 +276,7 @@ export default function TenantsPage() {
             target="_blank"
             rel="noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 break-all text-xs font-normal text-muted hover:text-copper-bright"
+            className="inline-flex min-h-11 items-center gap-1 break-all text-xs font-normal text-muted hover:text-copper-bright md:pointer-fine:min-h-0"
           >
             {t.slug}.behtechlabs.com <ExternalLink className="size-3 shrink-0" aria-hidden="true" />
           </a>

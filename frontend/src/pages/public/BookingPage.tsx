@@ -343,7 +343,7 @@ export default function BookingPage() {
       </div>
 
       {/* Sticky eylem çubuğu: mobilde ekranın altında, içerikle birlikte biter. */}
-      <div className="pb-safe sticky bottom-0 z-30 -mx-5 border-t border-line bg-ink/95 backdrop-blur-sm md:-mx-10 md:border-0 md:bg-transparent md:backdrop-blur-none">
+      <div className="pb-safe sticky bottom-0 z-30 -mx-5 border-t border-line bg-ink/95 backdrop-blur-sm md:-mx-10 [@media(min-height:700px)]:md:border-0 [@media(min-height:700px)]:md:bg-transparent [@media(min-height:700px)]:md:backdrop-blur-none">
         <div className="mx-auto flex w-full items-center gap-3 px-5 py-3 md:px-10 md:pb-12">
           {step !== 'service' && (
             <Button variant="secondary" size="lg" onClick={back} leftIcon={<ArrowLeft className="size-4" />} aria-label="Geri">
@@ -667,7 +667,7 @@ function TimeStep({
                   : 'border-line bg-surface text-cream hover:border-line-strong active:bg-surface-raised',
               )}
             >
-              <span className={cn('text-[11px] font-medium uppercase tracking-wider', selected ? 'text-ink/80' : 'text-muted')}>
+              <span className={cn('text-xs font-medium uppercase tracking-wider', selected ? 'text-ink/80' : 'text-muted')}>
                 {i === 0 ? 'Bugün' : formatWeekdayShort(d)}
               </span>
               <span className="font-display text-2xl leading-none">{dt.getDate()}</span>

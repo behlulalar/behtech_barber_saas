@@ -206,10 +206,35 @@
 
 /* Editoryal küçük büyük-harf etiket */
 @utility eyebrow {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   line-height: 1;
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--color-copper);
+}
+
+/* iOS/Safari tarih-saat alanları: kabın dışına taşmasın, yüksekliği çökmesin, metin hizası korunsun. */
+@layer base {
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 2.75rem;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: inherit;
+    min-height: 1.5em;
+  }
+  /* Dar ekranda saat alanındaki ikon metni kesmesin. */
+  @media (max-width: 400px) {
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      display: none;
+    }
+  }
 }

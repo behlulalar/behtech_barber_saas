@@ -25,7 +25,7 @@ function useDebounced<T>(value: T, ms: number): T {
 
 function PhoneLink({ phone }: { phone: string }) {
   return (
-    <a href={telHref(phone)} className="inline-flex min-h-11 items-center gap-2 text-copper-bright hover:underline md:min-h-0">
+    <a href={telHref(phone)} className="inline-flex min-h-11 items-center gap-2 text-copper-bright hover:underline md:pointer-fine:min-h-0">
       <Phone className="size-3.5" aria-hidden="true" />
       <span className="tabular-nums">{formatPhone(phone)}</span>
     </a>
@@ -39,7 +39,7 @@ function BookLink({ c }: { c: AdminCustomer }) {
       state={{ newAppointment: { phone: c.phone, name: c.name, surname: c.surname } }}
       aria-label={`${fullName(c)} için randevu oluştur`}
       title="Randevu oluştur"
-      className={buttonStyles({ variant: 'ghost', size: 'sm', className: 'size-11 !px-0 md:size-9' })}
+      className={buttonStyles({ variant: 'ghost', size: 'sm', className: 'size-11 !px-0 md:pointer-fine:size-9' })}
     >
       <CalendarPlus className="size-[18px]" />
     </Link>

@@ -24,7 +24,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
 
 // Dokunmatik hedef: mobilde en az 44px, masaüstünde sm daha kompakt olabilir.
 const SIZES: Record<ButtonSize, string> = {
-  sm: 'min-h-11 px-4 text-sm md:min-h-9 md:px-3.5',
+  sm: 'min-h-11 px-4 text-sm md:pointer-fine:min-h-9 md:px-3.5',
   md: 'min-h-11 px-5 text-sm',
   lg: 'min-h-12 px-7 text-base',
 }
@@ -96,7 +96,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex size-11 shrink-0 items-center justify-center rounded-sm text-muted-strong transition-colors hover:bg-cream/5 hover:text-cream active:bg-cream/10 disabled:opacity-45 md:size-10',
+        'inline-flex size-11 shrink-0 items-center justify-center rounded-sm text-muted-strong transition-colors hover:bg-cream/5 hover:text-cream active:bg-cream/10 disabled:opacity-45 md:pointer-fine:size-10',
         className,
       )}
       {...rest}

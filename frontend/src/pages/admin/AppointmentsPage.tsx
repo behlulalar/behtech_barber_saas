@@ -126,7 +126,7 @@ export default function AppointmentsPage() {
 
       {/* Gezinme */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <IconButton label={view === 'day' ? 'Önceki gün' : 'Önceki hafta'} onClick={() => setAnchor(addDaysISO(anchor, -step))} className="border border-panel-line">
             <ChevronLeft className="size-5" />
           </IconButton>
@@ -135,7 +135,7 @@ export default function AppointmentsPage() {
             aria-label="Tarihe git"
             value={anchor}
             onChange={(e) => e.target.value && setAnchor(e.target.value)}
-            className="min-w-0 flex-1 text-center md:max-w-52 md:flex-none"
+            className="min-w-[8.5rem] flex-1 text-center md:max-w-52 md:flex-none"
           />
           <IconButton label={view === 'day' ? 'Sonraki gün' : 'Sonraki hafta'} onClick={() => setAnchor(addDaysISO(anchor, step))} className="border border-panel-line">
             <ChevronRight className="size-5" />
@@ -171,7 +171,7 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Hafta şeridi */}
-        <div className="grid grid-cols-7 gap-1" role="group" aria-label="Haftanın günleri">
+        <div className="grid grid-cols-7 gap-0.5 min-[400px]:gap-1" role="group" aria-label="Haftanın günleri">
           {weekDays.map((d) => {
             const selected = view === 'day' && d === anchor
             const count = perDay[d] ?? 0
@@ -191,9 +191,9 @@ export default function AppointmentsPage() {
                   !selected && d === today && 'border-copper/60',
                 )}
               >
-                <span className={cn('text-[11px] font-medium uppercase', selected ? 'text-ink/70' : 'text-muted')}>{formatWeekdayShort(d)}</span>
+                <span className={cn('text-xs font-medium uppercase', selected ? 'text-ink/70' : 'text-muted')}>{formatWeekdayShort(d)}</span>
                 <span className="font-display text-lg leading-tight tabular-nums">{parseISODateLocal(d).getDate()}</span>
-                <span className={cn('text-[10px] tabular-nums', selected ? 'text-ink/70' : count ? 'text-copper-bright' : 'text-transparent')}>{count || 0}</span>
+                <span className={cn('text-xs tabular-nums', selected ? 'text-ink/70' : count ? 'text-copper-bright' : 'text-transparent')}>{count || 0}</span>
               </button>
             )
           })}
