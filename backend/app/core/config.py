@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     base_domain: str
     environment: str
     daily_appointment_limit: int
+    otp_expiration_seconds: int
     model_config = SettingsConfigDict(env_file=".env")
     
 settings = Settings()

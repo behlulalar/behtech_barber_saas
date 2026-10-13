@@ -229,7 +229,17 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       (3) tam müsait-saat hesaplama (working_hours+time_off ile birlikte),
       (4) randevu oluşturma — TAMAMLANDI: (4a) müşteri bul/oluştur ✅,
       (4b) çakışma+günlük limit kontrolü ✅, (4c) asıl INSERT ✅.
-      (5) OTP akışı, (6) webhook/yedekleme kaldı.
+      (5) OTP akışı — servis katmanı TAMAMLANDI, route'lara bağlama kaldı,
+      (6) webhook/yedekleme kaldı.
+      (5) servis katmanı: `app/services/otp_services.py` → `send_code()`
+      (`secrets.randbelow()` ile kriptografik güvenli 6 haneli kod —
+      `random` modülü değil, OTP gibi güvenlik-kritik yerlerde `secrets`
+      şart; `otp_expiration_seconds` ayarı eklendi) ve `verify_code()`
+      (ilk kez **UPDATE** deseni: `db.add()` gerekmiyor, zaten session'ın
+      takip ettiği bir nesnenin alanını doğrudan değiştirip `commit()`
+      çağırmak yeterli — SQLAlchemy değişikliği kendisi algılayıp UPDATE
+      üretiyor). Üç senaryo script ile test edildi: doğru kod →başarılı,
+      aynı kodun tekrar kullanımı →reddedildi, yanlış kod →reddedildi.
       (4c) TAMAMLANDI: `POST /appointments` (`app/schemas/appointment.py`:
       `AppointmentCreate`/`AppointmentOut`). Route sırayla
       `get_or_create_customer` → `check_daily_limit` → `check_slot_available`
