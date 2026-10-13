@@ -362,6 +362,23 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       ilgisi yok. Gerçek bir webhook payload'ı görülünce, webhook
       route'u ve muhtemelen OTP akışına bağlama (WhatsApp üzerinden
       gelen "evet" gibi yanıtları işleme) tamamlanacak.
+      DURUM GÜNCELLEMESİ: Docker kuruldu ve Evolution API gerçekten
+      ayağa kaldırıldı — `/Users/muhammedbehlulalar/Desktop/berber_saas/evolution-api/`
+      (saas-app'in dışında, ayrı bir altyapı klasörü; `docker-compose.yml`
+      + `.env` — kendi Postgres container'ı + Evolution API container'ı,
+      `CACHE_LOCAL_ENABLED=true` ile Redis'e gerek bırakılmadı).
+      `evolution_api_key` gerçek, üretilmiş bir değerle `.env`'e
+      yazıldı. `behtech` adlı bir WhatsApp instance'ı
+      `POST /instance/create` ile oluşturuldu (`status: connecting`).
+      **Bekleyen adım:** kullanıcı `http://localhost:8080/manager`
+      arayüzünden QR kodu telefonuyla okutup WhatsApp'ı bağlayacak —
+      telefon şarjda olduğu için ertelendi, container'lar ayakta
+      kalmaya devam ediyor, ne zaman hazır olursa kaldığı yerden devam
+      edilecek. Bağlantı kurulunca: webhook `POST /webhook/set/behtech`
+      ile bizim `/webhooks/evolution` route'umuza bağlanacak (yerel
+      geliştirmede container'dan host'a erişim için `host.docker.internal`
+      kullanılması gerekecek, `localhost` değil), gerçek bir mesajla
+      test edilip asıl işleme mantığı tamamlanacak.
 - [ ] React frontend
 - [x] Mevcut verinin geçişi — TAMAMLANDI. `backend/scripts/migrate_old_data.py`
       (bağımsız script, FastAPI'nin parçası değil). Eski sistemin gerçek
