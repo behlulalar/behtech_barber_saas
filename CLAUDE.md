@@ -229,7 +229,7 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       (3) tam müsait-saat hesaplama (working_hours+time_off ile birlikte),
       (4) randevu oluşturma — TAMAMLANDI: (4a) müşteri bul/oluştur ✅,
       (4b) çakışma+günlük limit kontrolü ✅, (4c) asıl INSERT ✅.
-      (5) OTP akışı — servis katmanı TAMAMLANDI, route'lara bağlama kaldı,
+      (5) OTP akışı — TAMAMLANDI (servis katmanı + route'lar).
       (6) webhook/yedekleme kaldı.
       (5) servis katmanı: `app/services/otp_services.py` → `send_code()`
       (`secrets.randbelow()` ile kriptografik güvenli 6 haneli kod —
@@ -240,6 +240,12 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       çağırmak yeterli — SQLAlchemy değişikliği kendisi algılayıp UPDATE
       üretiyor). Üç senaryo script ile test edildi: doğru kod →başarılı,
       aynı kodun tekrar kullanımı →reddedildi, yanlış kod →reddedildi.
+      Route'lar: `POST /auth/send-code`, `POST /auth/verify_code`
+      (`app/schemas/otp.py`: `SendCodeRequest`/`VerifyCodeRequest`).
+      `send-code` geliştirme modunda kodu doğrudan response'ta
+      döndürüyor (gerçek WhatsApp entegrasyonu gelince kaldırılacak).
+      Gerçek HTTP istekleriyle uçtan uca test edildi: kod gönder →
+      doğru kodla doğrula (başarılı) → aynı kodu tekrar kullan (400).
       (4c) TAMAMLANDI: `POST /appointments` (`app/schemas/appointment.py`:
       `AppointmentCreate`/`AppointmentOut`). Route sırayla
       `get_or_create_customer` → `check_daily_limit` → `check_slot_available`

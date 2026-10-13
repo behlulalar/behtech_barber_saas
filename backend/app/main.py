@@ -17,6 +17,8 @@ from app.schemas.appointment import AppointmentCreate, AppointmentOut
 from app.services.appointment_services import check_daily_limit, check_slot_available
 from app.models.customer import Customers
 from app.services.customer_services import get_or_create_customer
+from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
+from app.services.otp_services import send_code, verify_code
 
 
 
@@ -95,3 +97,22 @@ async def appointment_create(
     await db.commit()
     await db.refresh(new_appointment)
     return new_appointment
+
+@app.post("/auth/send-code")
+async def send_code_route(
+    data: SendCodeRequest,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+):
+    code = await send_code(db, tenant.id, data.phone)
+    return {"message": "Kod gönderildi (test modu)", "kod": code}
+
+@app.post("/auth/verify_code")
+async def verify_code_request(
+    data: VerifyCodeRequest,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+):
+
+    await verify_code(db, tenant.id, data.phone, data.code)
+    return {"message": "Doğrulama başarılı"}
