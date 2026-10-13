@@ -242,15 +242,29 @@ class PaymentMethodUpdate(BaseModel):
 
 
 # ---------- settings ----------
-_IMG = Annotated[str, StringConstraints(max_length=7_000_000)]
+# ~1.5 MB'lık görsel base64 ile ~2.1M karakter eder.
+_IMG_MAX_CHARS = 2_100_000
+_IMG_RE = re.compile(r"^data:image/(png|jpe?g|webp|gif);base64,")
+
+
+def _check_image(value: str | None) -> str | None:
+    if value is None or value == "":
+        return None
+    if not _IMG_RE.match(value):
+        raise ValueError("Görsel geçerli bir resim dosyası olmalı (PNG, JPEG, WebP, GIF)")
+    if len(value) > _IMG_MAX_CHARS:
+        raise ValueError("Görsel çok büyük, en fazla 1,5 MB olabilir")
+    return value
 
 
 class SettingsBody(BaseModel):
     business_name: Name
     business_address: Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)] | None = None
-    logo_image: _IMG | None = None
-    banner_image: _IMG | None = None
+    logo_image: str | None = None
+    banner_image: str | None = None
     notification_banner_enabled: bool = False
+
+    _images = field_validator("logo_image", "banner_image")(_check_image)
 
 
 # ---------- customers ----------

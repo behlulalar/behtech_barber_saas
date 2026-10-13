@@ -40,7 +40,7 @@ from app.schemas.admin import (
 )
 from app.schemas.auth import LoginRequest, TokenResponse
 from app.services import admin_services as svc
-from app.services.appointment_services import get_available_slots
+from app.services.appointment_services import get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
 
 router = APIRouter()
@@ -120,11 +120,14 @@ async def create_appointment(
     if not service.is_active:
         raise HTTPException(status_code=400, detail="Bu hizmet şu an pasif")
 
+    # Müşteri oluşturma commit edebilir; berber kilidi ondan sonra alınır ve INSERT'e kadar sürer.
+    customer = await get_or_create_customer(db, tid, data.phone, data.name, data.surname)
+    await lock_staff_schedule(db, tid, data.staff_id)
     slots = await get_available_slots(db, tid, data.staff_id, data.service_id, data.appointment_date)
     if data.appointment_time.replace(microsecond=0) not in slots:
+        await db.rollback()
         raise HTTPException(status_code=409, detail=SLOT_MSG)
 
-    customer = await get_or_create_customer(db, tid, data.phone, data.name, data.surname)
     appt = Appointment(
         tenant_id=tid,
         customer_id=customer.id,

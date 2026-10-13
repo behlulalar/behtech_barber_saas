@@ -5,6 +5,7 @@ from app.models.appointment import Appointment, AppointmentStatus
 from app.models.working_hours import WorkingHours
 from app.models.time_off import TimeOff
 from app.models.service import Service
+from app.models.staff import Staff
 from datetime import date, time, datetime, timedelta
 from app.core.config import settings
 
@@ -16,6 +17,16 @@ def _js_day_of_week(d: date) -> int:
     # kuralıyla saklıyor: 0=Pazar, 1=Pazartesi, ... 6=Cumartesi.
     # Python'ın date.weekday()'i ise 0=Pazartesi'dir, bu yüzden çeviriyoruz.
     return (d.weekday() + 1) % 7
+
+
+async def lock_staff_schedule(db: Session, tenant_id: int, staff_id: int) -> None:
+    # Unique index yalnızca birebir aynı başlangıç saatini korur; 15:00 ve 15:15 gibi örtüşen iki
+    # eşzamanlı rezervasyonu engellemez. Berberin satırını transaction sonuna (commit/rollback)
+    # kadar kilitleyerek aynı berbere gelen rezervasyonları sıraya sokuyoruz.
+    # Bu yüzden kilitten sonra commit eden bir şey (ör. get_or_create_customer) çağrılmamalı.
+    await db.execute(
+        select(Staff.id).where(Staff.id == staff_id, Staff.tenant_id == tenant_id).with_for_update()
+    )
 
 
 async def get_available_slots(

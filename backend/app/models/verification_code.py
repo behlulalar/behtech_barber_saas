@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import DateTime, String, func, ForeignKey, Boolean, false, Index
+from sqlalchemy import DateTime, String, func, ForeignKey, Boolean, false, Index, Integer, text
 from app.core.database import Base
 from datetime import datetime
 
@@ -15,6 +15,7 @@ class VerificationCode(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
     is_used: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    attempts: Mapped[int] = mapped_column(Integer, server_default=text("0"))
 
     __table_args__ = (
         Index("idx_verification_codes_tenant_id", "tenant_id"),

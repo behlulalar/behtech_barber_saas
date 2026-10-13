@@ -151,6 +151,9 @@ export default function BookingPage() {
         void startVerification()
         return
       }
+      // Telefon doğrulandı ama randevu reddedildi (limit vb.): kod formunda takılmasın,
+      // bilgi adımına dönsün; oturum geçerli olduğu için tekrar denemek kod istemez.
+      if (step === 'verify') setStep('contact')
       toast.error(errorMessage(err))
     },
   })

@@ -10,6 +10,8 @@ from app.models.verification_code import VerificationCode
 
 SEND_LIMIT = 3
 SEND_WINDOW_MINUTES = 10
+SEND_MIN_GAP_SECONDS = 60
+MAX_VERIFY_ATTEMPTS = 5
 
 
 async def send_code(db: Session, tenant_id: int, phone: str) -> str:
@@ -29,6 +31,21 @@ async def send_code(db: Session, tenant_id: int, phone: str) -> str:
             detail=f"Çok fazla kod istediniz, lütfen {SEND_WINDOW_MINUTES} dakika sonra tekrar deneyin",
         )
 
+    last = await db.execute(
+        select(func.count())
+        .select_from(VerificationCode)
+        .where(
+            VerificationCode.tenant_id == tenant_id,
+            VerificationCode.phone == phone,
+            VerificationCode.created_at > func.now() - text(f"interval '{SEND_MIN_GAP_SECONDS} seconds'"),
+        )
+    )
+    if last.scalar_one() > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Yeni kod istemek için lütfen {SEND_MIN_GAP_SECONDS} saniye bekleyin",
+        )
+
     code = f"{secrets.randbelow(1000000):06d}"
     expires_at = datetime.now() + timedelta(seconds=settings.otp_expiration_seconds)
 
@@ -38,19 +55,35 @@ async def send_code(db: Session, tenant_id: int, phone: str) -> str:
 
 
 async def verify_code(db: Session, tenant_id: int, phone: str, code: str) -> bool:
-    query = select(VerificationCode).where(
-        VerificationCode.tenant_id == tenant_id,
-        VerificationCode.phone == phone,
-        VerificationCode.code == code,
-        VerificationCode.is_used == False,  # noqa: E712
-        VerificationCode.expires_at > datetime.now(),
+    result = await db.execute(
+        select(VerificationCode).where(
+            VerificationCode.tenant_id == tenant_id,
+            VerificationCode.phone == phone,
+            VerificationCode.is_used == False,  # noqa: E712
+            VerificationCode.expires_at > datetime.now(),
+        )
     )
-    result = await db.execute(query)
-    verification = result.scalars().first()
-
-    if verification is None:
+    active = result.scalars().all()
+    if not active:
         raise HTTPException(status_code=400, detail="Kod geçersiz veya süresi dolmuş")
 
-    verification.is_used = True
+    if any(v.code == code for v in active):
+        # Başarılı doğrulamada bu telefona ait bekleyen tüm kodlar tüketilir (tek kullanımlık).
+        for v in active:
+            v.is_used = True
+        await db.commit()
+        return True
+
+    # Yanlış kod: deneme sayacını artır; sınır aşılınca kodları geçersiz kıl (brute force koruması).
+    exhausted = False
+    for v in active:
+        v.attempts = (v.attempts or 0) + 1
+        if v.attempts >= MAX_VERIFY_ATTEMPTS:
+            exhausted = True
+    if exhausted:
+        for v in active:
+            v.is_used = True
     await db.commit()
-    return True
+    if exhausted:
+        raise HTTPException(status_code=400, detail="Çok fazla hatalı deneme yaptınız, lütfen yeni bir kod isteyin")
+    raise HTTPException(status_code=400, detail="Kod geçersiz veya süresi dolmuş")

@@ -21,7 +21,7 @@ from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
 from app.schemas.public import SendCodeResponse, StaffPublicOut, TenantPublicOut, VerifyCodeResponse
 from app.schemas.service import ServiceOut
-from app.services.appointment_services import check_daily_limit, get_available_slots
+from app.services.appointment_services import check_daily_limit, get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
 from app.services.otp_services import send_code, verify_code
 
@@ -147,14 +147,11 @@ async def appointment_create(
     if datetime.combine(data.appointment_date, data.appointment_time) <= now:
         raise HTTPException(status_code=400, detail="Geçmiş bir saate randevu alınamaz")
 
-    # Slot listesi: hizmet/berber bu dükkâna ait mi, çalışma saati, izin, çakışma — hepsini kapsar.
-    slots = await get_available_slots(db, tenant.id, data.staff_id, data.service_id, data.appointment_date)
-    if data.appointment_time not in {s.replace(second=0, microsecond=0) for s in slots}:
-        raise HTTPException(status_code=409, detail="Bu saat artık müsait değil, lütfen başka bir saat seçin")
-
     service = (
         await db.execute(select(Service).where(Service.id == data.service_id, Service.tenant_id == tenant.id))
-    ).scalar_one()
+    ).scalar_one_or_none()
+    if service is None:
+        raise HTTPException(status_code=404, detail="Hizmet bulunamadı")
     if not service.is_active:
         raise HTTPException(status_code=400, detail="Bu hizmet şu an verilmiyor")
     staff = (
@@ -165,6 +162,14 @@ async def appointment_create(
 
     customer = await get_or_create_customer(db, tenant.id, identity.phone, data.name.strip(), data.surname.strip())
     await check_daily_limit(db, tenant.id, customer.id, data.appointment_date)
+
+    # get_or_create_customer commit edebilir; kilit ondan SONRA alınmalı ki INSERT'e kadar sürsün.
+    await lock_staff_schedule(db, tenant.id, data.staff_id)
+    # Slot listesi: hizmet/berber bu dükkâna ait mi, çalışma saati, izin, çakışma — hepsini kapsar.
+    slots = await get_available_slots(db, tenant.id, data.staff_id, data.service_id, data.appointment_date)
+    if data.appointment_time not in {s.replace(second=0, microsecond=0) for s in slots}:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Bu saat artık müsait değil, lütfen başka bir saat seçin")
 
     # İptal edilen randevular yeni bir randevuyu engellemez (kısmi unique index: status <> 'cancelled');
     # iptal kaydı geçmiş olarak olduğu gibi kalır.

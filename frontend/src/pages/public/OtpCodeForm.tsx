@@ -10,7 +10,7 @@ import { errorMessage, publicApi } from '../../lib/api'
 import { formatPhone } from '../../lib/format'
 import type { VerifyCodeResponse } from '../../types/api'
 
-const RESEND_SECONDS = 30
+const RESEND_SECONDS = 60
 
 interface Props {
   /** 10 haneli normalize telefon */
