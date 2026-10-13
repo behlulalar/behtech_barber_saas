@@ -334,6 +334,33 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       `.gitignore`'a eklendi (gerçek müşteri verisi içerebilir). Gerçek
       `pg_dump` çalıştırılıp dolu bir yedek dosyası (tüm tablolar dahil)
       üretildiği, eski dosya temizliğinin doğru çalıştığı doğrulandı.
-- [ ] Webhook (WhatsApp sağlayıcı kararı netleşene kadar temel iskelet)
+- [~] WhatsApp entegrasyonu (Evolution API) — kod tarafı TAMAMLANDI,
+      gerçek payload testi bekliyor. Karar: önce Evolution API, Wapio
+      gerekirse sonra eklenecek. Resmi dokümantasyon incelendi
+      (docs.evolutionfoundation.com.br — WebSearch/WebFetch ile
+      doğrulandı, repo: github.com/evolution-foundation/evolution-api).
+      `config.py`'ye `evolution_api_base_url`/`evolution_api_key`/
+      `evolution_instance_name` eklendi. `httpx` kuruldu (projede ilk
+      dış HTTP istemcisi — async). `app/services/whatsapp_services.py`
+      → `send_whatsapp_message()`, `POST /message/sendText/{instance}`
+      çağırıyor (`apikey` header, `{"number":..., "textMessage":{"text":...}}`
+      body) — Evolution API ayakta olmadığı için `httpx.ConnectError`
+      ile düzgün başarısız olduğu doğrulandı, mantık doğru.
+      `POST /webhooks/evolution` eklendi — gelen JSON'u olduğu gibi
+      kabul edip loglayan bir iskelet (gerçek alan isimleri resmi
+      dokümantasyonda net değildi, `MESSAGES_UPSERT` olayının tam
+      payload'ı belirsiz — Evolution API gerçekten çalıştırılıp test
+      edilince asıl işleme mantığı eklenecek).
+      BUG BULUNDU VE DÜZELTİLDİ: `logging.getLogger(...)` ile logger
+      oluşturmak tek başına yetmiyor — Python'ın varsayılan log eşiği
+      `WARNING` olduğu için `INFO` seviyesindeki loglar hiç görünmüyordu
+      (webhook payload'ı loglanmıyordu, sessizce kayboluyordu). Çözüm:
+      `logging.basicConfig(level=logging.INFO)`.
+      Evolution API'nin kendisi Docker ile kurulacak (resmi
+      docker-compose var) — bu, kullanıcının kendi başına, oturum
+      dışında yapacağı bir DevOps işi; FastAPI/SQLAlchemy öğrenimiyle
+      ilgisi yok. Gerçek bir webhook payload'ı görülünce, webhook
+      route'u ve muhtemelen OTP akışına bağlama (WhatsApp üzerinden
+      gelen "evet" gibi yanıtları işleme) tamamlanacak.
 - [ ] React frontend
 - [ ] Mevcut verinin geçişi (eski `randevu/` verisini yeni şemaya aktarma)

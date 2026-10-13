@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException
+import logging
+from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.tenant import Tenant
@@ -25,7 +26,10 @@ from app.core.deps import get_current_platform_admin
 
 
 
+logging.basicConfig(level=logging.INFO)
+
 app = FastAPI()
+logger = logging.getLogger("evolution_webhook")
 
 @app.get("/health")
 async def health_check():
@@ -150,3 +154,13 @@ async def platform_list_tenants(
     result = await db.execute(select(Tenant))
     all_tenants = result.scalars().all()
     return all_tenants
+
+@app.post("/webhooks/evolution")
+async def evolution_webhook(request: Request):
+    # Evolution API'nin gerçek payload yapısı henüz doğrulanmadı (bkz. CLAUDE.md).
+    # Şimdilik geleni olduğu gibi loglayıp 200 dönüyoruz; gerçek bir mesajla
+    # test edildikten sonra asıl işleme mantığı (OTP akışına bağlama vb.)
+    # buraya eklenecek.
+    payload = await request.json()
+    logger.info("Evolution webhook payload: %s", payload)
+    return {"status": "received"}

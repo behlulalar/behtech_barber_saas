@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     daily_appointment_limit: int
     otp_expiration_seconds: int
     backup_retention_days: int
+    evolution_api_base_url: str
+    evolution_api_key: str
+    evolution_instance_name: str
     model_config = SettingsConfigDict(env_file=".env")
     
 settings = Settings()
