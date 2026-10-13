@@ -301,6 +301,28 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       dolu saat sayılmıyor). `response_model` yok (hassas alan içermeyen
       düz bir liste). Gerçek veriyle test edildi (confirmed görünüyor,
       cancelled görünmüyor).
-- [ ] SaaS-owner (platform admin) paneli
+- [x] SaaS-owner (platform admin) paneli — temel backend TAMAMLANDI.
+      Önce kritik bir güvenlik kararı: JWT payload'ına `"type"` claim'i
+      eklendi (`"staff"` / `"platform_admin"`) — eklenmeseydi, `staff.id`
+      ve `platform_admins.id` ayrı tablolarda bağımsız sayıldığı için
+      (ikisi de 1,2,3... diye kendi ID'lerini sayıyor) bir platform
+      admin'in token'ı tesadüfen aynı ID'li bir personel gibi
+      doğrulanabilirdi. `get_current_staff` artık `type == "staff"`
+      kontrolü yapıyor, yeni `get_current_platform_admin` (`deps.py`)
+      `type == "platform_admin"` kontrolü yapıyor — ayrı bir
+      `OAuth2PasswordBearer` (`platform_oauth2_scheme`, `tokenUrl="platform/login"`)
+      ile. Route'lar: `POST /platform/login` (tenant'tan bağımsız —
+      `Depends(get_current_tenant)` kullanmıyor, platform_admins
+      tablosu zaten tenant'a bağlı değil), `POST /platform/tenants`
+      (yeni dükkân oluşturma — `TenantCreate` şeması eklendi),
+      `GET /platform/tenants` (tüm dükkânları listeleme, tenant filtresi
+      YOK — bilinçli, platform admin her şeyi görebilmeli).
+      KRİTİK GÜVENLİK TESTİ YAPILDI VE DOĞRULANDI: staff token'ı ile
+      platform route'larına girme denemesi →401, platform admin token'ı
+      ile staff route'larına (`/auth/me`) girme denemesi →401, her biri
+      kendi route'una →200. Token tipi karışması riski tamamen kapatıldı.
+- [ ] Yedekleme scripti (eski sistemdeki `backup_utils.py` mantığının
+      uyarlanması — `pg_dump` + bulut yükleme, cron ile çalışacak)
+- [ ] Webhook (WhatsApp sağlayıcı kararı netleşene kadar temel iskelet)
 - [ ] React frontend
-- [ ] Mevcut verinin geçişi
+- [ ] Mevcut verinin geçişi (eski `randevu/` verisini yeni şemaya aktarma)

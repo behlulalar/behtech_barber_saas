@@ -6,15 +6,20 @@ from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.staff import Staff
 from app.models.tenant import Tenant
+from app.models.platform_admin import PlatformAdmin
 from app.core.config import settings
 import jwt
 
 oauth2_scheme  = OAuth2PasswordBearer(tokenUrl="auth/login")
+platform_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="platform/login")
 
 async def get_current_staff(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Staff:
     try:
         payload = decode_access_token(token)
     except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+    if payload.get("type") != "staff":
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
     staff_id = int(payload["sub"])
@@ -26,6 +31,26 @@ async def get_current_staff(token: str = Depends(oauth2_scheme), db: Session = D
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
     return staff
+
+
+async def get_current_platform_admin(token: str = Depends(platform_oauth2_scheme), db: Session = Depends(get_db)) -> PlatformAdmin:
+    try:
+        payload = decode_access_token(token)
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+    if payload.get("type") != "platform_admin":
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+    admin_id = int(payload["sub"])
+
+    result = await db.execute(select(PlatformAdmin).where(PlatformAdmin.id == admin_id))
+    admin = result.scalar_one_or_none()
+
+    if admin is None:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+    return admin
 
 
 async def get_current_tenant(request: Request, db: Session = Depends(get_db)) -> Tenant:

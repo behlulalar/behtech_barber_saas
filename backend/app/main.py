@@ -19,6 +19,9 @@ from app.models.customer import Customers
 from app.services.customer_services import get_or_create_customer
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
 from app.services.otp_services import send_code, verify_code
+from app.models.platform_admin import PlatformAdmin
+from app.schemas.tenant import TenantCreate
+from app.core.deps import get_current_platform_admin
 
 
 
@@ -44,7 +47,7 @@ async def login(data: LoginRequest, tenant: Tenant = Depends(get_current_tenant)
     if staff is None or not verify_password(data.password, staff.password):
         raise HTTPException(status_code=401, detail="Invalid phone or password")
 
-    token = create_access_token({"sub": str(staff.id), "tenant_id": staff.tenant_id})
+    token = create_access_token({"sub": str(staff.id), "tenant_id": staff.tenant_id, "type": "staff"})
     return TokenResponse(access_token=token, token_type="bearer")
 
 @app.get("/auth/me", response_model=StaffOut)
@@ -116,3 +119,34 @@ async def verify_code_request(
 
     await verify_code(db, tenant.id, data.phone, data.code)
     return {"message": "Doğrulama başarılı"}
+
+@app.post("/platform/login", response_model=TokenResponse)
+async def platform_login(data: LoginRequest, db: Session = Depends(get_db)):
+    result = await db.execute(select(PlatformAdmin).where(PlatformAdmin.phone == data.phone))
+    admin = result.scalar_one_or_none()
+    if admin is None or not verify_password(data.password, admin.password):
+        raise HTTPException(status_code=401, detail="Invalid phone or password")
+
+    token = create_access_token({"sub": str(admin.id), "type": "platform_admin"})
+    return TokenResponse(access_token=token, token_type="bearer")
+
+@app.post("/platform/tenants", response_model=TenantOut)
+async def platform_create_tenant(
+    data: TenantCreate,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: Session = Depends(get_db),
+):
+    new_tenant = Tenant(name=data.name, slug=data.slug)
+    db.add(new_tenant)
+    await db.commit()
+    await db.refresh(new_tenant)
+    return new_tenant
+
+@app.get("/platform/tenants", response_model=list[TenantOut])
+async def platform_list_tenants(
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: Session = Depends(get_db),
+):
+    result = await db.execute(select(Tenant))
+    all_tenants = result.scalars().all()
+    return all_tenants

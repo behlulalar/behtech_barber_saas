@@ -1,6 +1,10 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
+class TenantCreate(BaseModel):
+    name: str
+    slug: str
+
 class TenantOut(BaseModel):
     model_config = ConfigDict(from_attributes=True) #ORM nesnelerinden okumak için TenantOut'a ekledik.
 
