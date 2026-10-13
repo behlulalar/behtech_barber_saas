@@ -15,7 +15,7 @@ from app.models.service import Service
 from datetime import date 
 from app.models.appointment import Appointment, AppointmentStatus
 from app.schemas.appointment import AppointmentCreate, AppointmentOut
-from app.services.appointment_services import check_daily_limit, check_slot_available
+from app.services.appointment_services import check_daily_limit, check_slot_available, get_available_slots
 from app.models.customer import Customers
 from app.services.customer_services import get_or_create_customer
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
@@ -75,7 +75,17 @@ async def booked_times_route(staff_id: int, date: date, tenant: Tenant = Depends
     result = await db.execute(select(Appointment.appointment_time).where(Appointment.tenant_id == tenant.id, Appointment.staff_id == staff_id, Appointment.appointment_date == date, Appointment.status != AppointmentStatus.CANCELLED))
     all_appointments = result.scalars().all()
     return all_appointments
-    
+
+@app.get("/availability")
+async def availability_route(
+    staff_id: int,
+    service_id: int,
+    date: date,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+):
+    return await get_available_slots(db, tenant.id, staff_id, service_id, date)
+
 @app.post("/appointments", response_model = AppointmentOut )
 async def appointment_create(
     data: AppointmentCreate,

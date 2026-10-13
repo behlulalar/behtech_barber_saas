@@ -226,7 +226,22 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       **Auth & tenant çözümleme fazı tamamen bitti.**
 - [~] İş mantığının taşınması — devam ediyor. Alt sıra: (1) herkese açık
       listeleme ✅, (2) müsaitlik kontrolü (basit versiyon) ✅,
-      (3) tam müsait-saat hesaplama (working_hours+time_off ile birlikte),
+      (3) tam müsait-saat hesaplama — TAMAMLANDI (frontend'e başlarken geri
+      dönüldü; React'ta gerçek bir saat seçici için gerekliydi).
+      `get_available_slots()` (`appointment_services.py`): `time_off`
+      (tam gün kapalıysa boş liste), `working_hours` (o gün çalışılmıyorsa
+      boş liste), mevcut randevular (hizmet süreleriyle birlikte JOIN
+      edilip çakışma aralıkları çıkarılıyor) birlikte değerlendirilip
+      15 dakikalık adımlarla müsait başlangıç saatleri üretiliyor.
+      ÖNEMLİ VERİ DETAYI: eski sistem (ve migrate edilen veri)
+      `day_of_week`'i JS `getDay()` kuralıyla saklıyor (`0=Pazar`),
+      Python'ın `date.weekday()`'i ise `0=Pazartesi` — `_js_day_of_week()`
+      yardımcı fonksiyonuyla çevriliyor, karıştırılırsa tüm hafta kayar.
+      `GET /availability?staff_id=&service_id=&date=` route'u eklendi.
+      Gerçek migrate edilmiş veriyle test edildi: çalışma saatleri
+      doğru aralık üretti, bir randevu alınca o saat VE onunla çakışan
+      komşu saatler doğru şekilde listeden düştü, çakışmayan listede
+      kaldı, çalışılmayan günde boş liste döndü.
       (4) randevu oluşturma — TAMAMLANDI: (4a) müşteri bul/oluştur ✅,
       (4b) çakışma+günlük limit kontrolü ✅, (4c) asıl INSERT ✅.
       (5) OTP akışı — TAMAMLANDI (servis katmanı + route'lar).
