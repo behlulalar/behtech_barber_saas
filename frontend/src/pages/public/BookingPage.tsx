@@ -1,9 +1,22 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
-import { api, ApiError } from '../lib/api'
-import { staffImageFor } from '../lib/placeholderImages'
-import type { Service, Staff } from '../types/api'
+import { customerApi, errorMessage, publicApi } from '../../lib/api'
+import { useCustomerAuth } from '../../lib/auth'
+import {
+  formatDateLong,
+  formatDuration,
+  formatPrice,
+  formatTime,
+  formatWeekdayShort,
+  isValidPhone,
+  nextDaysISO,
+  normalizePhone,
+  parseISODateLocal,
+  todayLocalISO,
+} from '../../lib/format'
+import { staffImageFor } from '../../lib/placeholderImages'
+import type { PublicService as Service, PublicStaff as Staff } from '../../types/api'
 
 type Step = 'service' | 'staff' | 'time' | 'contact' | 'verify' | 'confirm' | 'done'
 
@@ -18,28 +31,15 @@ const STEP_LABELS: Record<Step, string> = {
   done: 'Tamam',
 }
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function nextDays(count: number): string[] {
-  const days: string[] = []
-  for (let i = 0; i < count; i++) {
-    const d = new Date()
-    d.setDate(d.getDate() + i)
-    days.push(d.toISOString().slice(0, 10))
-  }
-  return days
-}
-
-export default function BookingFlow() {
+export default function BookingPage() {
+  const customerAuth = useCustomerAuth()
   const [searchParams] = useSearchParams()
   const preselectedStaffId = searchParams.get('staff')
 
   const [step, setStep] = useState<Step>('service')
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
-  const [selectedDate, setSelectedDate] = useState(todayISO())
+  const [selectedDate, setSelectedDate] = useState(todayLocalISO())
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
@@ -48,38 +48,40 @@ export default function BookingFlow() {
   const [devCode, setDevCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const servicesQuery = useQuery({ queryKey: ['services'], queryFn: api.getServices })
-  const staffQuery = useQuery({ queryKey: ['staff'], queryFn: api.getStaff })
+  const servicesQuery = useQuery({ queryKey: ['services'], queryFn: publicApi.getServices })
+  const staffQuery = useQuery({ queryKey: ['staff'], queryFn: publicApi.getStaff })
 
   const availabilityQuery = useQuery({
     queryKey: ['availability', selectedStaff?.id, selectedService?.id, selectedDate],
-    queryFn: () => api.getAvailability(selectedStaff!.id, selectedService!.id, selectedDate),
+    queryFn: () => publicApi.getAvailability({ staff_id: selectedStaff!.id, service_id: selectedService!.id, date: selectedDate }),
     enabled: step === 'time' && !!selectedStaff && !!selectedService,
   })
 
   const sendCodeMutation = useMutation({
-    mutationFn: () => api.sendCode(phone),
+    mutationFn: () => publicApi.sendCode({ phone: normalizePhone(phone) }),
     onSuccess: (data) => {
-      setDevCode(data.kod)
+      setDevCode(data.dev_code)
       setError(null)
       setStep('verify')
     },
-    onError: (err) => setError(err instanceof ApiError ? err.detail : 'Bir şeyler yanlış gitti'),
+    onError: (err) => setError(errorMessage(err)),
   })
 
   const verifyCodeMutation = useMutation({
-    mutationFn: () => api.verifyCode(phone, code),
-    onSuccess: () => {
+    mutationFn: () => publicApi.verifyCode({ phone: normalizePhone(phone), code }),
+    onSuccess: (res) => {
+      customerAuth.login(res)
+      if (res.customer && !name) setName(res.customer.name)
+      if (res.customer && !surname) setSurname(res.customer.surname)
       setError(null)
       setStep('confirm')
     },
-    onError: (err) => setError(err instanceof ApiError ? err.detail : 'Kod doğrulanamadı'),
+    onError: (err) => setError(errorMessage(err)),
   })
 
   const createAppointmentMutation = useMutation({
     mutationFn: () =>
-      api.createAppointment({
-        phone,
+      customerApi.createAppointment({
         name,
         surname,
         staff_id: selectedStaff!.id,
@@ -91,10 +93,10 @@ export default function BookingFlow() {
       setError(null)
       setStep('done')
     },
-    onError: (err) => setError(err instanceof ApiError ? err.detail : 'Randevu oluşturulamadı'),
+    onError: (err) => setError(errorMessage(err)),
   })
 
-  const days = useMemo(() => nextDays(14), [])
+  const days = useMemo(() => nextDaysISO(14), [])
   const currentIndex = STEP_ORDER.indexOf(step)
 
   function goBack() {
@@ -103,37 +105,22 @@ export default function BookingFlow() {
   }
 
   return (
-    <div className="min-h-screen bg-ink text-cream">
-      <nav className="flex items-center justify-between border-b border-line px-6 py-6 md:px-18">
-        <Link to="/" className="flex flex-col leading-none">
-          <span className="font-display text-xl font-semibold tracking-wide">Sefa Pertev</span>
-          <span className="mt-1 text-[11px] tracking-[3px] text-copper">BERBER SALONU</span>
-        </Link>
-        {step !== 'done' && (
-          <div className="hidden items-center gap-2 md:flex">
-            {STEP_ORDER.map((s, i) => (
-              <div
-                key={s}
-                className={`flex items-center gap-2 text-xs ${
-                  i <= currentIndex ? 'text-copper' : 'text-muted'
-                }`}
-              >
-                <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] ${
-                    i <= currentIndex ? 'border-copper' : 'border-line-strong'
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                {STEP_LABELS[s]}
-                {i < STEP_ORDER.length - 1 && <span className="mx-1 text-line-strong">—</span>}
-              </div>
-            ))}
-          </div>
-        )}
-      </nav>
+    <div className="text-cream">
+      {step !== 'done' && (
+        <div className="hidden items-center justify-center gap-2 border-b border-line py-4 md:flex">
+          {STEP_ORDER.map((s, i) => (
+            <div key={s} className={`flex items-center gap-2 text-xs ${i <= currentIndex ? 'text-copper' : 'text-muted'}`}>
+              <span className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] ${i <= currentIndex ? 'border-copper' : 'border-line-strong'}`}>
+                {i + 1}
+              </span>
+              {STEP_LABELS[s]}
+              {i < STEP_ORDER.length - 1 && <span className="mx-1 text-line-strong">—</span>}
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="mx-auto max-w-2xl px-6 py-16 md:py-20">
+      <div className="mx-auto max-w-2xl px-5 py-10 md:py-16">
         {step !== 'service' && step !== 'done' && (
           <button
             type="button"
@@ -170,9 +157,9 @@ export default function BookingFlow() {
                 >
                   <div>
                     <div className="font-display text-lg font-medium">{service.name}</div>
-                    <div className="mt-1 text-sm text-muted">{service.duration_min} dakika</div>
+                    <div className="mt-1 text-sm text-muted">{formatDuration(service.duration_min)}</div>
                   </div>
-                  <div className="font-display text-xl font-semibold text-copper">{service.price}₺</div>
+                  <div className="font-display text-xl font-semibold text-copper">{formatPrice(service.price)}</div>
                 </button>
               ))}
             </div>
@@ -215,7 +202,7 @@ export default function BookingFlow() {
 
             <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
               {days.map((day) => {
-                const d = new Date(day)
+                const d = parseISODateLocal(day)
                 const isSelected = day === selectedDate
                 return (
                   <button
@@ -230,7 +217,7 @@ export default function BookingFlow() {
                     }`}
                   >
                     <span className="text-[11px] uppercase">
-                      {d.toLocaleDateString('tr-TR', { weekday: 'short' })}
+                      {formatWeekdayShort(day)}
                     </span>
                     <span className="mt-1 font-display text-lg font-medium">{d.getDate()}</span>
                   </button>
@@ -255,7 +242,7 @@ export default function BookingFlow() {
                         : 'border-line bg-surface text-cream hover:border-copper'
                     }`}
                   >
-                    {time.slice(0, 5)}
+                    {formatTime(time)}
                   </button>
                 ))}
               </div>
@@ -279,6 +266,10 @@ export default function BookingFlow() {
               className="mt-8 flex flex-col gap-4"
               onSubmit={(e) => {
                 e.preventDefault()
+                if (!isValidPhone(phone)) {
+                  setError('Geçerli bir telefon numarası girin (5XXXXXXXXX).')
+                  return
+                }
                 sendCodeMutation.mutate()
               }}
             >
@@ -300,6 +291,8 @@ export default function BookingFlow() {
               />
               <input
                 type="tel"
+                inputMode="tel"
+                autoComplete="tel"
                 required
                 placeholder="Telefon (5XXXXXXXXX)"
                 value={phone}
@@ -323,7 +316,7 @@ export default function BookingFlow() {
             <p className="mt-3 text-muted">{phone} numarasına gönderilen kodu girin.</p>
             {devCode && (
               <p className="mt-2 text-xs text-copper">
-                (Geliştirme modu — gerçek WhatsApp entegrasyonu bağlanana kadar kod burada görünür: {devCode})
+                (Geliştirme modu — kod: {devCode})
               </p>
             )}
             <form
@@ -335,6 +328,9 @@ export default function BookingFlow() {
             >
               <input
                 type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
                 required
                 placeholder="6 haneli kod"
                 value={code}
@@ -360,14 +356,10 @@ export default function BookingFlow() {
               <SummaryRow label="Usta" value={`${selectedStaff?.name} ${selectedStaff?.surname}`} />
               <SummaryRow
                 label="Tarih"
-                value={new Date(selectedDate).toLocaleDateString('tr-TR', {
-                  day: 'numeric',
-                  month: 'long',
-                  weekday: 'long',
-                })}
+                value={formatDateLong(selectedDate)}
               />
-              <SummaryRow label="Saat" value={selectedTime?.slice(0, 5) ?? ''} />
-              <SummaryRow label="Ücret" value={`${selectedService?.price}₺`} />
+              <SummaryRow label="Saat" value={selectedTime ? formatTime(selectedTime) : ''} />
+              <SummaryRow label="Ücret" value={formatPrice(selectedService?.price ?? 0)} />
             </div>
             <button
               type="button"
@@ -390,8 +382,7 @@ export default function BookingFlow() {
             <h1 className="mt-6 font-display text-3xl font-medium">Randevunuz alındı!</h1>
             <p className="mt-3 text-muted">
               {selectedService?.name} — {selectedStaff?.name} {selectedStaff?.surname} ·{' '}
-              {new Date(selectedDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} ·{' '}
-              {selectedTime?.slice(0, 5)}
+              {formatDateLong(selectedDate)} · {selectedTime ? formatTime(selectedTime) : ''}
             </p>
             <Link
               to="/"

@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { api } from '../lib/api'
-import { HERO_IMAGE, staffImageFor } from '../lib/placeholderImages'
+import { publicApi } from '../../lib/api'
+import { formatDuration, formatPrice } from '../../lib/format'
+import { useTenant } from '../../lib/queries'
+import { HERO_IMAGE, staffImageFor } from '../../lib/placeholderImages'
 
 function ServiceIcon() {
   return (
@@ -11,39 +13,18 @@ function ServiceIcon() {
   )
 }
 
-export default function BookingPage() {
-  const staffQuery = useQuery({ queryKey: ['staff'], queryFn: api.getStaff })
-  const servicesQuery = useQuery({ queryKey: ['services'], queryFn: api.getServices })
+export default function LandingPage() {
+  const tenant = useTenant()
+  const staffQuery = useQuery({ queryKey: ['staff'], queryFn: publicApi.getStaff })
+  const servicesQuery = useQuery({ queryKey: ['services'], queryFn: publicApi.getServices })
 
   return (
-    <div className="min-h-screen bg-ink text-cream">
-      {/* NAV */}
-      <nav className="flex items-center justify-between border-b border-line px-6 py-6 md:px-18">
-        <div className="flex flex-col leading-none">
-          <span className="font-display text-xl font-semibold tracking-wide">Sefa Pertev</span>
-          <span className="mt-1 text-[11px] tracking-[3px] text-copper">BERBER SALONU</span>
-        </div>
-        <div className="hidden items-center gap-10 md:flex">
-          <a href="#hizmetler" className="text-sm font-medium text-muted-strong hover:text-cream">
-            Hizmetler
-          </a>
-          <a href="#ekip" className="text-sm font-medium text-muted-strong hover:text-cream">
-            Ekibimiz
-          </a>
-          <Link
-            to="/randevu"
-            className="rounded-sm bg-copper px-6 py-3 text-sm font-semibold text-ink hover:bg-copper-bright"
-          >
-            Randevu Al
-          </Link>
-        </div>
-      </nav>
-
+    <div className="text-cream">
       {/* HERO */}
-      <section className="flex flex-col items-center gap-16 px-6 py-20 md:flex-row md:px-18 md:py-24">
-        <div className="flex flex-1 flex-col gap-7">
+      <section className="flex flex-col items-center gap-16 px-5 py-16 md:flex-row md:px-10 md:py-24">
+        <div className="flex min-w-0 flex-1 flex-col gap-7">
           <span className="text-xs font-semibold tracking-[4px] text-copper">
-            BEHTECH BERBER SAAS
+            {(tenant.data?.business_name ?? '').toLocaleUpperCase('tr-TR')}
           </span>
           <h1 className="font-display text-5xl font-medium leading-[1.08] tracking-tight md:text-6xl">
             Usta ellerde,
@@ -54,7 +35,7 @@ export default function BookingPage() {
             Saç, sakal ve cilt bakımınızı güvendiğiniz ustadan, size uygun saatte alın.
             Tüm randevu süreci üç dakikadan kısa sürer.
           </p>
-          <div className="mt-3 flex gap-4">
+          <div className="mt-3 flex flex-wrap gap-4">
             <Link
               to="/randevu"
               className="rounded-sm bg-copper px-8 py-4 text-sm font-semibold text-ink hover:bg-copper-bright"
@@ -69,7 +50,7 @@ export default function BookingPage() {
             </a>
           </div>
         </div>
-        <div className="h-[420px] w-full flex-1 overflow-hidden rounded border border-line md:h-[560px]">
+        <div className="aspect-[4/5] w-full flex-1 overflow-hidden rounded border border-line md:aspect-[4/5]">
           <img
             src={HERO_IMAGE}
             alt="Berber salonunda saç kesimi"
@@ -79,7 +60,7 @@ export default function BookingPage() {
       </section>
 
       {/* SERVICES */}
-      <section id="hizmetler" className="bg-surface px-6 py-20 md:px-18">
+      <section id="hizmetler" className="bg-surface px-5 py-16 md:px-10">
         <span className="text-xs font-semibold tracking-[4px] text-copper">HİZMETLERİMİZ</span>
         <h2 className="mt-3 mb-12 font-display text-3xl font-medium md:text-4xl">
           Neye ihtiyacınız var?
@@ -99,10 +80,10 @@ export default function BookingPage() {
               </div>
               <div>
                 <div className="font-display text-lg font-medium">{service.name}</div>
-                <div className="mt-1.5 text-sm text-muted">{service.duration_min} dakika</div>
+                <div className="mt-1.5 text-sm text-muted">{formatDuration(service.duration_min)}</div>
               </div>
               <div className="font-display text-xl font-semibold text-copper">
-                {service.price}₺
+                {formatPrice(service.price)}
               </div>
             </div>
           ))}
@@ -110,7 +91,7 @@ export default function BookingPage() {
       </section>
 
       {/* STAFF */}
-      <section id="ekip" className="px-6 py-20 md:px-18">
+      <section id="ekip" className="px-5 py-16 md:px-10">
         <span className="text-xs font-semibold tracking-[4px] text-copper">EKİBİMİZ</span>
         <h2 className="mt-3 mb-12 font-display text-3xl font-medium md:text-4xl">
           Ustanızı seçin.
@@ -122,7 +103,7 @@ export default function BookingPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {staffQuery.data?.map((member) => (
             <div key={member.id} className="overflow-hidden rounded border border-line bg-surface">
-              <div className="h-70 overflow-hidden">
+              <div className="aspect-square overflow-hidden">
                 <img
                   src={staffImageFor(member.id)}
                   alt={`${member.name} ${member.surname}`}
@@ -146,7 +127,7 @@ export default function BookingPage() {
       </section>
 
       {/* CTA */}
-      <section className="flex flex-wrap items-center justify-between gap-8 border-y border-line bg-surface px-6 py-20 md:px-18">
+      <section className="flex flex-wrap items-center justify-between gap-8 border-y border-line bg-surface px-5 py-16 md:px-10">
         <div>
           <h2 className="max-w-lg font-display text-3xl font-medium leading-tight">
             Randevunuzu hemen oluşturun.
@@ -161,13 +142,6 @@ export default function BookingPage() {
         </Link>
       </section>
 
-      {/* FOOTER */}
-      <footer className="flex items-center justify-between px-6 py-12 md:px-18">
-        <div className="flex flex-col leading-tight">
-          <span className="font-display text-base font-semibold">Sefa Pertev Berber</span>
-          <span className="mt-1 text-[13px] text-muted">© 2026 — behtechlabs.com altyapısıyla</span>
-        </div>
-      </footer>
     </div>
   )
 }

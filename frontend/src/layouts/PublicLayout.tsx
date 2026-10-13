@@ -1,0 +1,121 @@
+import { Menu, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { buttonStyles } from '../components/ui/Button'
+import { useCustomerAuth } from '../lib/auth'
+import { cn } from '../lib/cn'
+import { useTenant } from '../lib/queries'
+
+const LINKS = [
+  { to: '/#hizmetler', label: 'Hizmetler' },
+  { to: '/#ekip', label: 'Ekibimiz' },
+  { to: '/randevularim', label: 'Randevularım' },
+]
+
+/** Müşteri tarafı iskeleti: işletme adıyla header, mobil menü, footer. */
+export default function PublicLayout() {
+  const tenant = useTenant()
+  const { isAuthenticated } = useCustomerAuth()
+  const [open, setOpen] = useState(false)
+  const location = useLocation()
+  const name = tenant.data?.business_name
+
+  // Rota değişince menüyü kapat, hash varsa ona kaydır, yoksa en üste dön.
+  useEffect(() => {
+    setOpen(false)
+    if (location.hash) {
+      const el = document.getElementById(location.hash.slice(1))
+      if (el) {
+        el.scrollIntoView()
+        return
+      }
+    }
+    window.scrollTo(0, 0)
+  }, [location.pathname, location.hash])
+
+  useEffect(() => {
+    if (name) document.title = name
+  }, [name])
+
+  // Menü açıkken arka plan kaydırmasını kilitle.
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [open])
+
+  return (
+    <div className="flex min-h-svh flex-col bg-ink">
+      <header className="pt-safe sticky top-0 z-40 border-b border-line bg-ink/95 backdrop-blur-sm">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 md:h-[72px] md:px-10">
+          <Link to="/" className="min-w-0 leading-none">
+            <span className="block truncate font-display text-xl font-semibold tracking-wide text-cream">
+              {name ?? ' '}
+            </span>
+          </Link>
+
+          <nav aria-label="Ana menü" className="hidden items-center gap-8 md:flex">
+            {LINKS.map((l) => (
+              <NavLink key={l.to} to={l.to} className="text-sm font-medium text-muted-strong transition-colors hover:text-cream">
+                {l.label}
+              </NavLink>
+            ))}
+            <Link to="/randevu" className={buttonStyles({ size: 'sm' })}>
+              Randevu Al
+            </Link>
+          </nav>
+
+          <button
+            type="button"
+            className="-mr-2 inline-flex size-11 items-center justify-center rounded-sm text-cream active:bg-cream/10 md:hidden"
+            aria-label={open ? 'Menüyü kapat' : 'Menüyü aç'}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X className="size-6" /> : <Menu className="size-6" />}
+          </button>
+        </div>
+
+        {open && (
+          <div
+            id="mobile-menu"
+            className="absolute inset-x-0 top-full flex max-h-[calc(100dvh-4rem)] animate-fade-in flex-col overflow-y-auto border-b border-line bg-ink px-5 pb-6 pt-2 md:hidden"
+          >
+            {LINKS.map((l) => (
+              <Link key={l.to} to={l.to} className="flex min-h-14 items-center border-b border-line font-display text-xl text-cream">
+                {l.label}
+              </Link>
+            ))}
+            <Link to="/randevu" className={cn(buttonStyles({ size: 'lg', fullWidth: true }), 'mt-5')}>
+              Randevu Al
+            </Link>
+            {isAuthenticated && <p className="mt-4 text-center text-xs text-muted">Telefonunuzla giriş yapıldı</p>}
+          </div>
+        )}
+      </header>
+
+      <main className="min-w-0 flex-1">
+        <Outlet />
+      </main>
+
+      <footer className="pb-safe border-t border-line bg-surface">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-5 py-10 md:flex-row md:items-end md:justify-between md:px-10">
+          <div className="min-w-0">
+            <p className="break-words font-display text-lg font-semibold text-cream">{name ?? ''}</p>
+            {tenant.data?.business_address && <p className="mt-1.5 break-words text-sm text-muted">{tenant.data.business_address}</p>}
+          </div>
+          <div className="flex flex-col gap-2 text-sm text-muted md:items-end">
+            <Link to="/panel/giris" className="inline-flex min-h-11 items-center hover:text-cream md:min-h-0">
+              Personel girişi
+            </Link>
+            <p>© {new Date().getFullYear()} · behtechlabs.com altyapısıyla</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
