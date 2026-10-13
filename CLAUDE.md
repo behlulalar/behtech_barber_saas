@@ -363,4 +363,24 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       route'u ve muhtemelen OTP akışına bağlama (WhatsApp üzerinden
       gelen "evet" gibi yanıtları işleme) tamamlanacak.
 - [ ] React frontend
-- [ ] Mevcut verinin geçişi (eski `randevu/` verisini yeni şemaya aktarma)
+- [x] Mevcut verinin geçişi — TAMAMLANDI. `backend/scripts/migrate_old_data.py`
+      (bağımsız script, FastAPI'nin parçası değil). Eski sistemin gerçek
+      veritabanı (`sefa_db`, yerel Postgres) — küçük hacimli, 3 staff,
+      4 customer, 6 service, 36 appointment — tek bir yeni tenant altında
+      (`sefapertev`, "Sefa Pertev Berber") migrate edildi. Karşılaşılan
+      uyumsuzluklar ve çözümleri: `staff.name` eski sistemde tek alandı
+      (`"Sefa Pertev"`), ilk boşluğa göre `name`/`surname`'e bölündü;
+      şifre hash'leri zaten bcrypt formatındaydı (`$2b$`, 60 karakter) —
+      doğrudan aktarıldı, sıfırlamaya gerek kalmadı; `working_hours`'ta
+      `is_available=false` olan satırlar (yeni şemada böyle bir alan yok)
+      atlandı; `time_off`'un tek `off_date`'i yeni şemanın
+      `start_date`/`end_date` aralığına hem başlangıç hem bitiş olarak
+      kopyalandı; `payment_methods.code` yeni şemanın `details` JSONB
+      alanına paketlendi. Eski tabloların PK ID'leri, yeni tabloların
+      FK'lerini doğru kurabilmek için Python'da sözlük (`staff_id_map`
+      gibi) ile eski→yeni ID eşlemesi yapılarak taşındı. Script, aynı
+      slug'lı bir tenant zaten varsa tekrar çalışmayı reddediyor
+      (yanlışlıkla iki kez çalıştırıp veri çoğaltmayı önlemek için).
+      Gerçek API üzerinden doğrulandı (`GET /staff`, `GET /services`,
+      doğru subdomain ile) — isimler, roller, fiyatlar birebir eşleşti.
+      **Backend tarafı artık tamamen bitti.**
