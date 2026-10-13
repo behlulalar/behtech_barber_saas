@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
+import { staffImageFor } from '../lib/placeholderImages'
 import type { Service, Staff } from '../types/api'
 
 type Step = 'service' | 'staff' | 'time' | 'contact' | 'verify' | 'confirm' | 'done'
@@ -192,8 +193,12 @@ export default function BookingFlow() {
                   }}
                   className="flex items-center gap-4 rounded border border-line bg-surface px-6 py-5 text-left hover:border-copper"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-raised font-display text-lg text-copper">
-                    {member.name[0]}
+                  <div className="h-12 w-12 overflow-hidden rounded-full">
+                    <img
+                      src={staffImageFor(member.id)}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <div className="font-display text-lg font-medium">
                     {member.name} {member.surname}

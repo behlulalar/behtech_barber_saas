@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { HERO_IMAGE, staffImageFor } from '../lib/placeholderImages'
 
 function ServiceIcon() {
   return (
@@ -68,8 +69,12 @@ export default function BookingPage() {
             </a>
           </div>
         </div>
-        <div className="flex h-[420px] w-full flex-1 items-center justify-center rounded border border-line bg-surface-raised md:h-[560px]">
-          <span className="font-display text-lg italic text-muted">[ Berber salonu fotoğrafı ]</span>
+        <div className="h-[420px] w-full flex-1 overflow-hidden rounded border border-line md:h-[560px]">
+          <img
+            src={HERO_IMAGE}
+            alt="Berber salonunda saç kesimi"
+            className="h-full w-full object-cover"
+          />
         </div>
       </section>
 
@@ -117,8 +122,12 @@ export default function BookingPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {staffQuery.data?.map((member) => (
             <div key={member.id} className="overflow-hidden rounded border border-line bg-surface">
-              <div className="flex h-70 items-center justify-center bg-surface-raised">
-                <span className="font-display text-sm italic text-muted">[ fotoğraf ]</span>
+              <div className="h-70 overflow-hidden">
+                <img
+                  src={staffImageFor(member.id)}
+                  alt={`${member.name} ${member.surname}`}
+                  className="h-full w-full object-cover"
+                />
               </div>
               <div className="p-6">
                 <div className="font-display text-xl font-medium">

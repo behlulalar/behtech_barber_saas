@@ -14,7 +14,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: Object.fromEntries(
-      ['/health', '/tenants', '/auth', '/staff', '/services', '/booked-times', '/appointments', '/webhooks', '/platform'].map(
+      ['/health', '/tenants', '/auth', '/staff', '/services', '/booked-times', '/availability', '/appointments', '/webhooks', '/platform'].map(
         (path) => [
           path,
           {
