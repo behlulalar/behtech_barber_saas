@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     evolution_api_base_url: str
     evolution_api_key: str
     evolution_instance_name: str
+    # Sadece geliştirmede: WhatsApp bağlanana kadar her OTP bu kod olur. environment
+    # "development" değilse yok sayılır. WhatsApp testine geçince .env'den silin.
+    otp_fixed_code: str | None = None
     model_config = SettingsConfigDict(env_file=".env")
     
 settings = Settings()

@@ -46,7 +46,8 @@ async def send_code(db: Session, tenant_id: int, phone: str) -> str:
             detail=f"Yeni kod istemek için lütfen {SEND_MIN_GAP_SECONDS} saniye bekleyin",
         )
 
-    code = f"{secrets.randbelow(1000000):06d}"
+    fixed = settings.otp_fixed_code if settings.environment == "development" else None
+    code = fixed or f"{secrets.randbelow(1000000):06d}"
     expires_at = datetime.now() + timedelta(seconds=settings.otp_expiration_seconds)
 
     db.add(VerificationCode(tenant_id=tenant_id, phone=phone, code=code, expires_at=expires_at))
