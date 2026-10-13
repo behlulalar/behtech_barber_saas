@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import Date, Time, String, func , ForeignKey, UniqueConstraint, DateTime, Boolean, false, Index
+from sqlalchemy import Date, Time, String, func , ForeignKey, DateTime, Boolean, false, Index, text
 from app.core.database import Base
 from datetime import datetime, date, time
 from sqlalchemy import Enum as SAEnum
@@ -31,7 +31,15 @@ class Appointment(Base):
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
      
     __table_args__ = (
-        UniqueConstraint("staff_id", "appointment_date", "appointment_time"),
+        # İptal edilen randevu o saati sonsuza kadar kilitlemesin diye kısmi unique index.
+        Index(
+            "uq_appointments_active_slot",
+            "staff_id",
+            "appointment_date",
+            "appointment_time",
+            unique=True,
+            postgresql_where=text("status <> 'cancelled'"),
+        ),
         Index("idx_appointments_tenant_id", "tenant_id"),
         Index("idx_appointments_customer_id", "customer_id"),
         Index("idx_appointments_service_id", "service_id"),

@@ -1,15 +1,16 @@
 from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
 
-class TenantCreate(BaseModel):
-    name: str
-    slug: str
 
 class TenantOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True) #ORM nesnelerinden okumak için TenantOut'a ekledik.
+    """Platform panelinde görünen dükkân özeti."""
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
     slug: str
-    created_at: datetime
     is_active: bool
+    created_at: datetime | None = None
+    staff_count: int = 0
+    appointment_count: int = 0
