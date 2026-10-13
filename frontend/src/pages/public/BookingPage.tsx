@@ -1,407 +1,767 @@
-import { useMemo, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { Link, useSearchParams } from 'react-router-dom'
-import { customerApi, errorMessage, publicApi } from '../../lib/api'
-import { useCustomerAuth } from '../../lib/auth'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  Clock,
+  Scissors,
+  UserRound,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { Button, buttonStyles } from '../../components/ui/Button'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { Field } from '../../components/ui/Field'
+import { Input } from '../../components/ui/Input'
+import { Skeleton } from '../../components/ui/Skeleton'
+import { useToast } from '../../components/ui/Toast'
+import { ApiError, customerApi, errorMessage, publicApi } from '../../lib/api'
+import { useCustomerAuth } from '../../lib/auth'
+import { cn } from '../../lib/cn'
+import {
+  appointmentStart,
   formatDateLong,
   formatDuration,
   formatPrice,
   formatTime,
+  formatTimeRange,
   formatWeekdayShort,
+  fullName,
   isValidPhone,
   nextDaysISO,
   normalizePhone,
   parseISODateLocal,
-  todayLocalISO,
 } from '../../lib/format'
-import { staffImageFor } from '../../lib/placeholderImages'
-import type { PublicService as Service, PublicStaff as Staff } from '../../types/api'
+import type { AppointmentPublicOut, PublicService, PublicStaff, VerifyCodeResponse } from '../../types/api'
+import { OtpCodeForm } from './OtpCodeForm'
 
-type Step = 'service' | 'staff' | 'time' | 'contact' | 'verify' | 'confirm' | 'done'
+type Step = 'service' | 'staff' | 'time' | 'contact' | 'verify' | 'done'
 
-const STEP_ORDER: Step[] = ['service', 'staff', 'time', 'contact', 'verify', 'confirm']
-const STEP_LABELS: Record<Step, string> = {
-  service: 'Hizmet',
-  staff: 'Usta',
-  time: 'Saat',
-  contact: 'İletişim',
-  verify: 'Doğrulama',
-  confirm: 'Onay',
-  done: 'Tamam',
+const STEPS: { key: 'service' | 'staff' | 'time' | 'contact'; label: string }[] = [
+  { key: 'service', label: 'Hizmet' },
+  { key: 'staff', label: 'Berber' },
+  { key: 'time', label: 'Zaman' },
+  { key: 'contact', label: 'Bilgiler' },
+]
+
+const STEP_TITLES: Record<Exclude<Step, 'done'>, { title: string; hint: string }> = {
+  service: { title: 'Ne yaptırmak istersiniz?', hint: 'Bir hizmet seçin.' },
+  staff: { title: 'Kimden almak istersiniz?', hint: 'Berberinizi seçin.' },
+  time: { title: 'Gün ve saat seçin', hint: 'Önümüzdeki 14 gün içinden bir gün seçin.' },
+  contact: { title: 'Son bir adım', hint: 'Randevu için iletişim bilgilerinizi girin.' },
+  verify: { title: 'Telefonunuzu doğrulayın', hint: 'Randevunuzu onaylamak için kodu girin.' },
+}
+
+const DAYS = 14
+
+function stepIndex(step: Step): number {
+  if (step === 'verify') return 3
+  if (step === 'done') return STEPS.length
+  return STEPS.findIndex((s) => s.key === step)
 }
 
 export default function BookingPage() {
-  const customerAuth = useCustomerAuth()
-  const [searchParams] = useSearchParams()
-  const preselectedStaffId = searchParams.get('staff')
+  const toast = useToast()
+  const queryClient = useQueryClient()
+  const auth = useCustomerAuth()
+  const days = useMemo(() => nextDaysISO(DAYS), [])
 
   const [step, setStep] = useState<Step>('service')
-  const [selectedService, setSelectedService] = useState<Service | null>(null)
-  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
-  const [selectedDate, setSelectedDate] = useState(todayLocalISO())
-  const [selectedTime, setSelectedTime] = useState<string | null>(null)
-  const [phone, setPhone] = useState('')
+  const [serviceId, setServiceId] = useState<number | null>(null)
+  const [staffId, setStaffId] = useState<number | null>(null)
+  const [date, setDate] = useState<string>(days[0])
+  const [time, setTime] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [surname, setSurname] = useState('')
-  const [code, setCode] = useState('')
+  const [phone, setPhone] = useState('')
+  const [errors, setErrors] = useState<{ name?: string; surname?: string; phone?: string }>({})
   const [devCode, setDevCode] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<AppointmentPublicOut | null>(null)
+  const topRef = useRef<HTMLDivElement>(null)
+  const prefilled = useRef(false)
 
-  const servicesQuery = useQuery({ queryKey: ['services'], queryFn: publicApi.getServices })
-  const staffQuery = useQuery({ queryKey: ['staff'], queryFn: publicApi.getStaff })
+  const services = useQuery({ queryKey: ['services'], queryFn: publicApi.getServices })
+  const staff = useQuery({ queryKey: ['staff'], queryFn: publicApi.getStaff })
 
-  const availabilityQuery = useQuery({
-    queryKey: ['availability', selectedStaff?.id, selectedService?.id, selectedDate],
-    queryFn: () => publicApi.getAvailability({ staff_id: selectedStaff!.id, service_id: selectedService!.id, date: selectedDate }),
-    enabled: step === 'time' && !!selectedStaff && !!selectedService,
+  const service = services.data?.find((s) => s.id === serviceId) ?? null
+  const barber = staff.data?.find((s) => s.id === staffId) ?? null
+
+  // Oturum varsa telefonu ve kayıtlı adı bir kez önceden doldur.
+  useEffect(() => {
+    if (prefilled.current || !auth.isAuthenticated) return
+    prefilled.current = true
+    if (auth.phone) setPhone(auth.phone)
+    if (auth.customer) {
+      setName((n) => n || auth.customer!.name)
+      setSurname((n) => n || auth.customer!.surname)
+    }
+  }, [auth.isAuthenticated, auth.phone, auth.customer])
+
+  const availability = useQuery({
+    queryKey: ['availability', staffId, serviceId, date],
+    queryFn: () => publicApi.getAvailability({ staff_id: staffId!, service_id: serviceId!, date }),
+    enabled: step === 'time' && staffId != null && serviceId != null,
+    staleTime: 15_000,
   })
 
-  const sendCodeMutation = useMutation({
-    mutationFn: () => publicApi.sendCode({ phone: normalizePhone(phone) }),
-    onSuccess: (data) => {
-      setDevCode(data.dev_code)
-      setError(null)
-      setStep('verify')
-    },
-    onError: (err) => setError(errorMessage(err)),
-  })
+  // Adım değişince sayfanın üstüne (sayfa içi başlığa) kaydır.
+  const firstRender = useRef(true)
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+    const el = topRef.current
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - 80
+      if (top < window.scrollY) window.scrollTo({ top: Math.max(0, top) })
+    }
+  }, [step])
 
-  const verifyCodeMutation = useMutation({
-    mutationFn: () => publicApi.verifyCode({ phone: normalizePhone(phone), code }),
-    onSuccess: (res) => {
-      customerAuth.login(res)
-      if (res.customer && !name) setName(res.customer.name)
-      if (res.customer && !surname) setSurname(res.customer.surname)
-      setError(null)
-      setStep('confirm')
-    },
-    onError: (err) => setError(errorMessage(err)),
-  })
+  const sessionPhoneMatches = auth.isAuthenticated && auth.phone === normalizePhone(phone)
 
-  const createAppointmentMutation = useMutation({
+  const create = useMutation({
     mutationFn: () =>
       customerApi.createAppointment({
-        name,
-        surname,
-        staff_id: selectedStaff!.id,
-        service_id: selectedService!.id,
-        appointment_date: selectedDate,
-        appointment_time: selectedTime!,
+        name: name.trim(),
+        surname: surname.trim(),
+        staff_id: staffId!,
+        service_id: serviceId!,
+        appointment_date: date,
+        appointment_time: time!.slice(0, 5),
       }),
-    onSuccess: () => {
-      setError(null)
+    onSuccess: (res) => {
+      setResult(res)
       setStep('done')
+      queryClient.invalidateQueries({ queryKey: ['customer', 'appointments'] })
+      queryClient.invalidateQueries({ queryKey: ['availability'] })
     },
-    onError: (err) => setError(errorMessage(err)),
+    onError: (err) => {
+      if (err instanceof ApiError && err.status === 409) {
+        setTime(null)
+        setStep('time')
+        queryClient.invalidateQueries({ queryKey: ['availability'] })
+        toast.error(err.detail)
+        return
+      }
+      if (err instanceof ApiError && err.status === 401) {
+        toast.error('Oturumunuzun süresi doldu. Lütfen telefonunuzu yeniden doğrulayın.')
+        void startVerification()
+        return
+      }
+      toast.error(errorMessage(err))
+    },
   })
 
-  const days = useMemo(() => nextDaysISO(14), [])
-  const currentIndex = STEP_ORDER.indexOf(step)
+  const sendCode = useMutation({
+    mutationFn: () => publicApi.sendCode({ phone: normalizePhone(phone) }),
+    onSuccess: (res) => {
+      setDevCode(res.dev_code)
+      setStep('verify')
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
 
-  function goBack() {
-    setError(null)
-    if (currentIndex > 0) setStep(STEP_ORDER[currentIndex - 1])
+  function startVerification() {
+    sendCode.mutate()
   }
 
+  function validateContact(): boolean {
+    const next: typeof errors = {}
+    if (name.trim().length < 2) next.name = 'Adınızı girin.'
+    if (surname.trim().length < 2) next.surname = 'Soyadınızı girin.'
+    if (!isValidPhone(phone)) next.phone = 'Geçerli bir cep telefonu girin (örn. 0555 123 45 67).'
+    setErrors(next)
+    return Object.keys(next).length === 0
+  }
+
+  function submitContact(e?: FormEvent) {
+    e?.preventDefault()
+    if (!validateContact()) return
+    if (sessionPhoneMatches) create.mutate()
+    else startVerification()
+  }
+
+  function onVerified(resp: VerifyCodeResponse) {
+    auth.login(resp)
+    if (resp.customer) {
+      setName(resp.customer.name)
+      setSurname(resp.customer.surname)
+    }
+    // Kayıtlı müşteri adı doluysa doğrudan oluştur; token store'a yazıldıktan sonra istek gider.
+    create.mutate()
+  }
+
+  function back() {
+    if (step === 'staff') setStep('service')
+    else if (step === 'time') setStep('staff')
+    else if (step === 'contact') setStep('time')
+    else if (step === 'verify') setStep('contact')
+  }
+
+  function next() {
+    if (step === 'service' && serviceId != null) setStep('staff')
+    else if (step === 'staff' && staffId != null) setStep('time')
+    else if (step === 'time' && time) setStep('contact')
+  }
+
+  const canNext =
+    (step === 'service' && serviceId != null) ||
+    (step === 'staff' && staffId != null) ||
+    (step === 'time' && time != null)
+
+  if (step === 'done' && result) {
+    return <SuccessView appointment={result} name={fullName({ name, surname })} />
+  }
+
+  const current = step === 'done' ? 'contact' : step
+  const idx = stepIndex(step)
+
   return (
-    <div className="text-cream">
-      {step !== 'done' && (
-        <div className="hidden items-center justify-center gap-2 border-b border-line py-4 md:flex">
-          {STEP_ORDER.map((s, i) => (
-            <div key={s} className={`flex items-center gap-2 text-xs ${i <= currentIndex ? 'text-copper' : 'text-muted'}`}>
-              <span className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] ${i <= currentIndex ? 'border-copper' : 'border-line-strong'}`}>
-                {i + 1}
-              </span>
-              {STEP_LABELS[s]}
-              {i < STEP_ORDER.length - 1 && <span className="mx-1 text-line-strong">—</span>}
-            </div>
-          ))}
-        </div>
+    <div className="mx-auto w-full max-w-3xl px-5 pt-6 md:px-10 md:pt-12">
+      <div ref={topRef} />
+      <StepIndicator index={idx} />
+
+      <header className="mt-7 min-h-[4.5rem] md:mt-10">
+        <h1 className="font-display text-[1.75rem] font-medium leading-tight text-cream md:text-4xl">
+          {STEP_TITLES[current].title}
+        </h1>
+        <p className="mt-1.5 text-sm text-muted">{STEP_TITLES[current].hint}</p>
+      </header>
+
+      {(service || barber) && step !== 'service' && (
+        <SelectionChips service={service} barber={barber} date={step === 'contact' || step === 'verify' ? date : null} time={step === 'contact' || step === 'verify' ? time : null} />
       )}
 
-      <div className="mx-auto max-w-2xl px-5 py-10 md:py-16">
-        {step !== 'service' && step !== 'done' && (
-          <button
-            type="button"
-            onClick={goBack}
-            className="mb-8 text-sm font-medium text-muted-strong hover:text-cream"
-          >
-            ← Geri
-          </button>
-        )}
-
-        {error && (
-          <div className="mb-6 rounded border border-copper/40 bg-copper/10 px-4 py-3 text-sm text-copper-bright">
-            {error}
-          </div>
-        )}
-
+      <div className="mt-6 pb-8">
         {step === 'service' && (
-          <section>
-            <h1 className="font-display text-3xl font-medium">Hangi hizmeti istiyorsunuz?</h1>
-            <div className="mt-8 flex flex-col gap-3">
-              {servicesQuery.data?.map((service) => (
-                <button
-                  key={service.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedService(service)
-                    setStep(preselectedStaffId ? 'time' : 'staff')
-                    if (preselectedStaffId && staffQuery.data) {
-                      const found = staffQuery.data.find((s) => s.id === Number(preselectedStaffId))
-                      if (found) setSelectedStaff(found)
-                    }
-                  }}
-                  className="flex items-center justify-between rounded border border-line bg-surface px-6 py-5 text-left hover:border-copper"
-                >
-                  <div>
-                    <div className="font-display text-lg font-medium">{service.name}</div>
-                    <div className="mt-1 text-sm text-muted">{formatDuration(service.duration_min)}</div>
-                  </div>
-                  <div className="font-display text-xl font-semibold text-copper">{formatPrice(service.price)}</div>
-                </button>
-              ))}
-            </div>
-          </section>
+          <ServiceStep
+            loading={services.isLoading}
+            error={services.isError}
+            items={services.data ?? []}
+            value={serviceId}
+            onChange={(id) => {
+              if (id !== serviceId) setTime(null)
+              setServiceId(id)
+            }}
+            onRetry={() => services.refetch()}
+          />
         )}
 
         {step === 'staff' && (
-          <section>
-            <h1 className="font-display text-3xl font-medium">Ustanızı seçin.</h1>
-            <div className="mt-8 flex flex-col gap-3">
-              {staffQuery.data?.map((member) => (
-                <button
-                  key={member.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedStaff(member)
-                    setStep('time')
-                  }}
-                  className="flex items-center gap-4 rounded border border-line bg-surface px-6 py-5 text-left hover:border-copper"
-                >
-                  <div className="h-12 w-12 overflow-hidden rounded-full">
-                    <img
-                      src={staffImageFor(member.id)}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="font-display text-lg font-medium">
-                    {member.name} {member.surname}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
+          <StaffStep
+            loading={staff.isLoading}
+            error={staff.isError}
+            items={staff.data ?? []}
+            value={staffId}
+            onChange={(id) => {
+              if (id !== staffId) setTime(null)
+              setStaffId(id)
+            }}
+            onRetry={() => staff.refetch()}
+          />
         )}
 
         {step === 'time' && (
-          <section>
-            <h1 className="font-display text-3xl font-medium">Tarih ve saat seçin.</h1>
-
-            <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
-              {days.map((day) => {
-                const d = parseISODateLocal(day)
-                const isSelected = day === selectedDate
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => {
-                      setSelectedDate(day)
-                      setSelectedTime(null)
-                    }}
-                    className={`flex min-w-16 flex-col items-center rounded border px-3 py-3 ${
-                      isSelected ? 'border-copper bg-copper text-ink' : 'border-line bg-surface text-cream'
-                    }`}
-                  >
-                    <span className="text-[11px] uppercase">
-                      {formatWeekdayShort(day)}
-                    </span>
-                    <span className="mt-1 font-display text-lg font-medium">{d.getDate()}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            <div className="mt-8">
-              {availabilityQuery.isLoading && <p className="text-muted">Müsait saatler yükleniyor…</p>}
-              {availabilityQuery.data?.length === 0 && (
-                <p className="text-muted">Bu tarihte müsait saat yok, başka bir gün deneyin.</p>
-              )}
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-                {availabilityQuery.data?.map((time) => (
-                  <button
-                    key={time}
-                    type="button"
-                    onClick={() => setSelectedTime(time)}
-                    className={`rounded border px-3 py-2 text-sm ${
-                      selectedTime === time
-                        ? 'border-copper bg-copper text-ink'
-                        : 'border-line bg-surface text-cream hover:border-copper'
-                    }`}
-                  >
-                    {formatTime(time)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              disabled={!selectedTime}
-              onClick={() => setStep('contact')}
-              className="mt-10 w-full rounded-sm bg-copper py-4 text-sm font-semibold text-ink hover:bg-copper-bright disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Devam Et
-            </button>
-          </section>
+          <TimeStep
+            days={days}
+            date={date}
+            onDate={(d) => {
+              setDate(d)
+              setTime(null)
+            }}
+            time={time}
+            onTime={setTime}
+            slots={availability.data}
+            loading={availability.isLoading || availability.isFetching}
+            error={availability.isError}
+            onRetry={() => availability.refetch()}
+            duration={service?.duration_min ?? 0}
+          />
         )}
 
         {step === 'contact' && (
-          <section>
-            <h1 className="font-display text-3xl font-medium">İletişim bilgileriniz.</h1>
-            <form
-              className="mt-8 flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (!isValidPhone(phone)) {
-                  setError('Geçerli bir telefon numarası girin (5XXXXXXXXX).')
-                  return
-                }
-                sendCodeMutation.mutate()
-              }}
+          <form id="contact-form" onSubmit={submitContact} noValidate className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Ad" required error={errors.name}>
+                <Input
+                  autoComplete="given-name"
+                  autoCapitalize="words"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={60}
+                />
+              </Field>
+              <Field label="Soyad" required error={errors.surname}>
+                <Input
+                  autoComplete="family-name"
+                  autoCapitalize="words"
+                  value={surname}
+                  onChange={(e) => setSurname(e.target.value)}
+                  maxLength={60}
+                />
+              </Field>
+            </div>
+            <Field
+              label="Cep telefonu"
+              required
+              error={errors.phone}
+              hint={
+                sessionPhoneMatches
+                  ? 'Bu numara doğrulandı, tekrar kod istemeyeceğiz.'
+                  : 'Numaranıza bir doğrulama kodu göndereceğiz.'
+              }
             >
-              <input
-                type="text"
-                required
-                placeholder="Ad"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="rounded border border-line bg-surface px-4 py-3 text-cream placeholder:text-muted focus:border-copper focus:outline-none"
-              />
-              <input
-                type="text"
-                required
-                placeholder="Soyad"
-                value={surname}
-                onChange={(e) => setSurname(e.target.value)}
-                className="rounded border border-line bg-surface px-4 py-3 text-cream placeholder:text-muted focus:border-copper focus:outline-none"
-              />
-              <input
+              <Input
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
-                required
-                placeholder="Telefon (5XXXXXXXXX)"
+                placeholder="0555 123 45 67"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="rounded border border-line bg-surface px-4 py-3 text-cream placeholder:text-muted focus:border-copper focus:outline-none"
+                maxLength={20}
               />
-              <button
-                type="submit"
-                disabled={sendCodeMutation.isPending}
-                className="mt-4 w-full rounded-sm bg-copper py-4 text-sm font-semibold text-ink hover:bg-copper-bright disabled:opacity-60"
-              >
-                {sendCodeMutation.isPending ? 'Gönderiliyor…' : 'Doğrulama Kodu Gönder'}
-              </button>
-            </form>
-          </section>
+            </Field>
+          </form>
         )}
 
         {step === 'verify' && (
-          <section>
-            <h1 className="font-display text-3xl font-medium">Telefonunuzu doğrulayın.</h1>
-            <p className="mt-3 text-muted">{phone} numarasına gönderilen kodu girin.</p>
-            {devCode && (
-              <p className="mt-2 text-xs text-copper">
-                (Geliştirme modu — kod: {devCode})
-              </p>
-            )}
-            <form
-              className="mt-8 flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault()
-                verifyCodeMutation.mutate()
-              }}
-            >
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                required
-                placeholder="6 haneli kod"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="rounded border border-line bg-surface px-4 py-3 text-center font-display text-2xl tracking-[8px] text-cream placeholder:text-muted focus:border-copper focus:outline-none"
-              />
-              <button
+          <OtpCodeForm
+            phone={normalizePhone(phone)}
+            initialDevCode={devCode}
+            formId="verify-form"
+            hideSubmit
+            onVerified={onVerified}
+            onBack={() => setStep('contact')}
+          />
+        )}
+      </div>
+
+      {/* Sticky eylem çubuğu: mobilde ekranın altında, içerikle birlikte biter. */}
+      <div className="pb-safe sticky bottom-0 z-30 -mx-5 border-t border-line bg-ink/95 backdrop-blur-sm md:-mx-10 md:border-0 md:bg-transparent md:backdrop-blur-none">
+        <div className="mx-auto flex w-full items-center gap-3 px-5 py-3 md:px-10 md:pb-12">
+          {step !== 'service' && (
+            <Button variant="secondary" size="lg" onClick={back} leftIcon={<ArrowLeft className="size-4" />} aria-label="Geri">
+              <span className="hidden sm:inline">Geri</span>
+            </Button>
+          )}
+          <div className="min-w-0 flex-1">
+            {step === 'contact' ? (
+              <Button
                 type="submit"
-                disabled={verifyCodeMutation.isPending}
-                className="mt-4 w-full rounded-sm bg-copper py-4 text-sm font-semibold text-ink hover:bg-copper-bright disabled:opacity-60"
+                form="contact-form"
+                size="lg"
+                fullWidth
+                loading={create.isPending || sendCode.isPending}
               >
-                {verifyCodeMutation.isPending ? 'Doğrulanıyor…' : 'Doğrula'}
-              </button>
-            </form>
-          </section>
-        )}
+                {sessionPhoneMatches ? 'Randevuyu onayla' : 'Kod gönder'}
+              </Button>
+            ) : step === 'verify' ? (
+              <Button type="submit" form="verify-form" size="lg" fullWidth loading={create.isPending}>
+                Doğrula ve onayla
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                fullWidth
+                disabled={!canNext}
+                onClick={next}
+                rightIcon={<ArrowRight className="size-4" />}
+              >
+                {step === 'time' && time ? `${formatTime(time)} için devam et` : 'Devam'}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-        {step === 'confirm' && (
-          <section>
-            <h1 className="font-display text-3xl font-medium">Randevunuzu onaylayın.</h1>
-            <div className="mt-8 flex flex-col gap-4 rounded border border-line bg-surface p-6">
-              <SummaryRow label="Hizmet" value={selectedService?.name ?? ''} />
-              <SummaryRow label="Usta" value={`${selectedStaff?.name} ${selectedStaff?.surname}`} />
-              <SummaryRow
-                label="Tarih"
-                value={formatDateLong(selectedDate)}
-              />
-              <SummaryRow label="Saat" value={selectedTime ? formatTime(selectedTime) : ''} />
-              <SummaryRow label="Ücret" value={formatPrice(selectedService?.price ?? 0)} />
-            </div>
+/* ------------------------------------------------------------------ */
+
+function StepIndicator({ index }: { index: number }) {
+  return (
+    <nav aria-label="Randevu adımları">
+      <ol className="flex items-center">
+        {STEPS.map((s, i) => {
+          const done = i < index
+          const active = i === index
+          return (
+            <li key={s.key} className={cn('flex items-center', i < STEPS.length - 1 && 'flex-1')} aria-current={active ? 'step' : undefined}>
+              <span className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    'flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
+                    done && 'border-copper bg-copper text-ink',
+                    active && 'border-copper text-copper-bright',
+                    !done && !active && 'border-line-strong text-muted',
+                  )}
+                >
+                  {done ? <Check className="size-3.5" aria-hidden="true" /> : i + 1}
+                </span>
+                <span
+                  className={cn(
+                    'text-xs font-medium tracking-wide',
+                    active ? 'text-cream' : 'hidden text-muted sm:inline',
+                    done && 'hidden sm:inline',
+                  )}
+                >
+                  {s.label}
+                </span>
+              </span>
+              {i < STEPS.length - 1 && (
+                <span className={cn('mx-2 h-px min-w-3 flex-1 sm:mx-3', done ? 'bg-copper' : 'bg-line-strong')} aria-hidden="true" />
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+
+function SelectionChips({
+  service,
+  barber,
+  date,
+  time,
+}: {
+  service: PublicService | null
+  barber: PublicStaff | null
+  date: string | null
+  time: string | null
+}) {
+  const chips = [
+    service && { icon: <Scissors className="size-3.5" />, text: service.name },
+    barber && { icon: <UserRound className="size-3.5" />, text: fullName(barber) },
+    date && time && { icon: <CalendarDays className="size-3.5" />, text: `${formatDateLong(date)} · ${formatTime(time)}` },
+  ].filter(Boolean) as { icon: ReactNode; text: string }[]
+  return (
+    <ul className="mt-4 flex flex-wrap gap-2">
+      {chips.map((c, i) => (
+        <li
+          key={i}
+          className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 py-1.5 text-xs text-muted-strong"
+        >
+          <span className="shrink-0 text-copper">{c.icon}</span>
+          <span className="truncate">{c.text}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function ListSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="space-y-3" role="status" aria-label="Yükleniyor">
+      {Array.from({ length: rows }, (_, i) => (
+        <Skeleton key={i} className="h-[76px] w-full rounded-md" />
+      ))}
+    </div>
+  )
+}
+
+function LoadError({ onRetry, text }: { onRetry: () => void; text: string }) {
+  return (
+    <EmptyState
+      title={text}
+      description="İnternet bağlantınızı kontrol edip tekrar deneyin."
+      action={
+        <Button variant="secondary" onClick={onRetry}>
+          Tekrar dene
+        </Button>
+      }
+    />
+  )
+}
+
+const optionBase =
+  'group flex w-full min-w-0 items-center gap-4 rounded-md border bg-surface px-4 py-4 text-left transition-colors md:px-5'
+const optionState = (selected: boolean) =>
+  selected ? 'border-copper bg-surface-raised' : 'border-line hover:border-line-strong active:bg-surface-raised'
+
+function RadioMark({ selected }: { selected: boolean }) {
+  return (
+    <span
+      className={cn(
+        'flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors',
+        selected ? 'border-copper bg-copper text-ink' : 'border-line-strong text-transparent',
+      )}
+      aria-hidden="true"
+    >
+      <Check className="size-3.5" />
+    </span>
+  )
+}
+
+function ServiceStep({
+  loading,
+  error,
+  items,
+  value,
+  onChange,
+  onRetry,
+}: {
+  loading: boolean
+  error: boolean
+  items: PublicService[]
+  value: number | null
+  onChange: (id: number) => void
+  onRetry: () => void
+}) {
+  if (loading) return <ListSkeleton rows={4} />
+  if (error) return <LoadError onRetry={onRetry} text="Hizmetler yüklenemedi" />
+  if (items.length === 0) return <EmptyState icon={<Scissors />} title="Henüz hizmet eklenmemiş" description="Lütfen daha sonra tekrar deneyin." />
+  return (
+    <div role="radiogroup" aria-label="Hizmet" className="space-y-3">
+      {items.map((s) => {
+        const selected = s.id === value
+        return (
+          <button
+            key={s.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(s.id)}
+            className={cn(optionBase, optionState(selected))}
+          >
+            <RadioMark selected={selected} />
+            <span className="min-w-0 flex-1">
+              <span className="block break-words font-display text-lg leading-snug text-cream">{s.name}</span>
+              <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
+                <Clock className="size-3.5" aria-hidden="true" />
+                {formatDuration(s.duration_min)}
+              </span>
+            </span>
+            <span className="shrink-0 font-display text-lg text-copper-bright">{formatPrice(s.price)}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function StaffStep({
+  loading,
+  error,
+  items,
+  value,
+  onChange,
+  onRetry,
+}: {
+  loading: boolean
+  error: boolean
+  items: PublicStaff[]
+  value: number | null
+  onChange: (id: number) => void
+  onRetry: () => void
+}) {
+  if (loading) return <ListSkeleton rows={3} />
+  if (error) return <LoadError onRetry={onRetry} text="Berberler yüklenemedi" />
+  if (items.length === 0) return <EmptyState icon={<UserRound />} title="Henüz berber eklenmemiş" />
+  return (
+    <div role="radiogroup" aria-label="Berber" className="space-y-3">
+      {items.map((p) => {
+        const selected = p.id === value
+        const initials = `${p.name[0] ?? ''}${p.surname[0] ?? ''}`.toLocaleUpperCase('tr-TR')
+        return (
+          <button
+            key={p.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(p.id)}
+            className={cn(optionBase, optionState(selected))}
+          >
+            <span
+              className={cn(
+                'flex size-12 shrink-0 items-center justify-center rounded-full border font-display text-lg',
+                selected ? 'border-copper text-copper-bright' : 'border-line-strong text-muted-strong',
+              )}
+              aria-hidden="true"
+            >
+              {initials}
+            </span>
+            <span className="min-w-0 flex-1 break-words font-display text-lg leading-snug text-cream">{fullName(p)}</span>
+            <RadioMark selected={selected} />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function TimeStep({
+  days,
+  date,
+  onDate,
+  time,
+  onTime,
+  slots: allSlots,
+  loading,
+  error,
+  onRetry,
+  duration,
+}: {
+  days: string[]
+  date: string
+  onDate: (d: string) => void
+  time: string | null
+  onTime: (t: string) => void
+  slots: string[] | undefined
+  loading: boolean
+  error: boolean
+  onRetry: () => void
+  duration: number
+}) {
+  const stripRef = useRef<HTMLDivElement>(null)
+  // Backend bugünün geçmiş saatlerini de döndürebilir; istemcide ele.
+  const slots = useMemo(() => {
+    if (!allSlots) return allSlots
+    if (date !== days[0]) return allSlots
+    const now = new Date()
+    return allSlots.filter((t) => appointmentStart(date, t) > now)
+  }, [allSlots, date, days])
+  const monthFmt = useMemo(() => new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }), [])
+
+  // Seçili günü şeridin içinde görünür tut (sayfayı değil, yalnızca şeridi kaydırır).
+  useEffect(() => {
+    const strip = stripRef.current
+    const btn = strip?.querySelector<HTMLElement>('[aria-pressed="true"]')
+    if (strip && btn) {
+      const left = btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2
+      strip.scrollTo({ left: Math.max(0, left), behavior: 'auto' })
+    }
+  }, [date])
+
+  return (
+    <div>
+      <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted">
+        {monthFmt.format(parseISODateLocal(date))}
+      </p>
+      <div
+        ref={stripRef}
+        className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto overscroll-x-contain px-5 pb-1 md:mx-0 md:px-0"
+        role="group"
+        aria-label="Gün"
+      >
+        {days.map((d, i) => {
+          const selected = d === date
+          const dt = parseISODateLocal(d)
+          return (
             <button
+              key={d}
               type="button"
-              disabled={createAppointmentMutation.isPending}
-              onClick={() => createAppointmentMutation.mutate()}
-              className="mt-8 w-full rounded-sm bg-copper py-4 text-sm font-semibold text-ink hover:bg-copper-bright disabled:opacity-60"
+              aria-pressed={selected}
+              onClick={() => onDate(d)}
+              className={cn(
+                'flex min-h-[76px] w-16 shrink-0 flex-col items-center justify-center rounded-md border transition-colors',
+                selected
+                  ? 'border-copper bg-copper text-ink'
+                  : 'border-line bg-surface text-cream hover:border-line-strong active:bg-surface-raised',
+              )}
             >
-              {createAppointmentMutation.isPending ? 'Oluşturuluyor…' : 'Randevuyu Onayla'}
+              <span className={cn('text-[11px] font-medium uppercase tracking-wider', selected ? 'text-ink/80' : 'text-muted')}>
+                {i === 0 ? 'Bugün' : formatWeekdayShort(d)}
+              </span>
+              <span className="font-display text-2xl leading-none">{dt.getDate()}</span>
             </button>
-          </section>
-        )}
+          )
+        })}
+      </div>
 
-        {step === 'done' && (
-          <section className="text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-copper text-copper">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12l5 5L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <h1 className="mt-6 font-display text-3xl font-medium">Randevunuz alındı!</h1>
-            <p className="mt-3 text-muted">
-              {selectedService?.name} — {selectedStaff?.name} {selectedStaff?.surname} ·{' '}
-              {formatDateLong(selectedDate)} · {selectedTime ? formatTime(selectedTime) : ''}
-            </p>
-            <Link
-              to="/"
-              className="mt-10 inline-block rounded-sm border border-line-strong px-8 py-4 text-sm font-semibold text-cream hover:border-copper"
-            >
-              Ana Sayfaya Dön
-            </Link>
-          </section>
+      <div className="mt-7 min-h-[11rem]">
+        <p className="mb-3 text-sm text-muted-strong">{formatDateLong(date)}</p>
+        {loading ? (
+          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4" role="status" aria-label="Müsait saatler yükleniyor">
+            {Array.from({ length: 8 }, (_, i) => (
+              <Skeleton key={i} className="h-11 rounded-sm" />
+            ))}
+          </div>
+        ) : error ? (
+          <LoadError onRetry={onRetry} text="Müsait saatler yüklenemedi" />
+        ) : !slots || slots.length === 0 ? (
+          <EmptyState
+            icon={<CalendarDays />}
+            title="Bu gün için müsait saat yok"
+            description="Lütfen başka bir gün seçin."
+            className="py-8"
+          />
+        ) : (
+          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4" role="radiogroup" aria-label="Saat">
+            {slots.map((t) => {
+              const selected = t === time
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => onTime(t)}
+                  className={cn(
+                    'min-h-11 rounded-sm border px-2 font-display text-base tabular-nums transition-colors',
+                    selected
+                      ? 'border-copper bg-copper text-ink'
+                      : 'border-line bg-surface text-cream hover:border-copper/70 active:bg-surface-raised',
+                  )}
+                >
+                  {formatTime(t)}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {time && duration > 0 && (
+          <p className="mt-4 text-xs text-muted">Seçtiğiniz saat: {formatTimeRange(time, duration)}</p>
         )}
       </div>
     </div>
   )
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function SuccessView({ appointment, name }: { appointment: AppointmentPublicOut; name: string }) {
+  const rows = [
+    { label: 'Hizmet', value: appointment.service.name },
+    { label: 'Berber', value: fullName(appointment.staff) },
+    { label: 'Tarih', value: formatDateLong(appointment.appointment_date) },
+    { label: 'Saat', value: formatTimeRange(appointment.appointment_time, appointment.service.duration_min) },
+    { label: 'Ücret', value: formatPrice(appointment.service.price) },
+  ]
   return (
-    <div className="flex items-center justify-between border-b border-line pb-4 last:border-0 last:pb-0">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="font-display text-base font-medium">{value}</span>
+    <div className="mx-auto w-full max-w-xl px-5 py-10 md:px-10 md:py-16">
+      <div className="flex flex-col items-center text-center">
+        <span className="flex size-16 items-center justify-center rounded-full border border-copper text-copper-bright">
+          <CheckCircle2 className="size-8" aria-hidden="true" />
+        </span>
+        <h1 className="mt-6 font-display text-3xl font-medium text-cream md:text-4xl">Randevunuz alındı</h1>
+        <p className="mt-2 text-sm text-muted">
+          {name ? `Teşekkürler ${name.split(' ')[0]}, ` : ''}sizi bekliyoruz.
+        </p>
+      </div>
+
+      <dl className="mt-8 divide-y divide-line rounded-md border border-line bg-surface">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-baseline justify-between gap-4 px-5 py-3.5">
+            <dt className="shrink-0 text-sm text-muted">{r.label}</dt>
+            <dd className="min-w-0 break-words text-right font-display text-base text-cream">{r.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-4 text-center text-xs text-muted">
+        Randevunuz işletme tarafından onaylanacaktır. Durumunu Randevularım sayfasından takip edebilirsiniz.
+      </p>
+
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <Link to="/randevularim" className={buttonStyles({ size: 'lg', fullWidth: true })}>
+          Randevularım
+        </Link>
+        <Link to="/" className={buttonStyles({ variant: 'secondary', size: 'lg', fullWidth: true })}>
+          Ana sayfa
+        </Link>
+      </div>
     </div>
   )
 }

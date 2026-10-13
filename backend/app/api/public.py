@@ -77,7 +77,11 @@ async def availability_route(
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ):
-    return await get_available_slots(db, tenant.id, staff_id, service_id, date)
+    slots = await get_available_slots(db, tenant.id, staff_id, service_id, date)
+    # Müşteri geçmiş saate randevu alamaz (POST /appointments da reddeder); bugünün geçmiş
+    # saatlerini burada eliyoruz. Panel tarafı walk-in kaydı için ortak servisi filtresiz kullanır.
+    now = datetime.now()
+    return [s for s in slots if datetime.combine(date, s) > now]
 
 
 # ---------------------------------------------------------------- OTP auth
