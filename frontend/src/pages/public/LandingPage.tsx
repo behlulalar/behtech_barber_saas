@@ -1,13 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, CalendarCheck, Clock, MapPin, Smartphone, UserRound } from 'lucide-react'
+import { ArrowRight, CalendarCheck, Clock, MapPin, Scissors, Smartphone, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { buttonStyles } from '../../components/ui/Button'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { publicApi } from '../../lib/api'
-import { cn } from '../../lib/cn'
-import { formatDuration, formatPrice, fullName } from '../../lib/format'
-import { HERO_IMAGE } from '../../lib/placeholderImages'
+import { formatDuration, formatPrice, fullName, initials } from '../../lib/format'
 import { useTenant } from '../../lib/queries'
 
 const STEPS = [
@@ -15,6 +13,42 @@ const STEPS = [
   { icon: CalendarCheck, title: 'Gün ve saat', text: 'Yalnızca gerçekten boş olan saatler listelenir.' },
   { icon: Smartphone, title: 'Telefonla onay', text: 'Şifre yok; numaranıza gelen kodla onaylayın.' },
 ]
+
+/** Berber direği şeritleri: kiracıya özgü görseller yokken kullanılan, palet tabanlı desen. */
+const STRIPES = {
+  backgroundImage:
+    'repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-copper) 9%, transparent) 0 14px, transparent 14px 28px)',
+} as const
+
+/** Banner yokken hero: işletmenin kendi adı, logosu ve palet tabanlı desen. */
+function BrandPanel({ name, logo }: { name?: string; logo?: string | null }) {
+  return (
+    <div className="relative flex size-full flex-col justify-between p-6 md:p-8" style={STRIPES}>
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,transparent,var(--color-surface)_75%)]"
+        aria-hidden="true"
+      />
+      <div className="pointer-events-none absolute inset-3 rounded-sm border border-copper/30" aria-hidden="true" />
+      <div className="relative flex items-center justify-between">
+        {logo ? (
+          <img src={logo} alt="" width={64} height={64} className="size-16 rounded-full border border-copper/60 bg-ink object-cover" />
+        ) : (
+          <span className="flex size-12 items-center justify-center rounded-full border border-copper/60 bg-ink text-copper-bright">
+            <Scissors className="size-5" aria-hidden="true" />
+          </span>
+        )}
+        <span className="text-xs font-medium uppercase tracking-[0.25em] text-muted">Berber</span>
+      </div>
+      <div className="relative min-w-0">
+        <p className="break-words font-display text-[2.4rem] font-medium leading-[1.02] tracking-tight text-cream md:text-5xl">
+          {name ?? ' '}
+        </p>
+        <p className="mt-4 h-px w-12 bg-copper" aria-hidden="true" />
+        <p className="mt-4 text-sm text-muted-strong">Randevunuz bir dakikada hazır.</p>
+      </div>
+    </div>
+  )
+}
 
 export default function LandingPage() {
   const tenant = useTenant()
@@ -25,14 +59,14 @@ export default function LandingPage() {
   const name = tenant.data?.business_name
   const address = tenant.data?.business_address
   const logo = tenant.data?.logo_image
-  const banner = tenant.data?.banner_image && !bannerFailed ? tenant.data.banner_image : HERO_IMAGE
+  const banner = tenant.data?.banner_image && !bannerFailed ? tenant.data.banner_image : null
 
   return (
     <div>
       {/* HERO */}
       <section className="mx-auto grid w-full max-w-6xl items-center gap-10 px-5 pb-14 pt-8 md:grid-cols-[1.05fr_0.95fr] md:gap-14 md:px-10 md:pb-24 md:pt-16">
         <div className="min-w-0">
-          {logo && (
+          {logo && banner && (
             <img
               src={logo}
               alt=""
@@ -68,19 +102,27 @@ export default function LandingPage() {
         </div>
 
         <div className="relative min-w-0">
-          <div className="aspect-[4/5] w-full overflow-hidden rounded-md border border-line bg-surface md:aspect-[4/5]">
-            <img
-              src={banner}
-              alt={name ? `${name} dükkânı` : 'Berber dükkânı'}
-              width={800}
-              height={1000}
-              fetchPriority="high"
-              decoding="async"
-              onError={() => setBannerFailed(true)}
-              className="size-full object-cover"
-            />
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-md border border-line bg-surface">
+            {banner ? (
+              <>
+                <img
+                  src={banner}
+                  alt={name ? `${name} dükkânı` : 'Berber dükkânı'}
+                  width={800}
+                  height={1000}
+                  fetchPriority="high"
+                  decoding="async"
+                  onError={() => setBannerFailed(true)}
+                  className="size-full object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/50 to-transparent px-6 pb-6 pt-24">
+                  {name && <p className="break-words font-display text-2xl leading-tight text-cream">{name}</p>}
+                </div>
+              </>
+            ) : (
+              <BrandPanel name={name} logo={logo} />
+            )}
           </div>
-          <div className="pointer-events-none absolute -bottom-3 -left-3 hidden size-24 rounded-md border border-copper/50 md:block" aria-hidden="true" />
         </div>
       </section>
 
@@ -166,32 +208,49 @@ export default function LandingPage() {
               ))}
             </div>
           ) : staff.data && staff.data.length > 0 ? (
-            <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {staff.data.map((p) => (
-                <li key={p.id} className="min-w-0">
-                  <Link
-                    to="/randevu"
-                    className={cn(
-                      'group flex min-h-28 items-center gap-5 rounded-md border border-line bg-ink p-5 transition-colors',
-                      'hover:border-copper/70 active:bg-surface-raised',
-                    )}
-                  >
-                    <span
-                      className="flex size-16 shrink-0 items-center justify-center rounded-full border border-line-strong font-display text-2xl text-copper-bright transition-colors group-hover:border-copper"
-                      aria-hidden="true"
+            <ul className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+              {staff.data.map((p) => {
+                const offered = (services.data ?? []).filter((sv) => p.service_ids.includes(sv.id))
+                return (
+                  <li key={p.id} className="min-w-0">
+                    <Link
+                      to="/randevu"
+                      className="group block h-full overflow-hidden rounded-md border border-line bg-ink transition-colors hover:border-copper/70 active:bg-surface-raised"
                     >
-                      {`${p.name[0] ?? ''}${p.surname[0] ?? ''}`.toLocaleUpperCase('tr-TR')}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block break-words font-display text-xl leading-snug text-cream">{fullName(p)}</span>
-                      <span className="mt-1 inline-flex items-center gap-1 text-sm text-muted transition-colors group-hover:text-copper-bright">
-                        Randevu al
-                        <ArrowRight className="size-3.5" aria-hidden="true" />
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
+                      <div className="relative aspect-[4/5] w-full overflow-hidden bg-surface-raised">
+                        {p.photo_image ? (
+                          <img
+                            src={p.photo_image}
+                            alt={fullName(p)}
+                            width={400}
+                            height={500}
+                            loading="lazy"
+                            decoding="async"
+                            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          />
+                        ) : (
+                          <div className="flex size-full items-center justify-center" style={STRIPES} aria-hidden="true">
+                            <span className="font-display text-5xl text-copper-bright md:text-6xl">{initials(fullName(p))}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <p className="break-words font-display text-lg leading-snug text-cream md:text-xl">{fullName(p)}</p>
+                        {offered.length > 0 && (
+                          <p className="mt-1 line-clamp-2 break-words text-xs leading-relaxed text-muted">
+                            {offered.slice(0, 3).map((sv) => sv.name).join(' · ')}
+                            {offered.length > 3 ? ` +${offered.length - 3}` : ''}
+                          </p>
+                        )}
+                        <span className="mt-3 inline-flex min-h-6 items-center gap-1 text-sm text-copper transition-colors group-hover:text-copper-bright">
+                          Randevu al
+                          <ArrowRight className="size-3.5" aria-hidden="true" />
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           ) : null}
         </div>

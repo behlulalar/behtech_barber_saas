@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Scissors, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Scissors, Trash2, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
+import { Avatar } from '../../components/ui/Avatar'
 import { Badge } from '../../components/ui/Badge'
 import { Button, IconButton } from '../../components/ui/Button'
+import { Checkbox } from '../../components/ui/Checkbox'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
@@ -15,9 +17,9 @@ import { useToast } from '../../components/ui/Toast'
 import { adminApi, errorMessage } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
 import { cn } from '../../lib/cn'
-import { formatDuration, formatPrice } from '../../lib/format'
-import type { AdminService } from '../../types/api'
-import { ErrorBlock, qk, useServiceList } from './shared'
+import { formatDuration, formatPrice, fullName } from '../../lib/format'
+import type { AdminService, AdminStaff } from '../../types/api'
+import { ErrorBlock, qk, useServiceList, useStaffList } from './shared'
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90]
 
@@ -26,6 +28,8 @@ export default function ServicesPage() {
   const toast = useToast()
   const qc = useQueryClient()
   const query = useServiceList()
+  const staffQuery = useStaffList()
+  const staffById = new Map((staffQuery.data ?? []).map((m) => [m.id, m]))
   const [editing, setEditing] = useState<AdminService | 'new' | null>(null)
   const [deleting, setDeleting] = useState<AdminService | null>(null)
 
@@ -63,6 +67,11 @@ export default function ServicesPage() {
     },
     { key: 'duration', header: 'Süre', cell: (s) => formatDuration(s.duration_min) },
     { key: 'price', header: 'Fiyat', align: 'right', cell: (s) => <span className="font-display text-base tabular-nums">{formatPrice(s.price)}</span> },
+    {
+      key: 'staff',
+      header: 'Personel',
+      cell: (s) => <ProviderStack ids={s.staff_ids} staffById={staffById} loading={staffQuery.isLoading} />,
+    },
     {
       key: 'active',
       header: 'Durum',
@@ -149,6 +158,24 @@ export default function ServicesPage() {
   )
 }
 
+function ProviderStack({ ids, staffById, loading }: { ids: number[]; staffById: Map<number, AdminStaff>; loading: boolean }) {
+  if (ids.length === 0) return <Badge tone="warning">Kimse vermiyor</Badge>
+  const members = ids.map((id) => staffById.get(id)).filter((m): m is AdminStaff => Boolean(m))
+  const shown = members.slice(0, 3)
+  return (
+    <span className="inline-flex items-center gap-2">
+      {!loading && shown.length > 0 && (
+        <span className="flex -space-x-2" aria-hidden="true">
+          {shown.map((m) => (
+            <Avatar key={m.id} name={fullName(m)} src={m.photo_image} size="sm" className="ring-2 ring-surface" />
+          ))}
+        </span>
+      )}
+      <span className="text-sm text-muted-strong">{ids.length} personel</span>
+    </span>
+  )
+}
+
 function RowActions({ s, onEdit, onDelete }: { s: AdminService; onEdit: () => void; onDelete: () => void }) {
   return (
     <div className="flex justify-end gap-1">
@@ -170,6 +197,13 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
   const [duration, setDuration] = useState(service ? String(service.duration_min) : '30')
   const [active, setActive] = useState(service?.is_active ?? true)
   const [touched, setTouched] = useState(false)
+  const staffQuery = useStaffList()
+  const providers = (staffQuery.data ?? []).filter((m) => m.role !== 'technical_support')
+  // null: henüz dokunulmadı (yeni hizmette varsayılan = tüm personel).
+  const [picked, setPicked] = useState<number[] | null>(service ? service.staff_ids : null)
+  const selected = picked ?? providers.map((m) => m.id)
+  const providerIds = new Set(providers.map((m) => m.id))
+  const toggleStaff = (id: number, on: boolean) => setPicked(on ? [...selected, id] : selected.filter((x) => x !== id))
 
   const priceNum = price === '' ? NaN : Number(price)
   const durNum = duration === '' ? NaN : Number(duration)
@@ -181,11 +215,14 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
 
   const save = useMutation({
     mutationFn: () => {
-      const data = { name: name.trim(), price: priceNum, duration_min: durNum, is_active: active }
+      // Teknik destek gibi listede olmayan eski bağlantılar korunur; listedekiler seçime göre belirlenir.
+      const staffIds = [...(service?.staff_ids.filter((id) => !providerIds.has(id)) ?? []), ...selected.filter((id) => providerIds.has(id))]
+      const data = { name: name.trim(), price: priceNum, duration_min: durNum, is_active: active, staff_ids: staffIds }
       return service ? adminApi.updateService(service.id, data) : adminApi.createService(data)
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.services })
+      void qc.invalidateQueries({ queryKey: qk.staff })
       toast.success(service ? 'Hizmet güncellendi' : 'Hizmet eklendi')
       onClose()
     },
@@ -194,6 +231,7 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
 
   function submit() {
     setTouched(true)
+    if (!staffQuery.data) return
     if (!name.trim() || !Number.isInteger(priceNum) || priceNum < 0 || !Number.isInteger(durNum) || durNum < 5 || durNum > 480) return
     save.mutate()
   }
@@ -252,6 +290,48 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
           ))}
         </div>
         <Switch checked={active} onChange={setActive} label="Aktif" description="Pasif hizmet müşterilere ve yeni randevulara sunulmaz." />
+        <fieldset className="min-w-0">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3">
+            <legend className="text-[13px] font-medium tracking-wide text-muted-strong">Bu hizmeti veren personel</legend>
+            {providers.length > 0 && (
+              <span className="flex">
+                <button type="button" onClick={() => setPicked(providers.map((m) => m.id))} className="min-h-11 px-2 text-sm text-copper-bright hover:underline">
+                  Tümünü seç
+                </button>
+                <button type="button" onClick={() => setPicked([])} className="min-h-11 px-2 text-sm text-copper-bright hover:underline">
+                  Hiçbirini
+                </button>
+              </span>
+            )}
+          </div>
+          {staffQuery.isLoading ? (
+            <p className="text-sm text-muted">Personel yükleniyor…</p>
+          ) : staffQuery.isError ? (
+            <p className="text-sm text-danger">{errorMessage(staffQuery.error, 'Personel yüklenemedi.')}</p>
+          ) : (
+            <div className="divide-y divide-line rounded-md border border-line px-3">
+              {providers.map((m) => (
+                <Checkbox
+                  key={m.id}
+                  checked={selected.includes(m.id)}
+                  onChange={(e) => toggleStaff(m.id, e.target.checked)}
+                  label={
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <Avatar name={fullName(m)} src={m.photo_image} size="sm" />
+                      <span className="min-w-0 truncate">{fullName(m)}</span>
+                    </span>
+                  }
+                />
+              ))}
+            </div>
+          )}
+          {!staffQuery.isLoading && !staffQuery.isError && selected.filter((id) => providerIds.has(id)).length === 0 && (
+            <p role="status" className="mt-2 flex items-start gap-2 text-sm text-warning">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              Hiç personel seçilmedi; müşteriler bu hizmet için randevu alamaz.
+            </p>
+          )}
+        </fieldset>
       </form>
     </Modal>
   )

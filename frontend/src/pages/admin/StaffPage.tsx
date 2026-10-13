@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { Avatar } from '../../components/ui/Avatar'
 import { Badge, type BadgeTone } from '../../components/ui/Badge'
 import { Button, IconButton } from '../../components/ui/Button'
+import { Checkbox } from '../../components/ui/Checkbox'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
+import { ImagePicker } from '../../components/ui/ImagePicker'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
@@ -15,10 +17,11 @@ import { Table, type Column } from '../../components/ui/Table'
 import { useToast } from '../../components/ui/Toast'
 import { adminApi, errorMessage } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
+import { STAFF_PHOTO_MAX_CHARS } from '../../lib/image'
 import { formatPhone, fullName, isValidPhone, normalizePhone } from '../../lib/format'
 import { ROLE_LABELS } from '../../layouts/AdminLayout'
 import type { AdminStaff, AdminStaffUpdate, StaffRole } from '../../types/api'
-import { ErrorBlock, qk, telHref, useStaffList } from './shared'
+import { ErrorBlock, qk, telHref, useServiceList, useStaffList } from './shared'
 
 const ROLE_TONES: Record<StaffRole, BadgeTone> = { super_admin: 'copper', technical_support: 'info', staff: 'neutral' }
 
@@ -56,7 +59,7 @@ export default function StaffPage() {
       primary: true,
       cell: (s) => (
         <span className="flex min-w-0 items-center gap-3">
-          <Avatar name={fullName(s)} size="sm" className="hidden md:inline-flex" />
+          <Avatar name={fullName(s)} src={s.photo_image} size="sm" className={s.photo_image ? undefined : 'hidden md:inline-flex'} />
           <span className="min-w-0 truncate font-medium">{fullName(s)}</span>
           {s.id === me?.id && <Badge tone="neutral">Siz</Badge>}
         </span>
@@ -168,6 +171,15 @@ function StaffForm({ member, onClose }: { member: AdminStaff | null; onClose: ()
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<StaffRole>(member?.role ?? 'staff')
   const [touched, setTouched] = useState(false)
+  const [photo, setPhoto] = useState<string | null>(member?.photo_image ?? null)
+  const servicesQuery = useServiceList()
+  const services = servicesQuery.data ?? []
+  // null: henüz dokunulmadı (yeni üyede varsayılan = tüm hizmetler).
+  const [picked, setPicked] = useState<number[] | null>(member ? member.service_ids : null)
+  const selected = picked ?? services.map((x) => x.id)
+  const serviceIds = new Set(services.map((x) => x.id))
+  const offersServices = role !== 'technical_support'
+  const toggleService = (id: number, on: boolean) => setPicked(on ? [...selected, id] : selected.filter((x) => x !== id))
 
   const creating = !member
   const errors = {
@@ -181,7 +193,15 @@ function StaffForm({ member, onClose }: { member: AdminStaff | null; onClose: ()
   const save = useMutation({
     mutationFn: () => {
       if (!member) {
-        return adminApi.createStaff({ name: name.trim(), surname: surname.trim(), phone: normalizePhone(phone), password, role })
+        return adminApi.createStaff({
+          name: name.trim(),
+          surname: surname.trim(),
+          phone: normalizePhone(phone),
+          password,
+          role,
+          ...(photo ? { photo_image: photo } : {}),
+          ...(offersServices ? { service_ids: selected.filter((id) => serviceIds.has(id)) } : {}),
+        })
       }
       const data: AdminStaffUpdate = {}
       if (name.trim() !== member.name) data.name = name.trim()
@@ -189,10 +209,17 @@ function StaffForm({ member, onClose }: { member: AdminStaff | null; onClose: ()
       if (normalizePhone(phone) !== member.phone) data.phone = normalizePhone(phone)
       if (role !== member.role) data.role = role
       if (password) data.password = password
+      if (photo !== member.photo_image) data.photo_image = photo
+      if (offersServices) {
+        const next = selected.filter((id) => serviceIds.has(id))
+        const prev = member.service_ids
+        if (next.length !== prev.length || next.some((id) => !prev.includes(id))) data.service_ids = next
+      }
       return adminApi.updateStaff(member.id, data)
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.staff })
+      void qc.invalidateQueries({ queryKey: qk.services })
       toast.success(member ? 'Ekip üyesi güncellendi' : 'Ekip üyesi eklendi')
       onClose()
     },
@@ -201,6 +228,7 @@ function StaffForm({ member, onClose }: { member: AdminStaff | null; onClose: ()
 
   function submit() {
     setTouched(true)
+    if (offersServices && !servicesQuery.data) return
     if (!name.trim() || !surname.trim() || !isValidPhone(phone)) return
     if ((creating && password.length < 6) || (password !== '' && password.length < 6)) return
     save.mutate()
@@ -232,6 +260,16 @@ function StaffForm({ member, onClose }: { member: AdminStaff | null; onClose: ()
           submit()
         }}
       >
+        <ImagePicker
+          label="Fotoğraf"
+          value={photo}
+          onChange={setPhoto}
+          aspect="portrait"
+          maxDim={480}
+          type="image/jpeg"
+          maxChars={STAFF_PHOTO_MAX_CHARS}
+          disabled={save.isPending}
+        />
         <div className="grid grid-cols-2 gap-3">
           <Field label="Ad" required error={errors.name}>
             <Input value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" data-autofocus />
@@ -258,6 +296,51 @@ function StaffForm({ member, onClose }: { member: AdminStaff | null; onClose: ()
             {(isOwner || role === 'super_admin') && <option value="super_admin">{ROLE_LABELS.super_admin}</option>}
           </Select>
         </Field>
+        {offersServices && (
+          <fieldset className="min-w-0">
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3">
+              <legend className="text-[13px] font-medium tracking-wide text-muted-strong">Verdiği hizmetler</legend>
+              {services.length > 0 && (
+                <span className="flex">
+                  <button type="button" onClick={() => setPicked(services.map((x) => x.id))} className="min-h-11 px-2 text-sm text-copper-bright hover:underline">
+                    Tümünü seç
+                  </button>
+                  <button type="button" onClick={() => setPicked([])} className="min-h-11 px-2 text-sm text-copper-bright hover:underline">
+                    Hiçbirini
+                  </button>
+                </span>
+              )}
+            </div>
+            {servicesQuery.isLoading ? (
+              <p className="text-sm text-muted">Hizmetler yükleniyor…</p>
+            ) : servicesQuery.isError ? (
+              <p className="text-sm text-danger">{errorMessage(servicesQuery.error, 'Hizmetler yüklenemedi.')}</p>
+            ) : services.length === 0 ? (
+              <p className="text-sm text-muted">Henüz hizmet yok.</p>
+            ) : (
+              <div className="divide-y divide-line rounded-md border border-line px-3">
+                {services.map((x) => (
+                  <Checkbox
+                    key={x.id}
+                    checked={selected.includes(x.id)}
+                    onChange={(e) => toggleService(x.id, e.target.checked)}
+                    label={
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 truncate">{x.name}</span>
+                        {!x.is_active && <Badge tone="neutral">pasif</Badge>}
+                      </span>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+            {!servicesQuery.isLoading && services.length > 0 && selected.filter((id) => serviceIds.has(id)).length === 0 && (
+              <p role="status" className="mt-2 text-sm text-warning">
+                Hiç hizmet seçilmedi; müşteriler bu kişiden randevu alamaz.
+              </p>
+            )}
+          </fieldset>
+        )}
       </form>
     </Modal>
   )

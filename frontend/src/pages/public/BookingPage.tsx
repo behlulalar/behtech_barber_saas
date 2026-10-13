@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { Avatar } from '../../components/ui/Avatar'
 import { Button, buttonStyles } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
@@ -87,6 +88,25 @@ export default function BookingPage() {
 
   const service = services.data?.find((s) => s.id === serviceId) ?? null
   const barber = staff.data?.find((s) => s.id === staffId) ?? null
+
+  // Seçili hizmeti veren berberler; tek kişi varsa otomatik seçilir.
+  const offeringStaff = useMemo(
+    () => (serviceId == null ? [] : (staff.data ?? []).filter((p) => p.service_ids.includes(serviceId))),
+    [staff.data, serviceId],
+  )
+  // Hiçbir berberin vermediği hizmetleri listeden gizle (berberler yüklenene kadar hepsi görünür).
+  const bookableServices = useMemo(() => {
+    const all = services.data ?? []
+    if (!staff.data) return all
+    return all.filter((s) => staff.data!.some((p) => p.service_ids.includes(s.id)))
+  }, [services.data, staff.data])
+
+  useEffect(() => {
+    if (step === 'staff' && offeringStaff.length === 1 && staffId !== offeringStaff[0].id) {
+      setStaffId(offeringStaff[0].id)
+      setTime(null)
+    }
+  }, [step, offeringStaff, staffId])
 
   // Oturum varsa telefonu ve kayıtlı adı bir kez önceden doldur.
   useEffect(() => {
@@ -243,10 +263,14 @@ export default function BookingPage() {
           <ServiceStep
             loading={services.isLoading}
             error={services.isError}
-            items={services.data ?? []}
+            items={bookableServices}
             value={serviceId}
             onChange={(id) => {
-              if (id !== serviceId) setTime(null)
+              if (id !== serviceId) {
+                setTime(null)
+                const current = staff.data?.find((p) => p.id === staffId)
+                if (current && !current.service_ids.includes(id)) setStaffId(null)
+              }
               setServiceId(id)
             }}
             onRetry={() => services.refetch()}
@@ -257,8 +281,9 @@ export default function BookingPage() {
           <StaffStep
             loading={staff.isLoading}
             error={staff.isError}
-            items={staff.data ?? []}
+            items={offeringStaff}
             value={staffId}
+            onBackToService={() => setStep('service')}
             onChange={(id) => {
               if (id !== staffId) setTime(null)
               setStaffId(id)
@@ -554,6 +579,7 @@ function StaffStep({
   value,
   onChange,
   onRetry,
+  onBackToService,
 }: {
   loading: boolean
   error: boolean
@@ -561,15 +587,27 @@ function StaffStep({
   value: number | null
   onChange: (id: number) => void
   onRetry: () => void
+  onBackToService: () => void
 }) {
   if (loading) return <ListSkeleton rows={3} />
   if (error) return <LoadError onRetry={onRetry} text="Berberler yüklenemedi" />
-  if (items.length === 0) return <EmptyState icon={<UserRound />} title="Henüz berber eklenmemiş" />
+  if (items.length === 0)
+    return (
+      <EmptyState
+        icon={<UserRound />}
+        title="Bu hizmeti şu an veren berber yok"
+        description="Lütfen başka bir hizmet seçin."
+        action={
+          <Button variant="secondary" onClick={onBackToService} leftIcon={<ArrowLeft className="size-4" />}>
+            Hizmetlere dön
+          </Button>
+        }
+      />
+    )
   return (
     <div role="radiogroup" aria-label="Berber" className="space-y-3">
       {items.map((p) => {
         const selected = p.id === value
-        const initials = `${p.name[0] ?? ''}${p.surname[0] ?? ''}`.toLocaleUpperCase('tr-TR')
         return (
           <button
             key={p.id}
@@ -579,15 +617,7 @@ function StaffStep({
             onClick={() => onChange(p.id)}
             className={cn(optionBase, optionState(selected))}
           >
-            <span
-              className={cn(
-                'flex size-12 shrink-0 items-center justify-center rounded-full border font-display text-lg',
-                selected ? 'border-copper text-copper-bright' : 'border-line-strong text-muted-strong',
-              )}
-              aria-hidden="true"
-            >
-              {initials}
-            </span>
+            <Avatar name={fullName(p)} src={p.photo_image} size="lg" className={selected ? 'border-copper' : undefined} />
             <span className="min-w-0 flex-1 break-words font-display text-lg leading-snug text-cream">{fullName(p)}</span>
             <RadioMark selected={selected} />
           </button>

@@ -418,6 +418,14 @@ iyi bir çalışma malzemesi.
       satırı kilitleniyor (`lock_staff_schedule` — örtüşen eşzamanlı randevuları
       engeller), ayarlar görselleri ≤1,5 MB raster data URL, public availability
       bugünün geçmiş saatlerini gizliyor.
+      Sonra (aynı gün, kullanıcı "sen yap, hızlı bitirelim" dedi — bu kısımlar
+      da elle yazılmadı): personel fotoğrafı (`staff.photo_image`), personel↔hizmet
+      eşleşmesi artık zorunlu (`staff_services`; eşleşmesi olmayan tenant'lara
+      migration'da "herkes her hizmeti verir" dolduruldu, sefapertev'in eski
+      eşleşmeleri korundu; berbere özel fiyat sütunu şimdilik kullanılmıyor),
+      platform panelinde işletme bağlantıları + sahip adı/telefonu, kapak görseli
+      olmayan işletmelerde stok fotoğraf yerine işletmeye özgü tipografik kapak,
+      yerelde `<slug>.localhost:5173` ile her işletmeye ayrı erişim.
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.
