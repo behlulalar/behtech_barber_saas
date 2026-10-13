@@ -228,8 +228,19 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       listeleme ✅, (2) müsaitlik kontrolü (basit versiyon) ✅,
       (3) tam müsait-saat hesaplama (working_hours+time_off ile birlikte),
       (4) randevu oluşturma — alt alt sıra: (4a) müşteri bul/oluştur ✅,
-      (4b) çakışma+günlük limit kontrolü, (4c) asıl INSERT,
+      (4b) çakışma+günlük limit kontrolü ✅, (4c) asıl INSERT,
       (5) OTP akışı, (6) webhook/yedekleme.
+      (4b) TAMAMLANDI: `app/services/appointment_services.py` →
+      `check_daily_limit()` (customer_id+tarih başına
+      `settings.daily_appointment_limit`'i aşan randevu varsa 400) ve
+      `check_slot_available()` (staff_id+tarih+saat için iptal
+      edilmemiş randevu varsa 409). `daily_appointment_limit: int`
+      `config.py`/`.env`/`.env.example`'a eklendi. Kullanıcı önemli bir
+      ürün kararı verdi: `HTTPException` `detail` mesajları (müşteriye
+      doğrudan gidecek metinler) Türkçe yazılıyor, kod/log İngilizce
+      kalıyor — tek dilli (TR) ürün için i18n katmanı şimdilik gereksiz
+      bir soyutlama olurdu. İkisi de script ile gerçek veriyle test
+      edildi (dolu saat →409, boş saat →geçti, limit dolmadı →geçti).
       (4a) TAMAMLANDI: `app/services/customer_services.py` →
       `get_or_create_customer()`. İlk kez veritabanına **yazma** işlemi
       (`db.add()`, `await db.commit()`, `await db.refresh()`) öğrenildi —

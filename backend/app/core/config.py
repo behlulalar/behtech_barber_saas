@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int
     base_domain: str
     environment: str
+    daily_appointment_limit: int
     model_config = SettingsConfigDict(env_file=".env")
     
 settings = Settings()
