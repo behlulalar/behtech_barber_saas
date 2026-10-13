@@ -21,6 +21,7 @@ from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
 from app.schemas.public import SendCodeResponse, StaffPublicOut, TenantPublicOut, VerifyCodeResponse
 from app.schemas.service import ServiceOut
+from app.services.admin_services import service_ids_by_staff
 from app.services.appointment_services import check_daily_limit, get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
 from app.services.otp_services import send_code, verify_code
@@ -52,13 +53,23 @@ async def public_tenant_route(tenant: Tenant = Depends(get_current_tenant), db: 
 
 
 @router.get("/staff", response_model=list[StaffPublicOut])
-async def staff_route(tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)):
+async def staff_route(
+    service_id: int | None = None, tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)
+):
+    """Berber listesi; service_id verilirse sadece o hizmeti veren berberler."""
     result = await db.execute(
         select(Staff)
         .where(Staff.tenant_id == tenant.id, Staff.role != RoleType.TECHNICAL_SUPPORT)
         .order_by(Staff.id)
     )
-    return result.scalars().all()
+    links = await service_ids_by_staff(db, tenant.id)
+    out = [
+        StaffPublicOut.model_validate(s).model_copy(update={"service_ids": sorted(links.get(s.id, []))})
+        for s in result.scalars().all()
+    ]
+    if service_id is not None:
+        out = [s for s in out if service_id in s.service_ids]
+    return out
 
 
 @router.get("/services", response_model=list[ServiceOut])

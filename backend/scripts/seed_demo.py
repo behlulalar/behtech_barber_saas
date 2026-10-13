@@ -24,6 +24,7 @@ from app.models.payment_method import PaymentMethod  # noqa: E402
 from app.models.platform_admin import PlatformAdmin  # noqa: E402
 from app.models.service import Service  # noqa: E402
 from app.models.staff import RoleType, Staff  # noqa: E402
+from app.models.staff_service import StaffService  # noqa: E402
 from app.models.tenant import Tenant  # noqa: E402
 from app.models.tenant_settings import TenantSettings  # noqa: E402
 from app.models.working_hours import WorkingHours  # noqa: E402
@@ -99,6 +100,12 @@ async def seed() -> None:
             db.add(c)
             customer_rows.append(c)
         await db.flush()
+
+        # Varsayılan: her berber her hizmeti verir (panelden daraltılabilir).
+        for s in staff_rows:
+            if s.role != RoleType.TECHNICAL_SUPPORT:
+                for sv in service_rows:
+                    db.add(StaffService(tenant_id=tenant.id, staff_id=s.id, service_id=sv.id))
 
         # Pazartesi-Cumartesi (JS günleri 1..6) 09:00-20:00, Pazar kapalı.
         for s in staff_rows:

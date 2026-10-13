@@ -182,7 +182,8 @@ async def update_appointment(
 @router.get("/admin/services", response_model=list[AdminServiceOut])
 async def list_services(current: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Service).where(Service.tenant_id == current.tenant_id).order_by(Service.name, Service.id))
-    return result.scalars().all()
+    links = await svc.staff_ids_by_service(db, current.tenant_id)
+    return [svc.service_out(s, links.get(s.id, [])) for s in result.scalars().all()]
 
 
 async def _service_name_taken(db: AsyncSession, tid: int, name: str, exclude_id: int | None = None) -> bool:
@@ -205,26 +206,34 @@ async def _get_service(db: AsyncSession, tid: int, service_id: int) -> Service:
 async def create_service(data: ServiceCreate, current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)):
     if await _service_name_taken(db, current.tenant_id, data.name):
         raise HTTPException(status_code=409, detail="Bu isimde bir hizmet zaten var")
-    service = Service(tenant_id=current.tenant_id, **data.model_dump())
+    tid = current.tenant_id
+    staff_ids = data.staff_ids if data.staff_ids is not None else await svc.bookable_staff_ids(db, tid)
+    service = Service(tenant_id=tid, **data.model_dump(exclude={"staff_ids"}))
     db.add(service)
+    await svc.flush_or_409(db, "Bu isimde bir hizmet zaten var")
+    await svc.set_service_staff(db, tid, service.id, staff_ids)
     await svc.commit_or_409(db, "Bu isimde bir hizmet zaten var")
     await db.refresh(service)
-    return service
+    return svc.service_out(service, (await svc.staff_ids_by_service(db, tid)).get(service.id, []))
 
 
 @router.patch("/admin/services/{service_id}", response_model=AdminServiceOut)
 async def update_service(
     service_id: int, data: ServiceUpdate, current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)
 ):
-    service = await _get_service(db, current.tenant_id, service_id)
+    tid = current.tenant_id
+    service = await _get_service(db, tid, service_id)
     changes = data.model_dump(exclude_unset=True)
-    if "name" in changes and await _service_name_taken(db, current.tenant_id, changes["name"], service_id):
+    staff_ids = changes.pop("staff_ids", None)
+    if "name" in changes and await _service_name_taken(db, tid, changes["name"], service_id):
         raise HTTPException(status_code=409, detail="Bu isimde bir hizmet zaten var")
     for k, v in changes.items():
         setattr(service, k, v)
+    if staff_ids is not None:
+        await svc.set_service_staff(db, tid, service_id, staff_ids)
     await svc.commit_or_409(db, "Bu isimde bir hizmet zaten var")
     await db.refresh(service)
-    return service
+    return svc.service_out(service, (await svc.staff_ids_by_service(db, tid)).get(service_id, []))
 
 
 @router.delete("/admin/services/{service_id}", status_code=204)
@@ -241,7 +250,8 @@ async def delete_service(service_id: int, current: Staff = Depends(require_manag
 @router.get("/admin/staff", response_model=list[StaffAdminOut])
 async def list_staff(current: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Staff).where(Staff.tenant_id == current.tenant_id).order_by(Staff.name, Staff.id))
-    return result.scalars().all()
+    links = await svc.service_ids_by_staff(db, current.tenant_id)
+    return [svc.staff_out(s, links.get(s.id, [])) for s in result.scalars().all()]
 
 
 async def _phone_taken(db: AsyncSession, tid: int, phone: str, exclude_id: int | None = None) -> bool:
@@ -261,18 +271,24 @@ async def create_staff(data: StaffCreate, current: Staff = Depends(require_manag
     _forbid_super_admin_touch(current, data.role)
     if await _phone_taken(db, current.tenant_id, data.phone):
         raise HTTPException(status_code=409, detail="Bu telefon numarası zaten kayıtlı")
+    tid = current.tenant_id
     staff = Staff(
-        tenant_id=current.tenant_id,
+        tenant_id=tid,
         name=data.name,
         surname=data.surname,
         phone=data.phone,
         password=hash_password(data.password),
         role=data.role,
+        photo_image=data.photo_image,
     )
     db.add(staff)
+    await svc.flush_or_409(db, "Bu telefon numarası zaten kayıtlı")
+    if data.role != RoleType.TECHNICAL_SUPPORT:
+        service_ids = data.service_ids if data.service_ids is not None else await svc.all_service_ids(db, tid)
+        await svc.set_staff_services(db, tid, staff.id, service_ids)
     await svc.commit_or_409(db, "Bu telefon numarası zaten kayıtlı")
     await db.refresh(staff)
-    return staff
+    return svc.staff_out(staff, (await svc.service_ids_by_staff(db, tid)).get(staff.id, []))
 
 
 @router.patch("/admin/staff/{staff_id}", response_model=StaffAdminOut)
@@ -289,11 +305,14 @@ async def update_staff(
         raise HTTPException(status_code=409, detail="Bu telefon numarası zaten kayıtlı")
     if "password" in changes:
         changes["password"] = hash_password(changes["password"])
+    service_ids = changes.pop("service_ids", None)
     for k, v in changes.items():
         setattr(target, k, v)
+    if service_ids is not None:
+        await svc.set_staff_services(db, current.tenant_id, staff_id, service_ids)
     await svc.commit_or_409(db, "Bu telefon numarası zaten kayıtlı")
     await db.refresh(target)
-    return target
+    return svc.staff_out(target, (await svc.service_ids_by_staff(db, current.tenant_id)).get(staff_id, []))
 
 
 @router.delete("/admin/staff/{staff_id}", status_code=204)

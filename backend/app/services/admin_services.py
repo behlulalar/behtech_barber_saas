@@ -9,11 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.customer import Customers
 from app.models.service import Service
-from app.models.staff import Staff
+from app.models.staff import RoleType, Staff
+from app.models.staff_service import StaffService
 from app.schemas.admin import (
     AdminAppointmentOut,
+    AdminServiceOut,
     CustomerRef,
     ServiceRef,
+    StaffAdminOut,
     StaffRef,
 )
 
@@ -43,6 +46,88 @@ async def has_appointments(db: AsyncSession, tenant_id: int, **column_filters) -
     conds = [Appointment.tenant_id == tenant_id] + [getattr(Appointment, k) == v for k, v in column_filters.items()]
     row = (await db.execute(select(Appointment.id).where(*conds).limit(1))).first()
     return row is not None
+
+
+async def flush_or_409(db: AsyncSession, message: str) -> None:
+    """flush eder (ör. yeni satırın id'si lazım); unique ihlali olursa rollback + 409."""
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail=message)
+
+
+# ---------- personel ↔ hizmet (staff_services) ----------
+# Kural: bir berber yalnızca staff_services'te bağlı olduğu hizmetleri verir.
+# Teknik destek hesapları müşteriye görünmediği için varsayılan "herkes" listesine girmez.
+
+async def _links(db: AsyncSession, tenant_id: int) -> list[tuple[int, int]]:
+    rows = await db.execute(
+        select(StaffService.staff_id, StaffService.service_id).where(StaffService.tenant_id == tenant_id)
+    )
+    return [(staff_id, service_id) for staff_id, service_id in rows.all()]
+
+
+async def service_ids_by_staff(db: AsyncSession, tenant_id: int) -> dict[int, list[int]]:
+    out: dict[int, list[int]] = {}
+    for staff_id, service_id in await _links(db, tenant_id):
+        out.setdefault(staff_id, []).append(service_id)
+    return out
+
+
+async def staff_ids_by_service(db: AsyncSession, tenant_id: int) -> dict[int, list[int]]:
+    out: dict[int, list[int]] = {}
+    for staff_id, service_id in await _links(db, tenant_id):
+        out.setdefault(service_id, []).append(staff_id)
+    return out
+
+
+async def bookable_staff_ids(db: AsyncSession, tenant_id: int) -> list[int]:
+    rows = await db.execute(
+        select(Staff.id).where(Staff.tenant_id == tenant_id, Staff.role != RoleType.TECHNICAL_SUPPORT)
+    )
+    return list(rows.scalars().all())
+
+
+async def all_service_ids(db: AsyncSession, tenant_id: int) -> list[int]:
+    rows = await db.execute(select(Service.id).where(Service.tenant_id == tenant_id))
+    return list(rows.scalars().all())
+
+
+async def _ensure_in_tenant(db: AsyncSession, tenant_id: int, model, ids: list[int], message: str) -> set[int]:
+    wanted = set(ids)
+    if not wanted:
+        return wanted
+    found = await db.execute(select(model.id).where(model.tenant_id == tenant_id, model.id.in_(wanted)))
+    if set(found.scalars().all()) != wanted:
+        raise HTTPException(status_code=400, detail=message)
+    return wanted
+
+
+async def set_service_staff(db: AsyncSession, tenant_id: int, service_id: int, staff_ids: list[int]) -> None:
+    """Hizmeti veren personeli verilen listeyle değiştirir (commit etmez)."""
+    wanted = await _ensure_in_tenant(db, tenant_id, Staff, staff_ids, "Seçilen personellerden biri bulunamadı")
+    await db.execute(
+        delete(StaffService).where(StaffService.tenant_id == tenant_id, StaffService.service_id == service_id)
+    )
+    db.add_all(StaffService(tenant_id=tenant_id, staff_id=sid, service_id=service_id) for sid in wanted)
+
+
+async def set_staff_services(db: AsyncSession, tenant_id: int, staff_id: int, service_ids: list[int]) -> None:
+    """Personelin verdiği hizmetleri verilen listeyle değiştirir (commit etmez)."""
+    wanted = await _ensure_in_tenant(db, tenant_id, Service, service_ids, "Seçilen hizmetlerden biri bulunamadı")
+    await db.execute(
+        delete(StaffService).where(StaffService.tenant_id == tenant_id, StaffService.staff_id == staff_id)
+    )
+    db.add_all(StaffService(tenant_id=tenant_id, staff_id=staff_id, service_id=sid) for sid in wanted)
+
+
+def service_out(service: Service, staff_ids: list[int]) -> AdminServiceOut:
+    return AdminServiceOut.model_validate(service).model_copy(update={"staff_ids": sorted(staff_ids)})
+
+
+def staff_out(staff: Staff, service_ids: list[int]) -> StaffAdminOut:
+    return StaffAdminOut.model_validate(staff).model_copy(update={"service_ids": sorted(service_ids)})
 
 
 # ---------- randevular ----------

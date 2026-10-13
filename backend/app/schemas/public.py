@@ -17,6 +17,8 @@ class StaffPublicOut(BaseModel):
     id: int
     name: str
     surname: str
+    photo_image: str | None = None
+    service_ids: list[int] = []
 
 
 class SendCodeResponse(BaseModel):

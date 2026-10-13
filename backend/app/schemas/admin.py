@@ -20,6 +20,35 @@ def _check_phone(value: str) -> str:
     return value
 
 
+# ~1.5 MB'lık görsel base64 ile ~2.1M karakter eder.
+_IMG_MAX_CHARS = 2_100_000
+_IMG_RE = re.compile(r"^data:image/(png|jpe?g|webp|gif);base64,")
+
+
+def _check_image(value: str | None) -> str | None:
+    if value is None or value == "":
+        return None
+    if not _IMG_RE.match(value):
+        raise ValueError("Görsel geçerli bir resim dosyası olmalı (PNG, JPEG, WebP, GIF)")
+    if len(value) > _IMG_MAX_CHARS:
+        raise ValueError("Görsel çok büyük, en fazla 1,5 MB olabilir")
+    return value
+
+
+# Personel fotoğrafı tarayıcıda ~480px'e küçültülüp gönderilir; 300 KB fazlasıyla yeter.
+_PHOTO_MAX_CHARS = 400_000
+
+
+def _check_photo(value: str | None) -> str | None:
+    value = _check_image(value)
+    if value is not None and len(value) > _PHOTO_MAX_CHARS:
+        raise ValueError("Fotoğraf çok büyük, en fazla 300 KB olabilir")
+    return value
+
+
+IdList = Annotated[list[int], Field(max_length=500)]
+
+
 class _Orm(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -110,6 +139,7 @@ class AdminServiceOut(_Orm):
     price: int
     duration_min: int
     is_active: bool
+    staff_ids: list[int] = []
 
 
 class ServiceCreate(BaseModel):
@@ -117,6 +147,8 @@ class ServiceCreate(BaseModel):
     price: int = Field(ge=0, le=10_000_000)
     duration_min: int = Field(ge=5, le=480)
     is_active: bool = True
+    # Verilmezse hizmeti tüm personel verir.
+    staff_ids: IdList | None = None
 
 
 class ServiceUpdate(BaseModel):
@@ -124,6 +156,7 @@ class ServiceUpdate(BaseModel):
     price: int | None = Field(default=None, ge=0, le=10_000_000)
     duration_min: int | None = Field(default=None, ge=5, le=480)
     is_active: bool | None = None
+    staff_ids: IdList | None = None
 
     @model_validator(mode="after")
     def _no_nulls(self):
@@ -141,6 +174,8 @@ class StaffAdminOut(_Orm):
     phone: str
     role: RoleType | None
     created_at: datetime | None
+    photo_image: str | None = None
+    service_ids: list[int] = []
 
 
 class StaffCreate(BaseModel):
@@ -149,8 +184,12 @@ class StaffCreate(BaseModel):
     phone: str
     password: str = Field(min_length=6, max_length=128)
     role: RoleType = RoleType.STAFF
+    photo_image: str | None = None
+    # Verilmezse personel tüm hizmetleri verir.
+    service_ids: IdList | None = None
 
     _phone = field_validator("phone")(_check_phone)
+    _photo = field_validator("photo_image")(_check_photo)
 
 
 class StaffUpdate(BaseModel):
@@ -159,6 +198,11 @@ class StaffUpdate(BaseModel):
     phone: str | None = None
     password: str | None = Field(default=None, min_length=6, max_length=128)
     role: RoleType | None = None
+    # "" ya da null gönderilirse fotoğraf kaldırılır.
+    photo_image: str | None = None
+    service_ids: IdList | None = None
+
+    _photo = field_validator("photo_image")(_check_photo)
 
     @field_validator("phone")
     @classmethod
@@ -167,7 +211,7 @@ class StaffUpdate(BaseModel):
 
     @model_validator(mode="after")
     def _no_nulls(self):
-        for f in self.model_fields_set:
+        for f in self.model_fields_set - {"photo_image"}:
             if getattr(self, f) is None:
                 raise ValueError(f"{f} boş olamaz")
         return self
@@ -242,21 +286,6 @@ class PaymentMethodUpdate(BaseModel):
 
 
 # ---------- settings ----------
-# ~1.5 MB'lık görsel base64 ile ~2.1M karakter eder.
-_IMG_MAX_CHARS = 2_100_000
-_IMG_RE = re.compile(r"^data:image/(png|jpe?g|webp|gif);base64,")
-
-
-def _check_image(value: str | None) -> str | None:
-    if value is None or value == "":
-        return None
-    if not _IMG_RE.match(value):
-        raise ValueError("Görsel geçerli bir resim dosyası olmalı (PNG, JPEG, WebP, GIF)")
-    if len(value) > _IMG_MAX_CHARS:
-        raise ValueError("Görsel çok büyük, en fazla 1,5 MB olabilir")
-    return value
-
-
 class SettingsBody(BaseModel):
     business_name: Name
     business_address: Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)] | None = None

@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImagePlus, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Card, CardHeader } from '../../components/ui/Card'
 import { Field } from '../../components/ui/Field'
+import { ImagePicker } from '../../components/ui/ImagePicker'
 import { Input } from '../../components/ui/Input'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Skeleton } from '../../components/ui/Skeleton'
@@ -12,42 +12,8 @@ import { Textarea } from '../../components/ui/Textarea'
 import { useToast } from '../../components/ui/Toast'
 import { adminApi, errorMessage } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
-import { cn } from '../../lib/cn'
 import type { TenantSettings } from '../../types/api'
 import { ErrorBlock, qk } from './shared'
-
-const MAX_DATA_URL = 6_500_000 // backend sınırı 7M karakter
-
-/** Görseli tarayıcıda küçültüp data URL'e çevirir (telefon fotoğrafları çok büyük olur). */
-async function fileToDataUrl(file: File, maxDim: number, type: 'image/png' | 'image/jpeg'): Promise<string> {
-  const url = URL.createObjectURL(file)
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image()
-      el.onload = () => resolve(el)
-      el.onerror = () => reject(new Error('Görsel okunamadı. Farklı bir dosya deneyin.'))
-      el.src = url
-    })
-    const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight))
-    const w = Math.max(1, Math.round(img.naturalWidth * scale))
-    const h = Math.max(1, Math.round(img.naturalHeight * scale))
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Görsel işlenemedi.')
-    if (type === 'image/jpeg') {
-      ctx.fillStyle = '#15110e'
-      ctx.fillRect(0, 0, w, h)
-    }
-    ctx.drawImage(img, 0, 0, w, h)
-    const out = canvas.toDataURL(type, 0.82)
-    if (out.length > MAX_DATA_URL) throw new Error('Görsel çok büyük. Daha küçük bir dosya seçin.')
-    return out
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
 
 export default function SettingsPage() {
   const query = useQuery({ queryKey: qk.settings, queryFn: adminApi.getSettings })
@@ -159,70 +125,5 @@ function SettingsForm({ initial }: { initial: TenantSettings }) {
         </div>
       )}
     </form>
-  )
-}
-
-interface PickerProps {
-  label: string
-  value: string | null
-  onChange: (v: string | null) => void
-  aspect: 'square' | 'wide'
-  maxDim: number
-  type: 'image/png' | 'image/jpeg'
-}
-
-function ImagePicker({ label, value, onChange, aspect, maxDim, type }: PickerProps) {
-  const toast = useToast()
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [busy, setBusy] = useState(false)
-
-  async function onFile(file: File | undefined) {
-    if (!file) return
-    setBusy(true)
-    try {
-      onChange(await fileToDataUrl(file, maxDim, type))
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Görsel yüklenemedi.')
-    } finally {
-      setBusy(false)
-      if (inputRef.current) inputRef.current.value = ''
-    }
-  }
-
-  return (
-    <div className="min-w-0">
-      <p className="mb-1.5 text-[13px] font-medium tracking-wide text-muted-strong">{label}</p>
-      <div
-        className={cn(
-          'flex w-full items-center justify-center overflow-hidden rounded-md border border-dashed border-line-strong bg-surface',
-          aspect === 'square' ? 'aspect-square max-w-48' : 'aspect-[16/7]',
-        )}
-      >
-        {value ? (
-          <img src={value} alt={`${label} önizleme`} className={cn('size-full', aspect === 'square' ? 'object-contain p-2' : 'object-cover')} />
-        ) : (
-          <ImagePlus className="size-7 text-muted" aria-hidden="true" />
-        )}
-      </div>
-      <div className="mt-2.5 flex flex-wrap gap-2">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          tabIndex={-1}
-          aria-label={`${label} dosyası seç`}
-          onChange={(e) => void onFile(e.target.files?.[0])}
-        />
-        <Button variant="secondary" size="sm" loading={busy} onClick={() => inputRef.current?.click()} leftIcon={<ImagePlus className="size-4" />}>
-          {value ? 'Değiştir' : 'Görsel seç'}
-        </Button>
-        {value && (
-          <Button variant="ghost" size="sm" onClick={() => onChange(null)} leftIcon={<Trash2 className="size-4" />}>
-            Kaldır
-          </Button>
-        )}
-      </div>
-    </div>
   )
 }

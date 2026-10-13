@@ -1,4 +1,4 @@
-from sqlalchemy import DateTime, String, func , ForeignKey, UniqueConstraint, Index
+from sqlalchemy import DateTime, String, Text, func , ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from app.core.database import Base
@@ -28,6 +28,7 @@ class Staff(Base):
         SAEnum(RoleType, name="role_type", values_callable=lambda enum_class: [member.value for member in enum_class]),
         default=RoleType.STAFF,
     )
+    photo_image: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
 
     __table_args__ = (

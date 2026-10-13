@@ -149,7 +149,8 @@ function parseDetail(body: unknown): string {
     if (typeof detail === 'string') return detail
     if (Array.isArray(detail) && detail.length > 0) {
       const first = detail[0] as { msg?: string }
-      if (first?.msg) return first.msg
+      // Pydantic özel doğrulayıcı mesajlarının başına "Value error, " ekler; kullanıcıya göstermiyoruz.
+      if (first?.msg) return first.msg.replace(/^Value error, /, "")
     }
   }
   return 'Bilinmeyen bir hata oluştu.'

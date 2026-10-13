@@ -39,7 +39,11 @@ export interface PublicTenant {
   banner_image: string | null
 }
 
-export type PublicStaff = StaffBrief
+export interface PublicStaff extends StaffBrief {
+  photo_image: string | null
+  /** Bu berberin verdiği hizmetlerin id'leri; hizmet seçilince berber listesi buna göre süzülür. */
+  service_ids: number[]
+}
 export type PublicService = ServiceBrief
 
 export interface AvailabilityParams {
@@ -162,6 +166,8 @@ export interface AdminAppointmentUpdate {
 
 export interface AdminService extends ServiceBrief {
   is_active: boolean
+  /** Bu hizmeti veren personel. */
+  staff_ids: number[]
 }
 
 export interface AdminServiceCreate {
@@ -169,6 +175,8 @@ export interface AdminServiceCreate {
   price: number
   duration_min: number
   is_active?: boolean
+  /** Verilmezse backend tüm personeli (teknik destek hariç) atar. */
+  staff_ids?: number[]
 }
 
 export type AdminServiceUpdate = Partial<AdminServiceCreate>
@@ -180,6 +188,10 @@ export interface AdminStaff {
   phone: string
   role: StaffRole
   created_at: string
+  /** data:image/... URL'i (backend en fazla ~300 KB kabul eder). */
+  photo_image: string | null
+  /** Bu personelin verdiği hizmetler. */
+  service_ids: number[]
 }
 
 export interface AdminStaffCreate {
@@ -188,8 +200,12 @@ export interface AdminStaffCreate {
   phone: string
   password: string
   role: StaffRole
+  photo_image?: string | null
+  /** Verilmezse backend tüm hizmetleri atar. */
+  service_ids?: number[]
 }
 
+/** photo_image: null fotoğrafı kaldırır. */
 export type AdminStaffUpdate = Partial<AdminStaffCreate>
 
 export interface WorkingHour {

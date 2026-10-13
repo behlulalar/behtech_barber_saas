@@ -6,6 +6,7 @@ from app.models.working_hours import WorkingHours
 from app.models.time_off import TimeOff
 from app.models.service import Service
 from app.models.staff import Staff
+from app.models.staff_service import StaffService
 from datetime import date, time, datetime, timedelta
 from app.core.config import settings
 
@@ -38,6 +39,17 @@ async def get_available_slots(
     service = service_result.scalar_one_or_none()
     if service is None:
         raise HTTPException(status_code=404, detail="Hizmet bulunamadı")
+
+    # Berber yalnızca kendisine bağlı hizmetleri verir (staff_services).
+    provides = await db.execute(
+        select(StaffService.id).where(
+            StaffService.tenant_id == tenant_id,
+            StaffService.staff_id == staff_id,
+            StaffService.service_id == service_id,
+        )
+    )
+    if provides.first() is None:
+        raise HTTPException(status_code=400, detail="Seçilen berber bu hizmeti vermiyor")
 
     time_off_result = await db.execute(
         select(TimeOff).where(
