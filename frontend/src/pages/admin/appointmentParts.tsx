@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button, buttonStyles } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
+import { PhoneInput } from '../../components/ui/PhoneInput'
 import { Modal } from '../../components/ui/Modal'
 import { Select } from '../../components/ui/Select'
 import { Skeleton } from '../../components/ui/Skeleton'
@@ -524,7 +525,7 @@ function NewAppointmentForm({ onClose, defaultDate, prefill, onCreated }: NewPro
         noValidate
       >
         <Field label="Telefon" required error={errors.phone} hint={known ? `Kayıtlı müşteri: ${fullName(known)}` : undefined}>
-          <Input type="tel" inputMode="tel" autoComplete="off" placeholder="5XX XXX XX XX" value={phone} onChange={(e) => setPhone(e.target.value)} data-autofocus />
+          <PhoneInput autoComplete="off" value={phone} onValueChange={setPhone} data-autofocus />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Ad" required error={errors.name}>

@@ -16,6 +16,7 @@ import { Button, buttonStyles } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
+import { PhoneInput } from '../../components/ui/PhoneInput'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { useToast } from '../../components/ui/Toast'
 import { ApiError, customerApi, errorMessage, publicApi } from '../../lib/api'
@@ -342,14 +343,10 @@ export default function BookingPage() {
                   : 'Numaranıza bir doğrulama kodu göndereceğiz.'
               }
             >
-              <Input
-                type="tel"
-                inputMode="tel"
+              <PhoneInput
                 autoComplete="tel"
-                placeholder="0555 123 45 67"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                maxLength={20}
+                onValueChange={setPhone}
               />
             </Field>
           </form>

@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
+import { PhoneInput } from '../../components/ui/PhoneInput'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Table, type Column } from '../../components/ui/Table'
@@ -268,7 +269,7 @@ function CreateModal({
           </Field>
         </div>
         <Field label="Sahip telefonu" required error={show('owner_phone')} hint="Panele bu numara ile giriş yapılır.">
-          <Input type="tel" inputMode="tel" placeholder="5XX XXX XX XX" autoComplete="off" value={form.owner_phone} onChange={(e) => set('owner_phone')(e.target.value)} />
+          <PhoneInput autoComplete="off" value={form.owner_phone} onValueChange={set('owner_phone')} />
         </Field>
         <Field label="Geçici şifre" required error={show('owner_password')}>
           <Input type="password" autoComplete="new-password" value={form.owner_password} onChange={(e) => set('owner_password')(e.target.value)} />

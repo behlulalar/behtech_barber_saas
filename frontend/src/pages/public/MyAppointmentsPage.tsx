@@ -7,7 +7,7 @@ import { StatusBadge } from '../../components/ui/Badge'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
-import { Input } from '../../components/ui/Input'
+import { PhoneInput } from '../../components/ui/PhoneInput'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { useToast } from '../../components/ui/Toast'
 import { customerApi, errorMessage, publicApi } from '../../lib/api'
@@ -95,15 +95,11 @@ function LoginPanel() {
         ) : (
           <form onSubmit={submit} noValidate className="space-y-5">
             <Field label="Cep telefonu" error={error}>
-              <Input
-                type="tel"
-                inputMode="tel"
+              <PhoneInput
                 autoComplete="tel"
-                placeholder="0555 123 45 67"
                 leading={<Phone className="size-4" />}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                maxLength={20}
+                onValueChange={setPhone}
               />
             </Field>
             <Button type="submit" size="lg" fullWidth loading={send.isPending}>

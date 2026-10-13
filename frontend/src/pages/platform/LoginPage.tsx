@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
+import { PhoneInput } from '../../components/ui/PhoneInput'
 import AuthLayout from '../../layouts/AuthLayout'
 import { errorMessage } from '../../lib/api'
 import { usePlatformAuth } from '../../lib/auth'
@@ -46,13 +47,10 @@ export default function LoginPage() {
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         <Field label="Telefon" required>
-          <Input
-            type="tel"
-            inputMode="tel"
+          <PhoneInput
             autoComplete="username"
-            placeholder="5XX XXX XX XX"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onValueChange={setPhone}
           />
         </Field>
         <Field label="Şifre" required>

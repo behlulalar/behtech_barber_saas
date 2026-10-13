@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
 import { ImagePicker } from '../../components/ui/ImagePicker'
 import { Input } from '../../components/ui/Input'
+import { PhoneInput } from '../../components/ui/PhoneInput'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Select } from '../../components/ui/Select'
@@ -279,7 +280,7 @@ function StaffForm({ member, onClose }: { member: AdminStaff | null; onClose: ()
           </Field>
         </div>
         <Field label="Telefon" required error={errors.phone} hint="Giriş için kullanılır.">
-          <Input type="tel" inputMode="tel" placeholder="5XX XXX XX XX" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="off" />
+          <PhoneInput value={phone} onValueChange={setPhone} autoComplete="off" />
         </Field>
         <Field
           label={creating ? 'Şifre' : 'Yeni şifre'}
