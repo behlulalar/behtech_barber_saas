@@ -23,3 +23,6 @@ build/
 
 # Logs
 *.log
+
+# Database backups (may contain real customer data)
+backend/backups/

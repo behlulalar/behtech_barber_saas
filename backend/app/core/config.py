@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     environment: str
     daily_appointment_limit: int
     otp_expiration_seconds: int
+    backup_retention_days: int
     model_config = SettingsConfigDict(env_file=".env")
     
 settings = Settings()

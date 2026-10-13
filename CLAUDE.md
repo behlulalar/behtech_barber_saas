@@ -321,8 +321,19 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
       platform route'larına girme denemesi →401, platform admin token'ı
       ile staff route'larına (`/auth/me`) girme denemesi →401, her biri
       kendi route'una →200. Token tipi karışması riski tamamen kapatıldı.
-- [ ] Yedekleme scripti (eski sistemdeki `backup_utils.py` mantığının
-      uyarlanması — `pg_dump` + bulut yükleme, cron ile çalışacak)
+- [x] Yedekleme scripti — temel versiyon TAMAMLANDI (bulut yükleme/rclone
+      ertelendi, gerçek sunucu kurulana kadar gerek yok).
+      `backend/scripts/backup_database.py` — FastAPI'nin parçası değil,
+      bağımsız bir script, cron ile zamanlanacak. `settings.database_url`'i
+      (`postgresql+asyncpg://...`) ayrıştırıp `pg_dump`'ın anladığı
+      host/port/user/password/dbname'e çeviriyor, şifreyi komut satırı
+      argümanı olarak değil `PGPASSWORD` ortam değişkeni olarak geçiriyor
+      (güvenlik — komut satırı argümanları process listesinde görünür).
+      `backup_retention_days` ayarı eklendi (varsayılan 7), o günden eski
+      yedekleri otomatik siliyor. `backend/backups/` klasörü
+      `.gitignore`'a eklendi (gerçek müşteri verisi içerebilir). Gerçek
+      `pg_dump` çalıştırılıp dolu bir yedek dosyası (tüm tablolar dahil)
+      üretildiği, eski dosya temizliğinin doğru çalıştığı doğrulandı.
 - [ ] Webhook (WhatsApp sağlayıcı kararı netleşene kadar temel iskelet)
 - [ ] React frontend
 - [ ] Mevcut verinin geçişi (eski `randevu/` verisini yeni şemaya aktarma)
