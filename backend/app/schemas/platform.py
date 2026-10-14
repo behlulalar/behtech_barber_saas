@@ -1,14 +1,21 @@
-from pydantic import BaseModel, Field
+from typing import Annotated
 
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints
+
+from app.core.text import person_name_tr
 from app.schemas.otp import Phone
+
+PersonName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255), AfterValidator(person_name_tr)
+]
 
 
 class TenantCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     # Biçim/rezerve kontrolü servis katmanında yapılır (Türkçe 400 mesajı için).
     slug: str = Field(max_length=255)
-    owner_name: str = Field(min_length=1, max_length=255)
-    owner_surname: str = Field(min_length=1, max_length=255)
+    owner_name: PersonName
+    owner_surname: PersonName
     owner_phone: Phone
     owner_password: str = Field(min_length=6, max_length=128)
 

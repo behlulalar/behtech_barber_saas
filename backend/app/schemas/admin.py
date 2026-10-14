@@ -5,13 +5,17 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
-from app.core.text import title_case_tr
+from app.core.text import person_name_tr, title_case_tr
 from app.models.appointment import AppointmentStatus
 from app.models.staff import RoleType
 
 _PHONE_RE = re.compile(r"^5\d{9}$")
 
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
+# Kişi adı/soyadı da kaydedilmeden önce "Ali Yılmaz" biçimine getirilir.
+PersonName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255), AfterValidator(person_name_tr)
+]
 # Hizmet adları kaydedilmeden önce "Saç Kesimi" biçimine getirilir (bkz. app/core/text.py).
 ServiceName = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255), AfterValidator(title_case_tr)
@@ -97,8 +101,8 @@ class AdminAppointmentOut(BaseModel):
 
 class AdminAppointmentCreate(BaseModel):
     phone: str
-    name: Name
-    surname: Name
+    name: PersonName
+    surname: PersonName
     staff_id: int
     service_id: int
     appointment_date: date
@@ -178,8 +182,8 @@ class StaffAdminOut(_Orm):
 
 
 class StaffCreate(BaseModel):
-    name: Name
-    surname: Name
+    name: PersonName
+    surname: PersonName
     phone: str
     password: str = Field(min_length=6, max_length=128)
     role: RoleType = RoleType.STAFF
@@ -192,8 +196,8 @@ class StaffCreate(BaseModel):
 
 
 class StaffUpdate(BaseModel):
-    name: Name | None = None
-    surname: Name | None = None
+    name: PersonName | None = None
+    surname: PersonName | None = None
     phone: str | None = None
     password: str | None = Field(default=None, min_length=6, max_length=128)
     role: RoleType | None = None

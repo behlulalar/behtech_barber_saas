@@ -1,8 +1,9 @@
 from datetime import date, time
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
 
+from app.core.text import person_name_tr
 from app.models.appointment import AppointmentStatus
 
 
@@ -12,12 +13,16 @@ def _normalize_time(value: time) -> time:
 
 
 NormalizedTime = Annotated[time, AfterValidator(_normalize_time)]
+# "ali yılmaz" -> "Ali Yılmaz"
+PersonName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100), AfterValidator(person_name_tr)
+]
 
 
 class AppointmentCreate(BaseModel):
     """Müşteri randevu isteği. Telefon body'den DEĞİL, OTP token'ından gelir."""
-    name: str = Field(min_length=1, max_length=100)
-    surname: str = Field(min_length=1, max_length=100)
+    name: PersonName
+    surname: PersonName
     staff_id: int
     service_id: int
     appointment_date: date
