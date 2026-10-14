@@ -31,6 +31,7 @@ const PlatformPlansPage = lazy(() => import('./pages/platform/PlansPage'))
 const PlatformSettingsPage = lazy(() => import('./pages/platform/SettingsPage'))
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const TenantGate = lazy(() => import('./pages/TenantGate'))
 const ProductPage = lazy(() => import('./pages/product/ProductPage'))
 
 function PageFallback() {
@@ -76,6 +77,8 @@ function App() {
       <Routes>
         <Route path="tanitim" element={<ProductPage />} />
 
+        {/* Dükkân tarafı: işletme pasif/yoksa TenantGate bilgi ekranı gösterir */}
+        <Route element={<TenantGate />}>
         {/* Müşteri tarafı */}
         <Route element={<PublicLayout />}>
           <Route index element={<LandingPage />} />
@@ -97,6 +100,7 @@ function App() {
             <Route path="odeme-yontemleri" element={<AdminPaymentMethodsPage />} />
             <Route path="ayarlar" element={<AdminSettingsPage />} />
           </Route>
+        </Route>
         </Route>
 
         {/* Platform */}
