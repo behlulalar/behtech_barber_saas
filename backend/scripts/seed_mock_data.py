@@ -213,7 +213,7 @@ async def seed_shop(db, slug: str, password_hash: str) -> str:
             status = rng.choices([AppointmentStatus.COMPLETED, AppointmentStatus.NO_SHOW, AppointmentStatus.CANCELLED],
                                  weights=[74, 8, 18])[0]
         else:
-            status = rng.choices([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED], weights=[40, 60])[0]
+            status = AppointmentStatus.CONFIRMED
         if status != AppointmentStatus.CANCELLED:
             slots.append((start_min, end_min))
         db.add(Appointment(

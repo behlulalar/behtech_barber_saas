@@ -2,7 +2,8 @@
 // Tarih: 'YYYY-MM-DD'. Saat: yanıtlarda 'HH:MM:SS', isteklerde 'HH:MM' veya 'HH:MM:SS'.
 // Para: tam sayı TL. Telefon: 10 hane, başında 0 yok (5551234567).
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+// Randevular doğrudan 'confirmed' olarak oluşur (onay adımı yok)
+export type AppointmentStatus = 'confirmed' | 'completed' | 'cancelled' | 'no_show'
 export type StaffRole = 'super_admin' | 'technical_support' | 'staff'
 
 /* ---------- Ortak ---------- */
@@ -212,7 +213,6 @@ export interface DashboardOut {
   appointments_today: number
   completed_today: number
   cancelled_today: number
-  pending_today: number
   expected_revenue_today: number
   appointments_this_week: number
   total_customers: number

@@ -80,14 +80,14 @@ function Browser({ url, children }: { url: string; children: React.ReactNode }) 
 export function PanelMockup({ className }: MockupProps) {
   const nav = ['Genel Bakış', 'Randevular', 'Müşteriler', 'Hizmetler', 'Ekip', 'Çalışma saatleri']
   const stats: [string, string, string?][] = [
-    ['Bugün', '12', 'randevu'], ['Tamamlanan', '7'], ['Bekleyen', '3'], ['Ciro', '4.850', '₺'],
+    ['Bugün', '12', 'randevu'], ['Tamamlanan', '7'], ['Kalan', '3'], ['Ciro', '4.850', '₺'],
   ]
   const rows: [string, string, string, string, string, string][] = [
     ['10:00', 'Mehmet Yıldız', 'Saç kesimi', 'Kerem', 'Tamamlandı', 'done'],
     ['11:30', 'Can Demir', 'Saç + Sakal', 'Burak', 'Tamamlandı', 'done'],
     ['13:00', 'Ahmet Kaya', 'Sakal tıraşı', 'Emir', 'Gelmedi', 'no'],
     ['14:30', 'Selim Aksoy', 'Saç + Sakal', 'Kerem', 'Onaylandı', 'ok'],
-    ['15:15', 'Oğuz Tan', 'Çocuk tıraşı', 'Burak', 'Bekliyor', 'wait'],
+    ['15:15', 'Oğuz Tan', 'Çocuk tıraşı', 'Burak', 'Onaylandı', 'ok'],
     ['16:00', 'Barış Çelik', 'Saç kesimi', 'Emir', 'Onaylandı', 'ok'],
   ]
   return (
@@ -162,13 +162,13 @@ export function TenantSiteMockup({ className }: MockupProps) {
   )
 }
 
-/** Personel paneli telefonda: günün ajandası, tek dokunuşla onay/tamamlama, alt sekme çubuğu. */
+/** Personel paneli telefonda: günün ajandası, tek dokunuşla tamamlama, alt sekme çubuğu. */
 export function PhonePanelMockup({ className }: MockupProps) {
   const appts: [string, string, string, string, string, string][] = [
     ['10:00', 'Mehmet Yıldız', 'Saç kesimi', 'Kerem', 'Tamamlandı', 'done'],
     ['11:30', 'Can Demir', 'Saç + Sakal', 'Kerem', 'Tamamlandı', 'done'],
     ['14:30', 'Selim Aksoy', 'Saç + Sakal', 'Kerem', 'Onaylandı', 'ok'],
-    ['15:15', 'Oğuz Tan', 'Çocuk tıraşı', 'Kerem', 'Bekliyor', 'wait'],
+    ['15:15', 'Oğuz Tan', 'Çocuk tıraşı', 'Kerem', 'Onaylandı', 'ok'],
   ]
   return (
     <div className={cx('mk-root mk-phone', className)} aria-hidden="true">
@@ -196,7 +196,7 @@ export function PhonePanelMockup({ className }: MockupProps) {
                   <div className="who">{c}</div>
                   <div className="what">{s} · 30 dk</div>
                   {i === 3 && (
-                    <div className="acts"><span className="pri">Onayla</span><span>Gelmedi</span></div>
+                    <div className="acts"><span className="pri">Tamamla</span><span>Gelmedi</span></div>
                   )}
                 </div>
               ))}

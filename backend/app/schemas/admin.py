@@ -52,6 +52,12 @@ _check_photo = _check_image
 IdList = Annotated[list[int], Field(max_length=500)]
 
 
+def _no_pending(value):
+    if value == AppointmentStatus.PENDING:
+        raise ValueError("Randevular onay beklemez; 'beklemede' durumu artık kullanılmıyor")
+    return value
+
+
 class _Orm(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -110,11 +116,14 @@ class AdminAppointmentCreate(BaseModel):
     status: AppointmentStatus = AppointmentStatus.CONFIRMED
 
     _phone = field_validator("phone")(_check_phone)
+    _status = field_validator("status")(_no_pending)
 
 
 class AdminAppointmentUpdate(BaseModel):
     status: AppointmentStatus | None = None
     payment_method: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
+
+    _status = field_validator("status")(_no_pending)
 
     @model_validator(mode="after")
     def _status_not_null(self):
@@ -128,7 +137,6 @@ class DashboardOut(BaseModel):
     appointments_today: int
     completed_today: int
     cancelled_today: int
-    pending_today: int
     expected_revenue_today: int
     appointments_this_week: int
     total_customers: int

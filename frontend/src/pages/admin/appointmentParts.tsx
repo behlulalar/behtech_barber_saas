@@ -49,12 +49,11 @@ export function useUpdateAppointment() {
 /* Akış: satırdan hızlı eylem + alt sayfa                              */
 /* ------------------------------------------------------------------ */
 
-export type QuickAction = 'confirm' | 'complete' | 'no_show' | 'cancel'
+export type QuickAction = 'complete' | 'no_show' | 'cancel'
 type Step = 'details' | 'complete' | 'no_show' | 'cancel'
 
 const DONE_MESSAGES: Record<AppointmentStatus, string> = {
-  pending: 'Randevu beklemeye alındı',
-  confirmed: 'Randevu onaylandı',
+  confirmed: 'Randevu geri alındı',
   completed: 'Randevu tamamlandı',
   cancelled: 'Randevu iptal edildi',
   no_show: 'Gelmedi olarak işaretlendi',
@@ -85,8 +84,7 @@ export function useAppointmentFlow() {
   }
 
   function quick(appt: AdminAppointmentOut, action: QuickAction) {
-    if (action === 'confirm') setStatus(appt, 'confirmed')
-    else open(appt, action)
+    open(appt, action)
   }
 
   const element = state ? (
@@ -128,10 +126,7 @@ interface RowProps {
 
 export function AppointmentRow({ appt, showStaff, showDate, flow }: RowProps) {
   const dim = appt.status === 'cancelled' || appt.status === 'no_show'
-  const busy = flow.busyId === appt.id
-  const canConfirm = appt.status === 'pending'
-  const canComplete = appt.status === 'pending' || appt.status === 'confirmed'
-  const hasActions = canConfirm || canComplete
+  const hasActions = appt.status === 'confirmed'
 
   return (
     <div className={cn('rounded-md border border-panel-line bg-panel', dim && 'opacity-70')}>
@@ -163,25 +158,12 @@ export function AppointmentRow({ appt, showStaff, showDate, flow }: RowProps) {
       </button>
       {hasActions && (
         <div className="flex gap-2 border-t border-panel-line p-2">
-          {canConfirm ? (
-            <Button size="sm" variant="primary" className="flex-1" loading={busy} onClick={() => flow.quick(appt, 'confirm')} leftIcon={<Check className="size-4" />}>
-              Onayla
-            </Button>
-          ) : (
-            <Button size="sm" variant="primary" className="flex-1" onClick={() => flow.quick(appt, 'complete')} leftIcon={<Check className="size-4" />}>
-              Tamamla
-            </Button>
-          )}
-          {canConfirm && (
-            <Button size="sm" variant="secondary" className="flex-1" onClick={() => flow.quick(appt, 'complete')}>
-              Tamamla
-            </Button>
-          )}
-          {!canConfirm && (
-            <Button size="sm" variant="secondary" className="flex-1" onClick={() => flow.quick(appt, 'no_show')} leftIcon={<UserX className="size-4" />}>
-              Gelmedi
-            </Button>
-          )}
+          <Button size="sm" variant="primary" className="flex-1" onClick={() => flow.quick(appt, 'complete')} leftIcon={<Check className="size-4" />}>
+            Tamamla
+          </Button>
+          <Button size="sm" variant="secondary" className="flex-1" onClick={() => flow.quick(appt, 'no_show')} leftIcon={<UserX className="size-4" />}>
+            Gelmedi
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => flow.quick(appt, 'cancel')} aria-label="Randevuyu iptal et" leftIcon={<X className="size-4" />}>
             İptal
           </Button>
@@ -303,8 +285,7 @@ function AppointmentSheet({ appt, initialStep, busy, onClose, onSetStatus, onSet
   }
 
   /* --- Detay --- */
-  const canConfirm = appt.status === 'pending'
-  const canFinish = appt.status === 'pending' || appt.status === 'confirmed'
+  const canFinish = appt.status === 'confirmed'
   const canReopen = appt.status === 'cancelled' || appt.status === 'no_show' || isCompleted
 
   return (
@@ -331,13 +312,8 @@ function AppointmentSheet({ appt, initialStep, busy, onClose, onSetStatus, onSet
         {isCompleted && <InfoRow label="Ödeme">{appt.payment_method ?? 'Belirtilmedi'}</InfoRow>}
       </dl>
       <div className="mt-4 grid grid-cols-2 gap-2 pb-3">
-        {canConfirm && (
-          <Button className="col-span-2" loading={busy} onClick={() => onSetStatus('confirmed')} leftIcon={<Check className="size-4" />}>
-            Onayla
-          </Button>
-        )}
         {canFinish && (
-          <Button variant={canConfirm ? 'secondary' : 'primary'} className={canConfirm ? '' : 'col-span-2'} onClick={() => setStep('complete')} leftIcon={<Check className="size-4" />}>
+          <Button variant="primary" className="col-span-2" onClick={() => setStep('complete')} leftIcon={<Check className="size-4" />}>
             Tamamla
           </Button>
         )}
@@ -358,7 +334,7 @@ function AppointmentSheet({ appt, initialStep, busy, onClose, onSetStatus, onSet
         )}
         {canReopen && (
           <Button variant="ghost" className="col-span-2" loading={busy} onClick={() => onSetStatus('confirmed')} leftIcon={<RotateCcw className="size-4" />}>
-            {isCompleted ? 'Tamamlandıyı geri al' : 'Yeniden onayla'}
+            {isCompleted ? 'Tamamlandıyı geri al' : 'Randevuyu geri al'}
           </Button>
         )}
       </div>

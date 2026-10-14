@@ -40,7 +40,7 @@ export default function DashboardPage() {
   })
 
   const d = dash.data
-  const open = (agenda.data ?? []).filter((a) => a.status === 'pending' || a.status === 'confirmed').length
+  const open = (agenda.data ?? []).filter((a) => a.status === 'confirmed').length
 
   return (
     <>
@@ -64,7 +64,7 @@ export default function DashboardPage() {
           icon={<CalendarDays />}
           value={d ? formatNumber(d.appointments_today) : ''}
           loading={dash.isLoading}
-          hint={d ? `${d.pending_today} bekliyor · ${d.cancelled_today} iptal` : undefined}
+          hint={d ? `${d.cancelled_today} iptal` : undefined}
         />
         <StatCard
           label="Tamamlanan"

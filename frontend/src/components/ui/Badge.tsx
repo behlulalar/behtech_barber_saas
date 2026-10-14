@@ -28,7 +28,6 @@ export function Badge({ tone = 'neutral', children, className }: { tone?: BadgeT
 }
 
 export const STATUS_LABELS: Record<AppointmentStatus, string> = {
-  pending: 'Bekliyor',
   confirmed: 'Onaylandı',
   completed: 'Tamamlandı',
   cancelled: 'İptal',
@@ -36,14 +35,13 @@ export const STATUS_LABELS: Record<AppointmentStatus, string> = {
 }
 
 export const STATUS_TONES: Record<AppointmentStatus, BadgeTone> = {
-  pending: 'warning',
   confirmed: 'info',
   completed: 'success',
   cancelled: 'neutral',
   no_show: 'danger',
 }
 
-export const STATUS_ORDER: AppointmentStatus[] = ['pending', 'confirmed', 'completed', 'cancelled', 'no_show']
+export const STATUS_ORDER: AppointmentStatus[] = ['confirmed', 'completed', 'cancelled', 'no_show']
 
 /** Randevu durumu rozeti (Türkçe etiket + renk). */
 export function StatusBadge({ status, className }: { status: AppointmentStatus; className?: string }) {

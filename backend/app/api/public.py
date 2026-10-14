@@ -219,7 +219,7 @@ async def appointment_create(
         service_id=data.service_id,
         appointment_date=data.appointment_date,
         appointment_time=data.appointment_time,
-        status=AppointmentStatus.PENDING,
+        status=AppointmentStatus.CONFIRMED,  # işletme onayı beklenmez
     )
     db.add(appointment)
     try:

@@ -278,7 +278,7 @@ function Features() {
             label="İşletme için"
             title="Dükkânın tüm işleri tek panelde"
             items={[
-              { t: 'Bugünün ajandası', d: 'Randevuyu onaylayın, tamamlayın ya da gelmedi olarak işaretleyin. Tamamlarken ödeme yöntemini kaydedin.' },
+              { t: 'Bugünün ajandası', d: 'Randevuyu tamamlayın, gelmedi ya da iptal olarak işaretleyin. Tamamlarken ödeme yöntemini kaydedin.' },
               { t: 'Yüz yüze gelenleri de ekleyin', d: 'Kapıdan giren müşteriyi elle randevu olarak girin; saat dolu görünsün, çakışma olmasın.' },
               { t: 'Müşteri listesi ve arama', d: 'Kimin ne zaman geldiğini isim ya da telefonla saniyeler içinde bulun.' },
               { t: 'Hizmetler, ekip, çalışma saatleri', d: 'Fiyat ve süreyi girin, hangi berberin hangi hizmeti verdiğini seçin, her berber için haftalık saatleri ve izin günlerini belirleyin.' },
@@ -317,7 +317,7 @@ function HowItWorks() {
     { t: 'Hesabınızı biz açıyoruz', d: 'Dükkânınızın adını, adresini ve logonuzu alıp hesabınızı kuruyoruz. Sizden teknik bir şey beklemiyoruz.' },
     { t: 'Giriş yapıp doldurun', d: 'Panele girin; hizmetlerinizi, ekibinizi ve çalışma saatlerinizi ekleyin. Telefonla da yapabilirsiniz.' },
     { t: 'Bağlantıyı paylaşın', d: 'Instagram biyografinize, Google Haritalar kaydınıza, WhatsApp durumunuza koyun. Müşteri tıklasın, randevusunu alsın.' },
-    { t: 'Ajandanız kendiliğinden dolsun', d: 'Gelen randevular panelinizde belirir. Siz onaylayın, tamamlayın, gerisini sistem tutsun.' },
+    { t: 'Ajandanız kendiliğinden dolsun', d: 'Gelen randevular panelinizde onaylı olarak belirir. Siz tamamlayın, gerisini sistem tutsun.' },
   ]
   return (
     <section id="nasil" className="border-y border-line bg-surface">
@@ -362,7 +362,7 @@ function Mobile() {
             düğmeler, tek elle kullanım, yüklenecek bir şey yok. Tarayıcıdan açın, ana ekrana ekleyin.
           </p>
           <ul className="mt-8 grid gap-3 text-[0.95rem] text-cream sm:grid-cols-2">
-            {['Günün ajandası avucunuzda', 'Tek dokunuşla onay ve tamamlama', 'Yeni gelen müşteriyi anında ekleme', 'Her berber kendi telefonundan'].map((x) => (
+            {['Günün ajandası avucunuzda', 'Tek dokunuşla tamamlama ve gelmedi işareti', 'Yeni gelen müşteriyi anında ekleme', 'Her berber kendi telefonundan'].map((x) => (
               <li key={x} className="flex items-center gap-3 border-t border-line pt-3">
                 <span aria-hidden className="pole h-1.5 w-3.5 shrink-0" />
                 {x}

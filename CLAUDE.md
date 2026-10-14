@@ -456,6 +456,10 @@ iyi bir çalışma malzemesi.
       (sefapertev dahil; artık "gerçek müşteri verisi" diye korunmuyor, ama canlıya çıkarken
       gerçek veri yeniden taşınacaksa bu durum tekrar sorulmalı). Tüm randevular 30 dk ızgarasına
       hizalandı (27 kayıt kaydırıldı, çakışan 1 kayıt silindi; öncesinde pg_dump yedeği).
+      2026-10-14: Onay adımı kaldırıldı — yeni randevu doğrudan `confirmed` (migration
+      `pending` olanları `confirmed` yaptı; `pending` DB enum'unda duruyor ama hiçbir yerde
+      üretilmiyor, panel API'si `pending` durumunu 422 ile reddeder). Akış:
+      confirmed → completed / no_show / cancelled.
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

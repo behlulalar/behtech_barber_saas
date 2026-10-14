@@ -139,8 +139,7 @@ async def seed() -> None:
                     [AppointmentStatus.COMPLETED, AppointmentStatus.NO_SHOW, AppointmentStatus.CANCELLED],
                     weights=[72, 10, 18])[0]
             else:
-                status = rng.choices(
-                    [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED], weights=[40, 60])[0]
+                status = AppointmentStatus.CONFIRMED
 
             busy.append((start_min, end_min))
             db.add(Appointment(

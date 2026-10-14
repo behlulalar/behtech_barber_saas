@@ -233,7 +233,6 @@ async def build_dashboard(db: AsyncSession, tenant_id: int, day: date, only_staf
             func.count(Appointment.id),
             func.count(case((Appointment.status == S.COMPLETED, 1))),
             func.count(case((Appointment.status == S.CANCELLED, 1))),
-            func.count(case((Appointment.status == S.PENDING, 1))),
             func.coalesce(
                 func.sum(case((Appointment.status.not_in(revenue_statuses), Service.price), else_=0)), 0
             ),
@@ -241,7 +240,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: int, day: date, only_staf
         .join(Service, Appointment.service_id == Service.id)
         .where(Appointment.appointment_date == day)
     )
-    total, completed, cancelled, pending, revenue = (await db.execute(today_q)).one()
+    total, completed, cancelled, revenue = (await db.execute(today_q)).one()
 
     week_start = day - timedelta(days=day.weekday())  # Pazartesi
     week_end = week_start + timedelta(days=6)
@@ -283,7 +282,6 @@ async def build_dashboard(db: AsyncSession, tenant_id: int, day: date, only_staf
         "appointments_today": total,
         "completed_today": completed,
         "cancelled_today": cancelled,
-        "pending_today": pending,
         "expected_revenue_today": int(revenue),
         "appointments_this_week": week_count,
         "total_customers": total_customers,

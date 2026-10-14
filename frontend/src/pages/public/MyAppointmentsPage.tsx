@@ -151,7 +151,7 @@ function AppointmentList() {
     const up: AppointmentPublicOut[] = []
     const pa: AppointmentPublicOut[] = []
     for (const a of query.data ?? []) {
-      const active = a.status === 'pending' || a.status === 'confirmed'
+      const active = a.status === 'confirmed'
       const future = appointmentStart(a.appointment_date, a.appointment_time).getTime() >= now
       if (active && future) up.push(a)
       else pa.push(a)

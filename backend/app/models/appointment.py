@@ -7,7 +7,7 @@ from sqlalchemy import Enum as SAEnum
 from enum import Enum
 
 class AppointmentStatus(str, Enum):
-    PENDING = "pending"
+    PENDING = "pending"  # KULLANILMIYOR: randevular artık doğrudan CONFIRMED olarak oluşur (DB enum'unda kalır)
     CONFIRMED = "confirmed"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
