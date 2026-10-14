@@ -3,14 +3,19 @@ import re
 from datetime import date, datetime, time
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
+from app.core.text import title_case_tr
 from app.models.appointment import AppointmentStatus
 from app.models.staff import RoleType
 
 _PHONE_RE = re.compile(r"^5\d{9}$")
 
 Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
+# Hizmet adları kaydedilmeden önce "Saç Kesimi" biçimine getirilir (bkz. app/core/text.py).
+ServiceName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255), AfterValidator(title_case_tr)
+]
 
 
 def _check_phone(value: str) -> str:
@@ -137,7 +142,7 @@ class AdminServiceOut(_Orm):
 
 
 class ServiceCreate(BaseModel):
-    name: Name
+    name: ServiceName
     price: int = Field(ge=0, le=10_000_000)
     duration_min: int = Field(ge=5, le=480)
     is_active: bool = True
@@ -146,7 +151,7 @@ class ServiceCreate(BaseModel):
 
 
 class ServiceUpdate(BaseModel):
-    name: Name | None = None
+    name: ServiceName | None = None
     price: int | None = Field(default=None, ge=0, le=10_000_000)
     duration_min: int | None = Field(default=None, ge=5, le=480)
     is_active: bool | None = None
