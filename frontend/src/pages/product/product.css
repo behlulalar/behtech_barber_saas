@@ -1,0 +1,59 @@
+/* Tanıtım sayfası: kaydırmayla beliren öğeler. Başlangıç gizliliği yalnızca JS yüklenince (html.rv-on) uygulanır. */
+html.rv-on .rv {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1), transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--d, 0ms);
+}
+html.rv-on .rv.is-in {
+  opacity: 1;
+  transform: none;
+}
+html.rv-on .rv-clip {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 900ms cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms);
+}
+html.rv-on .rv-clip.is-in {
+  clip-path: inset(0 0 0 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  html.rv-on .rv,
+  html.rv-on .rv-clip {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    transition: none !important;
+  }
+  .pole-anim { animation: none !important; }
+}
+
+/* Berber direği motifi */
+.pole {
+  background: repeating-linear-gradient(-45deg, var(--color-copper) 0 6px, transparent 6px 12px);
+}
+.pole-anim {
+  background-size: 17px 17px;
+  animation: pole-slide 2.4s linear infinite;
+}
+@keyframes pole-slide {
+  to { background-position: 17px 0; }
+}
+
+.pt-hero-glow {
+  background:
+    radial-gradient(60% 50% at 70% 40%, color-mix(in srgb, var(--color-copper) 22%, transparent), transparent 70%);
+}
+
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.faq-panel[data-open='true'] { grid-template-rows: 1fr; }
+.faq-panel > div { overflow: hidden; }
+
+.pt-header {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
