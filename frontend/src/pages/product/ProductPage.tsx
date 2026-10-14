@@ -495,7 +495,7 @@ export default function ProductPage() {
   useRevealRoot()
   useEffect(() => {
     const prev = document.title
-    document.title = `${PRODUCT_NAME} | Berber ve kuaförler için online randevu`
+    document.title = `${PRODUCT_NAME} · Berber ve kuaförler için online randevu`
     return () => {
       document.title = prev
     }

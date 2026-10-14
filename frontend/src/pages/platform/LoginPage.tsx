@@ -5,11 +5,13 @@ import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
 import { PhoneInput } from '../../components/ui/PhoneInput'
 import AuthLayout from '../../layouts/AuthLayout'
+import { PRODUCT_NAME, useDocumentTitle } from '../../lib/head'
 import { errorMessage } from '../../lib/api'
 import { usePlatformAuth } from '../../lib/auth'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 
 export default function LoginPage() {
+  useDocumentTitle('Platform girişi', PRODUCT_NAME)
   const { status, login } = usePlatformAuth()
 
   const location = useLocation()

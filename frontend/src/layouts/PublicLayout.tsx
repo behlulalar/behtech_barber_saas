@@ -5,11 +5,17 @@ import { buttonStyles } from '../components/ui/Button'
 import { useScrollLock } from '../components/ui/useDialog'
 import { useCustomerAuth } from '../lib/auth'
 import { cn } from '../lib/cn'
+import { PRODUCT_NAME, useDocumentTitle, useFavicon, useRouteLabel } from '../lib/head'
 import { useTenant } from '../lib/queries'
 
 const LINKS = [
   { to: '/#hizmetler', label: 'Hizmetler' },
   { to: '/#ekip', label: 'Ekibimiz' },
+  { to: '/randevularim', label: 'Randevularım' },
+]
+
+const PAGE_TITLES = [
+  { to: '/randevu', label: 'Randevu al' },
   { to: '/randevularim', label: 'Randevularım' },
 ]
 
@@ -34,9 +40,9 @@ export default function PublicLayout() {
     window.scrollTo(0, 0)
   }, [location.pathname, location.hash])
 
-  useEffect(() => {
-    if (name) document.title = name
-  }, [name])
+  const pageLabel = useRouteLabel(PAGE_TITLES)
+  useDocumentTitle(pageLabel, name ?? (tenant.isLoading ? null : PRODUCT_NAME))
+  useFavicon(tenant.data?.logo_image)
 
   // Menü açıkken arka plan kaydırmasını kilitle.
   useScrollLock(open)

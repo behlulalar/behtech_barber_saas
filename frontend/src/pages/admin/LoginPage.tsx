@@ -9,10 +9,13 @@ import { errorMessage } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 import { useTenant } from '../../lib/queries'
+import { useDocumentTitle, useFavicon } from '../../lib/head'
 
 export default function LoginPage() {
   const { status, login } = useStaffAuth()
   const tenant = useTenant()
+  useDocumentTitle('Personel girişi', tenant.data?.business_name)
+  useFavicon(tenant.data?.logo_image)
   const location = useLocation()
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')

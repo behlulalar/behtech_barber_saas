@@ -1,6 +1,7 @@
 import { Building2, LayoutDashboard } from 'lucide-react'
 import { usePlatformAuth } from '../lib/auth'
 import { formatPhone } from '../lib/format'
+import { PRODUCT_NAME, useDocumentTitle, useRouteLabel } from '../lib/head'
 import { PanelShell, type NavItem } from './PanelShell'
 
 const NAV: NavItem[] = [
@@ -11,6 +12,7 @@ const NAV: NavItem[] = [
 /** Platform (SaaS sahibi) paneli iskeleti. <RequirePlatform> altında kullanılır. */
 export default function PlatformLayout() {
   const { me, logout } = usePlatformAuth()
+  useDocumentTitle(useRouteLabel(NAV), 'Platform', PRODUCT_NAME)
   return (
     <PanelShell
       eyebrow="Platform"

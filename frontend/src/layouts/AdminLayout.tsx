@@ -2,6 +2,7 @@ import { CalendarDays, Clock, LayoutDashboard, Scissors, Settings, Store, UserRo
 import { Link } from 'react-router-dom'
 import { useStaffAuth } from '../lib/auth'
 import { fullName } from '../lib/format'
+import { useDocumentTitle, useFavicon, useRouteLabel } from '../lib/head'
 import { useTenant } from '../lib/queries'
 import { PanelShell, type NavItem } from './PanelShell'
 
@@ -26,6 +27,8 @@ export const ROLE_LABELS = {
 export default function AdminLayout() {
   const { me, logout } = useStaffAuth()
   const tenant = useTenant()
+  useDocumentTitle(useRouteLabel(NAV), 'Panel', tenant.data?.business_name)
+  useFavicon(tenant.data?.logo_image)
   return (
     <PanelShell
       eyebrow="Yönetim"
