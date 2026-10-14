@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CalendarDays, ChevronLeft, ChevronRight, LayoutList, Plus, Table2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { Avatar } from '../../components/ui/Avatar'
 import { Button, IconButton } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Input } from '../../components/ui/Input'
@@ -24,7 +25,7 @@ import {
   startOfWeekISO,
   todayLocalISO,
 } from '../../lib/format'
-import type { AppointmentStatus } from '../../types/api'
+import type { AdminAppointmentOut, AppointmentStatus } from '../../types/api'
 import { AppointmentsTable } from './AppointmentsTable'
 import { AppointmentRow, NewAppointmentModal, useAppointmentFlow, type NewAppointmentPrefill } from './appointmentParts'
 import { ErrorBlock, qk, useStaffList } from './shared'
@@ -44,6 +45,49 @@ function readLayout(): Layout {
   } catch {
     return 'list'
   }
+}
+
+function groupByDate(list: AdminAppointmentOut[]): [string, AdminAppointmentOut[]][] {
+  const map = new Map<string, AdminAppointmentOut[]>()
+  for (const a of list) map.set(a.appointment_date, [...(map.get(a.appointment_date) ?? []), a])
+  return [...map.entries()]
+}
+
+/** Günlere göre bölünmüş kart listesi (tek sütun). Hafta görünümünde gün başlığı gösterilir. */
+function DateGroups({
+  groups,
+  showDates,
+  today,
+  showStaff,
+  flow,
+}: {
+  groups: [string, AdminAppointmentOut[]][]
+  showDates: boolean
+  today: string
+  showStaff: boolean
+  flow: ReturnType<typeof useAppointmentFlow>
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      {groups.map(([date, list]) => (
+        <section key={date} aria-label={formatDateLong(date)}>
+          {showDates && (
+            <h3 className="mb-2.5 flex items-baseline justify-between text-sm font-medium capitalize text-muted-strong">
+              <span>{date === today ? `Bugün · ${formatDateLong(date)}` : formatDateLong(date)}</span>
+              <span className="text-xs text-muted">{list.length} randevu</span>
+            </h3>
+          )}
+          <ul className="flex flex-col gap-3">
+            {list.map((a) => (
+              <li key={a.id} className="min-w-0">
+                <AppointmentRow appt={a} showStaff={showStaff} flow={flow} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  )
 }
 
 export default function AppointmentsPage() {
@@ -123,20 +167,32 @@ export default function AppointmentsPage() {
     return staffFilter ? all.filter((s) => String(s.id) === staffFilter) : all
   }, [staffQ.data, isManager, staffFilter, me?.id])
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, typeof filtered>()
-    // Aktif: en yakın en üstte. Geçmiş: en yeni en üstte.
+  // Aktif: en yakın en üstte. Geçmiş: en yeni en üstte.
+  const sortedFiltered = useMemo(() => {
     const dir = tab === 'history' ? -1 : 1
-    const sorted = [...filtered].sort(
+    return [...filtered].sort(
       (x, y) => dir * (x.appointment_date.localeCompare(y.appointment_date) || x.appointment_time.localeCompare(y.appointment_time)),
     )
-    for (const a of sorted) {
-      const list = map.get(a.appointment_date) ?? []
-      list.push(a)
-      map.set(a.appointment_date, list)
-    }
-    return [...map.entries()]
-  }, [filtered])
+  }, [filtered, tab])
+  const grouped = useMemo(() => groupByDate(sortedFiltered), [sortedFiltered])
+
+  // "Tüm ekip" seçiliyken (yönetici) randevular personele göre gruplanır; tek berber seçiliyse ya da berber hesabında gruplama yok.
+  const groupByStaff = isManager && !staffFilter
+  const staffGroups = useMemo(() => {
+    if (!groupByStaff) return []
+    const byStaff = new Map<number, AdminAppointmentOut[]>()
+    for (const a of sortedFiltered) byStaff.set(a.staff.id, [...(byStaff.get(a.staff.id) ?? []), a])
+    const order = new Map((staffQ.data ?? []).map((s, i) => [s.id, i]))
+    return [...byStaff.entries()]
+      .sort(([a], [b]) => (order.get(a) ?? 999) - (order.get(b) ?? 999))
+      .map(([id, items]) => ({
+        id,
+        staff: items[0].staff,
+        photo: staffQ.data?.find((s) => s.id === id)?.photo_image ?? null,
+        count: items.length,
+        byDate: groupByDate(items),
+      }))
+  }, [groupByStaff, sortedFiltered, staffQ.data])
 
   const step = effectiveView === 'day' ? 1 : 7
   const rangeLabel =
@@ -339,25 +395,22 @@ export default function AppointmentsPage() {
               }
             />
           </div>
-        ) : (
-          <div className="flex max-w-3xl flex-col gap-6">
-            {grouped.map(([date, list]) => (
-              <section key={date} aria-label={formatDateLong(date)}>
-                {effectiveView === 'week' && (
-                  <h2 className="mb-2.5 flex items-baseline justify-between text-sm font-medium capitalize text-muted-strong">
-                    <span>{date === today ? `Bugün · ${formatDateLong(date)}` : formatDateLong(date)}</span>
-                    <span className="text-xs text-muted">{list.length} randevu</span>
-                  </h2>
-                )}
-                <ul className="flex flex-col gap-3">
-                  {list.map((a) => (
-                    <li key={a.id} className="min-w-0">
-                      <AppointmentRow appt={a} showStaff={isManager} flow={flow} />
-                    </li>
-                  ))}
-                </ul>
+        ) : groupByStaff ? (
+          <div className="flex max-w-3xl flex-col gap-10">
+            {staffGroups.map((g) => (
+              <section key={g.id} aria-label={fullName(g.staff)}>
+                <header className="mb-4 flex items-center gap-3 border-b border-panel-line pb-3">
+                  <Avatar name={fullName(g.staff)} src={g.photo} size="sm" />
+                  <h2 className="min-w-0 flex-1 truncate font-display text-lg font-medium text-cream">{fullName(g.staff)}</h2>
+                  <span className="shrink-0 rounded-xs bg-cream/5 px-2 py-0.5 text-xs tabular-nums text-muted-strong">{g.count} randevu</span>
+                </header>
+                <DateGroups groups={g.byDate} showDates={effectiveView === 'week'} today={today} showStaff={false} flow={flow} />
               </section>
             ))}
+          </div>
+        ) : (
+          <div className="max-w-3xl">
+            <DateGroups groups={grouped} showDates={effectiveView === 'week'} today={today} showStaff={isManager} flow={flow} />
           </div>
         )}
       </div>
