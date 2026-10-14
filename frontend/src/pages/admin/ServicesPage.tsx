@@ -21,7 +21,7 @@ import { formatDuration, formatPrice, fullName } from '../../lib/format'
 import type { AdminService, AdminStaff } from '../../types/api'
 import { ErrorBlock, qk, useServiceList, useStaffList } from './shared'
 
-const DURATION_PRESETS = [15, 30, 45, 60, 90]
+const DURATION_PRESETS = [30, 60, 90, 120, 150, 180]
 
 export default function ServicesPage() {
   const { isManager } = useStaffAuth()
@@ -210,7 +210,7 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
   const errors = {
     name: touched && !name.trim() ? 'Hizmet adı gerekli.' : null,
     price: touched && !(Number.isInteger(priceNum) && priceNum >= 0 && priceNum <= 10_000_000) ? 'Geçerli bir fiyat girin (tam sayı, ₺).' : null,
-    duration: touched && !(Number.isInteger(durNum) && durNum >= 5 && durNum <= 480) ? 'Süre 5 ile 480 dakika arasında olmalı.' : null,
+    duration: touched && !(Number.isInteger(durNum) && durNum >= 30 && durNum <= 480 && durNum % 30 === 0) ? 'Süre 30 dakikanın katı olmalı (30, 60, 90…)' : null,
   }
 
   const save = useMutation({
@@ -232,7 +232,7 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
   function submit() {
     setTouched(true)
     if (!staffQuery.data) return
-    if (!name.trim() || !Number.isInteger(priceNum) || priceNum < 0 || !Number.isInteger(durNum) || durNum < 5 || durNum > 480) return
+    if (!name.trim() || !Number.isInteger(priceNum) || priceNum < 0 || !Number.isInteger(durNum) || durNum < 30 || durNum > 480 || durNum % 30 !== 0) return
     save.mutate()
   }
 
@@ -270,7 +270,7 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
             <Input type="number" inputMode="numeric" min={0} step={1} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="450" />
           </Field>
           <Field label="Süre (dk)" required error={errors.duration}>
-            <Input type="number" inputMode="numeric" min={5} max={480} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
+            <Input type="number" inputMode="numeric" min={30} max={480} step={30} value={duration} onChange={(e) => setDuration(e.target.value)} />
           </Field>
         </div>
         <div className="-mt-2 flex flex-wrap gap-2" role="group" aria-label="Hızlı süre seçimi">

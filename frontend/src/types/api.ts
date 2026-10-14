@@ -52,6 +52,26 @@ export interface AvailabilityParams {
   date: string
 }
 
+export type SlotStatus = 'free' | 'busy' | 'past'
+
+export interface Slot {
+  /** "HH:MM" */
+  start: string
+  end: string
+  status: SlotStatus
+  /** Bu slot başlangıç olarak seçilebilir mi (kendisi + sonraki n-1 slot boş). */
+  bookable: boolean
+}
+
+export interface SlotsResponse {
+  date: string
+  slot_minutes: number
+  /** Seçilen hizmetin kapladığı slot sayısı. */
+  duration_slots: number
+  closed_reason: 'day_off' | 'time_off' | null
+  slots: Slot[]
+}
+
 export interface SendCodeRequest {
   phone: string
 }

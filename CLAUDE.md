@@ -447,6 +447,11 @@ iyi bir çalışma malzemesi.
       sahte müşteriler 54000000NN telefonlu, `--reset` yalnızca onları siler). sefapertev'e de
       uygulandı (gerçek kayıtlar yerinde; öncesinde pg_dump yedeği alındı). Bitiş saati 00:00
       olan çalışma günü artık "günün sonu" sayılıyor (öncesinde o gün hiç boş saat çıkmıyordu).
+      2026-10-14 (ajanlarla): 30 dk'lık slot sistemi — başlangıçlar yalnızca :00/:30, hizmet
+      süresi 30'un katı (migration mevcutları yukarı yuvarladı; sefapertev zaten uyumluydu),
+      n = süre/30 ardışık slot. `GET /api/availability/slots` slot ızgarası (free/busy/past +
+      bookable, closed_reason); `/availability` ve randevu doğrulaması aynı motoru kullanır.
+      Ortak `components/booking/SlotGrid.tsx` (Sabah/Öğle/Akşam; geçmiş saatler gizli).
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

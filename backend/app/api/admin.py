@@ -147,8 +147,12 @@ async def create_appointment(
     # Müşteri oluşturma commit edebilir; berber kilidi ondan sonra alınır ve INSERT'e kadar sürer.
     customer = await get_or_create_customer(db, tid, data.phone, data.name, data.surname)
     await lock_staff_schedule(db, tid, data.staff_id)
-    slots = await get_available_slots(db, tid, data.staff_id, data.service_id, data.appointment_date)
-    if data.appointment_time.replace(microsecond=0) not in slots:
+    # Geçmiş tarihli "tamamlandı" kaydında geçmiş slotlar engel sayılmaz (dolu olanlar yine sayılır).
+    slots = await get_available_slots(
+        db, tid, data.staff_id, data.service_id, data.appointment_date,
+        ignore_past=data.status == AppointmentStatus.COMPLETED,
+    )
+    if data.appointment_time.replace(second=0, microsecond=0) not in slots:
         await db.rollback()
         raise HTTPException(status_code=409, detail=SLOT_MSG)
 

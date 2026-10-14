@@ -145,10 +145,19 @@ class AdminServiceOut(_Orm):
     staff_ids: list[int] = []
 
 
+def _duration_multiple_of_30(value: int) -> int:
+    if value < 30 or value > 480 or value % 30 != 0:
+        raise ValueError("Süre 30 dakikanın katı olmalı (30, 60, 90…)")
+    return value
+
+
+DurationMin = Annotated[int, AfterValidator(_duration_multiple_of_30)]
+
+
 class ServiceCreate(BaseModel):
     name: ServiceName
     price: int = Field(ge=0, le=10_000_000)
-    duration_min: int = Field(ge=5, le=480)
+    duration_min: DurationMin
     is_active: bool = True
     # Verilmezse hizmeti tüm personel verir.
     staff_ids: IdList | None = None
@@ -157,7 +166,7 @@ class ServiceCreate(BaseModel):
 class ServiceUpdate(BaseModel):
     name: ServiceName | None = None
     price: int | None = Field(default=None, ge=0, le=10_000_000)
-    duration_min: int | None = Field(default=None, ge=5, le=480)
+    duration_min: DurationMin | None = None
     is_active: bool | None = None
     staff_ids: IdList | None = None
 

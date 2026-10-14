@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { SlotGrid, SlotGridSkeleton } from '../../components/booking/SlotGrid'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button, buttonStyles } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -23,7 +24,6 @@ import { ApiError, customerApi, errorMessage, publicApi } from '../../lib/api'
 import { useCustomerAuth } from '../../lib/auth'
 import { cn } from '../../lib/cn'
 import {
-  appointmentStart,
   formatDateLong,
   formatDuration,
   formatPrice,
@@ -36,7 +36,7 @@ import {
   normalizePhone,
   parseISODateLocal,
 } from '../../lib/format'
-import type { AppointmentPublicOut, PublicService, PublicStaff, VerifyCodeResponse } from '../../types/api'
+import type { AppointmentPublicOut, PublicService, PublicStaff, SlotsResponse, VerifyCodeResponse } from '../../types/api'
 import { OtpCodeForm } from './OtpCodeForm'
 
 type Step = 'service' | 'staff' | 'time' | 'contact' | 'verify' | 'done'
@@ -121,11 +121,19 @@ export default function BookingPage() {
   }, [auth.isAuthenticated, auth.phone, auth.customer])
 
   const availability = useQuery({
-    queryKey: ['availability', staffId, serviceId, date],
-    queryFn: () => publicApi.getAvailability({ staff_id: staffId!, service_id: serviceId!, date }),
+    queryKey: ['availability', 'slots', staffId, serviceId, date],
+    queryFn: () => publicApi.getSlots({ staff_id: staffId!, service_id: serviceId!, date }),
     enabled: step === 'time' && staffId != null && serviceId != null,
     staleTime: 15_000,
   })
+
+  // Yenilemeden sonra seçili başlangıç artık seçilebilir değilse seçimi temizle.
+  const slotsData = availability.data
+  useEffect(() => {
+    if (!time || !slotsData) return
+    const slot = slotsData.slots.find((x) => x.start === time.slice(0, 5))
+    if (!slot || !slot.bookable) setTime(null)
+  }, [slotsData, time])
 
   // Adım değişince sayfanın üstüne (sayfa içi başlığa) kaydır.
   const firstRender = useRef(true)
@@ -303,11 +311,10 @@ export default function BookingPage() {
             }}
             time={time}
             onTime={setTime}
-            slots={availability.data}
-            loading={availability.isLoading || availability.isFetching}
+            data={availability.data}
+            loading={availability.isLoading}
             error={availability.isError}
             onRetry={() => availability.refetch()}
-            duration={service?.duration_min ?? 0}
           />
         )}
 
@@ -630,31 +637,22 @@ function TimeStep({
   onDate,
   time,
   onTime,
-  slots: allSlots,
+  data,
   loading,
   error,
   onRetry,
-  duration,
 }: {
   days: string[]
   date: string
   onDate: (d: string) => void
   time: string | null
   onTime: (t: string) => void
-  slots: string[] | undefined
+  data: SlotsResponse | undefined
   loading: boolean
   error: boolean
   onRetry: () => void
-  duration: number
 }) {
   const stripRef = useRef<HTMLDivElement>(null)
-  // Backend bugünün geçmiş saatlerini de döndürebilir; istemcide ele.
-  const slots = useMemo(() => {
-    if (!allSlots) return allSlots
-    if (date !== days[0]) return allSlots
-    const now = new Date()
-    return allSlots.filter((t) => appointmentStart(date, t) > now)
-  }, [allSlots, date, days])
   const monthFmt = useMemo(() => new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }), [])
 
   // Seçili günü şeridin içinde görünür tut (sayfayı değil, yalnızca şeridi kaydırır).
@@ -703,49 +701,14 @@ function TimeStep({
         })}
       </div>
 
-      <div className="mt-7 min-h-[11rem]">
-        <p className="mb-3 text-sm text-muted-strong">{formatDateLong(date)}</p>
+      <div className="mt-7 min-h-[22rem]">
+        <p className="mb-4 text-sm text-muted-strong">{formatDateLong(date)}</p>
         {loading ? (
-          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4" role="status" aria-label="Müsait saatler yükleniyor">
-            {Array.from({ length: 8 }, (_, i) => (
-              <Skeleton key={i} className="h-11 rounded-sm" />
-            ))}
-          </div>
-        ) : error ? (
+          <SlotGridSkeleton />
+        ) : error || !data ? (
           <LoadError onRetry={onRetry} text="Müsait saatler yüklenemedi" />
-        ) : !slots || slots.length === 0 ? (
-          <EmptyState
-            icon={<CalendarDays />}
-            title="Bu gün için müsait saat yok"
-            description="Lütfen başka bir gün seçin."
-            className="py-8"
-          />
         ) : (
-          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4" role="radiogroup" aria-label="Saat">
-            {slots.map((t) => {
-              const selected = t === time
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => onTime(t)}
-                  className={cn(
-                    'min-h-11 rounded-sm border px-2 font-display text-base tabular-nums transition-colors',
-                    selected
-                      ? 'border-copper bg-copper text-ink'
-                      : 'border-line bg-surface text-cream hover:border-copper/70 active:bg-surface-raised',
-                  )}
-                >
-                  {formatTime(t)}
-                </button>
-              )
-            })}
-          </div>
-        )}
-        {time && duration > 0 && (
-          <p className="mt-4 text-xs text-muted">Seçtiğiniz saat: {formatTimeRange(time, duration)}</p>
+          <SlotGrid data={data} value={time} onChange={onTime} />
         )}
       </div>
     </div>

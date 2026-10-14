@@ -49,6 +49,7 @@ import type {
   PublicTenant,
   SendCodeRequest,
   SendCodeResponse,
+  SlotsResponse,
   StaffMe,
   TenantSettings,
   TimeOff,
@@ -231,6 +232,7 @@ export const publicApi = {
   getServices: () => request<PublicService[]>('/services'),
   /** Müsait başlangıç saatleri: ["09:00:00", ...] */
   getAvailability: (p: AvailabilityParams) => request<string[]>('/availability', { query: { ...p } }),
+  getSlots: (p: AvailabilityParams) => request<SlotsResponse>('/availability/slots', { query: { ...p } }),
   sendCode: (data: SendCodeRequest) => request<SendCodeResponse>('/auth/send-code', { method: 'POST', body: data }),
   /** Başarılı olunca yanıtı useCustomerAuth().login(response) ile kaydedin. */
   verifyCode: (data: VerifyCodeRequest) =>

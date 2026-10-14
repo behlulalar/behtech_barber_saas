@@ -48,8 +48,8 @@ PAST_DAYS, FUTURE_DAYS = 42, 14
 # Yer tutucu ("deneme") adlı personel bu isimlerle yeniden adlandırılır; gerçek adlara dokunulmaz.
 FALLBACK_STAFF = [("Murat", "Kaya"), ("Burak", "Aydın"), ("Emir", "Yıldız")]
 DEFAULT_SERVICES = [
-    ("Saç Kesimi", 450, 45), ("Sakal", 250, 20), ("Saç + Sakal", 650, 60),
-    ("Çocuk Kesimi", 300, 30), ("Cilt Bakımı", 500, 40), ("Keratin", 1500, 90),
+    ("Saç Kesimi", 450, 60), ("Sakal", 250, 30), ("Saç + Sakal", 650, 60),
+    ("Çocuk Kesimi", 300, 30), ("Cilt Bakımı", 500, 60), ("Keratin", 1500, 90),
 ]
 DEFAULT_ADDRESS = "Cumhuriyet Mah. Atatürk Cd. No: 24, Merkez"
 CUSTOMER_NAMES = [
@@ -60,6 +60,11 @@ CUSTOMER_NAMES = [
     ("Furkan", "Çakır"), ("Enes", "Uçar"), ("Gökhan", "Avcı"), ("Hakan", "Sönmez"), ("Berk", "Yavuz"),
     ("Eren", "Acar"), ("Kaan", "Duman"), ("Arda", "Bozkurt"),
 ]
+
+
+def occupied_minutes(duration_min: int) -> int:
+    """Randevunun kapladığı süre: ceil(süre/30) slot."""
+    return -(-duration_min // 30) * 30
 
 
 def minutes(t: time) -> int:
@@ -176,7 +181,7 @@ async def seed_shop(db, slug: str, password_hash: str) -> str:
     busy: dict[tuple[int, date], list[tuple[int, int]]] = {}
     for a in (await db.execute(select(Appointment).where(
             Appointment.tenant_id == tid, Appointment.status != AppointmentStatus.CANCELLED))).scalars():
-        dur = svc_by_id[a.service_id].duration_min if a.service_id in svc_by_id else 60
+        dur = occupied_minutes(svc_by_id[a.service_id].duration_min if a.service_id in svc_by_id else 60)
         busy.setdefault((a.staff_id, a.appointment_date), []).append(
             (minutes(a.appointment_time), minutes(a.appointment_time) + dur))
 
@@ -194,8 +199,12 @@ async def seed_shop(db, slug: str, password_hash: str) -> str:
         if not offered:
             continue
         v = rng.choice(offered)
-        start_min = rng.randrange(window[0], window[1] - v.duration_min + 1, 15)
-        end_min = start_min + v.duration_min
+        occ = occupied_minutes(v.duration_min)
+        first = -(-window[0] // 30) * 30  # ilk :00/:30 başlangıcı
+        if first + occ > window[1]:
+            continue
+        start_min = first + 30 * rng.randrange(0, (window[1] - occ - first) // 30 + 1)
+        end_min = start_min + occ
         slots = busy.setdefault((s.id, day), [])
         if any(start_min < e and end_min > b for b, e in slots):
             continue

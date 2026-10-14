@@ -1,5 +1,5 @@
 from datetime import date, time
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
 
@@ -64,3 +64,18 @@ class AppointmentPublicOut(BaseModel):
     status: AppointmentStatus
     service: AppointmentServiceBrief
     staff: AppointmentStaffBrief
+
+
+class SlotOut(BaseModel):
+    start: str  # "HH:MM"
+    end: str  # "HH:MM" (gün sonu için "24:00")
+    status: Literal["free", "busy", "past"]
+    bookable: bool
+
+
+class SlotsResponse(BaseModel):
+    date: date
+    slot_minutes: int
+    duration_slots: int
+    closed_reason: Literal["day_off", "time_off"] | None
+    slots: list[SlotOut]

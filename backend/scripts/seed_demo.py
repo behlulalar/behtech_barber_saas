@@ -40,11 +40,11 @@ STAFF = [
     ("5550000003", "Emir", "Kaya", RoleType.STAFF),
 ]
 SERVICES = [
-    ("Saç Kesimi", 450, 45),
-    ("Sakal", 250, 20),
+    ("Saç Kesimi", 450, 60),
+    ("Sakal", 250, 30),
     ("Saç + Sakal", 650, 60),
     ("Çocuk Kesimi", 300, 30),
-    ("Cilt Bakımı", 500, 40),
+    ("Cilt Bakımı", 500, 60),
     ("Keratin", 1500, 90),
 ]
 CUSTOMERS = [
@@ -125,8 +125,10 @@ async def seed() -> None:
             day = rng.choice(working_days)
             staff = rng.choice(staff_rows)
             service = rng.choice(service_rows)
-            start_min = rng.randrange(minutes(WORK_START), minutes(WORK_END) - service.duration_min + 1, 15)
-            end_min = start_min + service.duration_min
+            occ = -(-service.duration_min // 30) * 30  # ceil(süre/30) slot
+            first = -(-minutes(WORK_START) // 30) * 30
+            start_min = first + 30 * rng.randrange(0, (minutes(WORK_END) - occ - first) // 30 + 1)
+            end_min = start_min + occ
             busy = occupied.setdefault((staff.id, day), [])
             if any(start_min < be and end_min > bs for bs, be in busy):
                 continue

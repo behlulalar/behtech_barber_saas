@@ -1,4 +1,5 @@
 // Randevu satırı, durum/ödeme alt sayfası ve elle randevu oluşturma (Genel Bakış + Randevular ortak).
+import { SlotGrid, SlotGridSkeleton } from '../../components/booking/SlotGrid'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronRight, Phone, RotateCcw, UserX, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -452,14 +453,21 @@ function NewAppointmentForm({ onClose, defaultDate, prefill, onCreated }: NewPro
 
   const slotsEnabled = Boolean(serviceId && staffId && date)
   const slots = useQuery({
-    queryKey: ['public', 'availability', staffId, serviceId, date],
-    queryFn: () => publicApi.getAvailability({ staff_id: Number(staffId), service_id: Number(serviceId), date }),
+    queryKey: ['public', 'availability', 'slots', staffId, serviceId, date],
+    queryFn: () => publicApi.getSlots({ staff_id: Number(staffId), service_id: Number(serviceId), date }),
     enabled: slotsEnabled,
     staleTime: 15_000,
   })
   useEffect(() => {
     setTime('')
   }, [serviceId, staffId, date])
+  // Yenilemeden sonra seçili başlangıç artık seçilebilir değilse temizle.
+  const slotsData = slots.data
+  useEffect(() => {
+    if (!time || !slotsData) return
+    const slot = slotsData.slots.find((x) => x.start === time)
+    if (!slot || !slot.bookable) setTime('')
+  }, [slotsData, time])
 
   const create = useMutation({
     mutationFn: () =>
@@ -567,33 +575,11 @@ function NewAppointmentForm({ onClose, defaultDate, prefill, onCreated }: NewPro
               {!slotsEnabled ? (
                 <p className="rounded-sm border border-dashed border-line px-3 py-3 text-sm text-muted">Önce hizmet ve tarih seçin.</p>
               ) : slots.isLoading ? (
-                <div className="grid grid-cols-4 gap-2">
-                  {Array.from({ length: 8 }, (_, i) => (
-                    <Skeleton key={i} className="h-11" />
-                  ))}
-                </div>
-              ) : slots.isError ? (
+                <SlotGridSkeleton maxColumns={3} />
+              ) : slots.isError || !slots.data ? (
                 <p className="text-sm text-danger">{errorMessage(slots.error)}</p>
-              ) : slots.data && slots.data.length > 0 ? (
-                <div role="radiogroup" aria-label="Müsait saatler" className="grid grid-cols-4 gap-2">
-                  {slots.data.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      role="radio"
-                      aria-checked={time === t}
-                      onClick={() => setTime(t)}
-                      className={cn(
-                        'min-h-11 rounded-sm border text-sm font-medium tabular-nums transition-colors',
-                        time === t ? 'border-copper bg-copper text-ink' : 'border-line-strong text-cream hover:border-copper/60',
-                      )}
-                    >
-                      {formatTime(t)}
-                    </button>
-                  ))}
-                </div>
               ) : (
-                <p className="rounded-sm border border-dashed border-line px-3 py-3 text-sm text-muted">Bu tarihte müsait saat yok.</p>
+                <SlotGrid data={slots.data} value={time || null} onChange={setTime} maxColumns={3} />
               )}
             </div>
           )}

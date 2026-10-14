@@ -1,6 +1,6 @@
 """Herkese açık (müşteri tarafı) ve müşteri (OTP token'lı) route'ları. Tenant, Host header'ından çözülür."""
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
@@ -17,12 +17,18 @@ from app.models.service import Service
 from app.models.staff import RoleType, Staff
 from app.models.tenant import Tenant
 from app.models.tenant_settings import TenantSettings
-from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut
+from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut, SlotOut, SlotsResponse
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
 from app.schemas.public import SendCodeResponse, StaffPublicOut, TenantPublicOut, VerifyCodeResponse
 from app.schemas.service import ServiceOut
 from app.services.admin_services import service_ids_by_staff
-from app.services.appointment_services import check_daily_limit, get_available_slots, lock_staff_schedule
+from app.services.appointment_services import (
+    SLOT_MINUTES,
+    build_slot_grid,
+    check_daily_limit,
+    get_available_slots,
+    lock_staff_schedule,
+)
 from app.services.customer_services import get_or_create_customer
 from app.services.otp_services import send_code, verify_code
 
@@ -88,11 +94,33 @@ async def availability_route(
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ):
-    slots = await get_available_slots(db, tenant.id, staff_id, service_id, date)
-    # Müşteri geçmiş saate randevu alamaz (POST /appointments da reddeder); bugünün geçmiş
-    # saatlerini burada eliyoruz. Panel tarafı walk-in kaydı için ortak servisi filtresiz kullanır.
-    now = datetime.now()
-    return [s for s in slots if datetime.combine(date, s) > now]
+    # Motor geçmiş saatleri zaten eler; yalnızca seçilebilir (bookable) başlangıçlar döner.
+    return await get_available_slots(db, tenant.id, staff_id, service_id, date)
+
+
+def _hhmm(t: time, end: bool = False) -> str:
+    return "24:00" if end and t == time(0, 0) else t.strftime("%H:%M")
+
+
+@router.get("/availability/slots", response_model=SlotsResponse)
+async def availability_slots_route(
+    staff_id: int,
+    service_id: int,
+    date: date,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+):
+    grid = await build_slot_grid(db, tenant.id, staff_id, service_id, date)
+    return SlotsResponse(
+        date=grid.date,
+        slot_minutes=SLOT_MINUTES,
+        duration_slots=grid.duration_slots,
+        closed_reason=grid.closed_reason,
+        slots=[
+            SlotOut(start=_hhmm(s.start), end=_hhmm(s.end, end=True), status=s.status, bookable=s.bookable)
+            for s in grid.slots
+        ],
+    )
 
 
 # ---------------------------------------------------------------- OTP auth
