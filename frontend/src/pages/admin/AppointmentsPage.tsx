@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Select } from '../../components/ui/Select'
 import { Skeleton } from '../../components/ui/Skeleton'
-import { STATUS_LABELS, STATUS_ORDER } from '../../components/ui/Badge'
+import { STATUS_LABELS } from '../../components/ui/Badge'
 import { SegmentedControl, Tabs } from '../../components/ui/Tabs'
 import { adminApi } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
@@ -31,7 +31,10 @@ import { ErrorBlock, qk, useStaffList } from './shared'
 
 type View = 'day' | 'week'
 type Layout = 'list' | 'table'
-type StatusFilter = 'all' | AppointmentStatus
+// Aktif = onaylı (henüz tamamlanmamış) randevular. Geçmiş = tamamlanan, iptal edilen ve gelmeyen randevular.
+type Tab = 'active' | 'history'
+type HistoryFilter = 'all' | Exclude<AppointmentStatus, 'confirmed'>
+const HISTORY_FILTERS: HistoryFilter[] = ['all', 'completed', 'cancelled', 'no_show']
 
 const LAYOUT_KEY = 'beh.appointments.layout'
 
@@ -52,7 +55,8 @@ export default function AppointmentsPage() {
   const [view, setView] = useState<View>('day')
   const [layout, setLayout] = useState<Layout>(readLayout)
   const [anchor, setAnchor] = useState(todayLocalISO())
-  const [status, setStatus] = useState<StatusFilter>('all')
+  const [tab, setTab] = useState<Tab>('active')
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all')
   const [staffFilter, setStaffFilter] = useState('')
   const [creating, setCreating] = useState(Boolean(prefillState))
   const [prefill, setPrefill] = useState<NewAppointmentPrefill | null>(prefillState)
@@ -92,13 +96,18 @@ export default function AppointmentsPage() {
     return effectiveView === 'day' ? all.filter((a) => a.appointment_date === anchor) : all
   }, [query.data, effectiveView, anchor])
 
-  const filtered = useMemo(() => (status === 'all' ? visible : visible.filter((a) => a.status === status)), [visible, status])
+  const activeList = useMemo(() => visible.filter((a) => a.status === 'confirmed'), [visible])
+  const historyAll = useMemo(() => visible.filter((a) => a.status !== 'confirmed'), [visible])
+  const filtered = useMemo(() => {
+    if (tab === 'active') return activeList
+    return historyFilter === 'all' ? historyAll : historyAll.filter((a) => a.status === historyFilter)
+  }, [tab, activeList, historyAll, historyFilter])
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { all: visible.length }
-    for (const a of visible) c[a.status] = (c[a.status] ?? 0) + 1
+  const historyCounts = useMemo(() => {
+    const c: Record<string, number> = { all: historyAll.length }
+    for (const a of historyAll) c[a.status] = (c[a.status] ?? 0) + 1
     return c
-  }, [visible])
+  }, [historyAll])
 
   const perDay = useMemo(() => {
     const c: Record<string, number> = {}
@@ -106,8 +115,8 @@ export default function AppointmentsPage() {
     return c
   }, [query.data])
 
-  // Tabloda iptal edilenler (saati boşalttığı için) yalnızca "İptal" sekmesinde gösterilir.
-  const tableRows = useMemo(() => (status === 'all' ? filtered.filter((a) => a.status !== 'cancelled') : filtered), [filtered, status])
+  // Tablo günün tüm programını gösterir (aktif + tamamlanan + gelmeyen); iptaller saati boşalttığı için dahil değil.
+  const tableRows = useMemo(() => visible.filter((a) => a.status !== 'cancelled'), [visible])
   const tableStaff = useMemo(() => {
     const all = (staffQ.data ?? []).filter((s) => s.role !== 'technical_support')
     if (!isManager) return all.filter((s) => s.id === me?.id)
@@ -116,7 +125,12 @@ export default function AppointmentsPage() {
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof filtered>()
-    for (const a of [...filtered].sort((x, y) => x.appointment_time.localeCompare(y.appointment_time))) {
+    // Aktif: en yakın en üstte. Geçmiş: en yeni en üstte.
+    const dir = tab === 'history' ? -1 : 1
+    const sorted = [...filtered].sort(
+      (x, y) => dir * (x.appointment_date.localeCompare(y.appointment_date) || x.appointment_time.localeCompare(y.appointment_time)),
+    )
+    for (const a of sorted) {
       const list = map.get(a.appointment_date) ?? []
       list.push(a)
       map.set(a.appointment_date, list)
@@ -133,8 +147,8 @@ export default function AppointmentsPage() {
       : `${formatDateShort(weekStart)} – ${formatDateShort(weekEnd)} · ${formatMonthYear(weekEnd)}`
 
   const tabItems = [
-    { value: 'all' as StatusFilter, label: 'Tümü', count: counts.all },
-    ...STATUS_ORDER.map((s) => ({ value: s as StatusFilter, label: STATUS_LABELS[s], count: counts[s] ?? 0 })),
+    { value: 'active' as Tab, label: 'Aktif randevular', count: activeList.length },
+    { value: 'history' as Tab, label: 'Geçmiş randevular', count: historyAll.length },
   ]
 
   function closeCreate() {
@@ -257,7 +271,30 @@ export default function AppointmentsPage() {
           })}
         </div>
 
-        <Tabs label="Durum filtresi" items={tabItems} value={status} onChange={setStatus} />
+        {layout === 'list' && <Tabs label="Randevu türü" items={tabItems} value={tab} onChange={setTab} />}
+
+        {layout === 'list' && tab === 'history' && (
+          <div role="group" aria-label="Geçmiş randevu filtresi" className="flex flex-wrap gap-2">
+            {HISTORY_FILTERS.map((f) => {
+              const on = historyFilter === f
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setHistoryFilter(f)}
+                  className={cn(
+                    'inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-colors',
+                    on ? 'border-copper bg-copper/15 text-cream' : 'border-panel-line text-muted-strong hover:border-copper/60',
+                  )}
+                >
+                  {f === 'all' ? 'Tümü' : STATUS_LABELS[f]}
+                  <span className="text-xs tabular-nums text-muted">{historyCounts[f] ?? 0}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Liste */}
@@ -285,12 +322,20 @@ export default function AppointmentsPage() {
           <div className="rounded-md border border-dashed border-panel-line">
             <EmptyState
               icon={<CalendarDays />}
-              title={status === 'all' ? 'Randevu yok' : `${STATUS_LABELS[status]} randevu yok`}
-              description={effectiveView === 'day' ? 'Bu gün için kayıtlı randevu bulunmuyor.' : 'Bu hafta için kayıtlı randevu bulunmuyor.'}
+              title={tab === 'active' ? 'Aktif randevu yok' : historyFilter === 'all' ? 'Geçmiş randevu yok' : `${STATUS_LABELS[historyFilter]} randevu yok`}
+              description={
+                tab === 'active'
+                  ? effectiveView === 'day'
+                    ? 'Bu gün için bekleyen randevu bulunmuyor.'
+                    : 'Bu hafta için bekleyen randevu bulunmuyor.'
+                  : 'Tamamlanan, iptal edilen ve gelmeyen randevular burada görünür.'
+              }
               action={
-                <Button variant="secondary" onClick={() => setCreating(true)} leftIcon={<Plus className="size-4" />}>
-                  Randevu ekle
-                </Button>
+                tab === 'active' ? (
+                  <Button variant="secondary" onClick={() => setCreating(true)} leftIcon={<Plus className="size-4" />}>
+                    Randevu ekle
+                  </Button>
+                ) : undefined
               }
             />
           </div>
@@ -327,7 +372,7 @@ export default function AppointmentsPage() {
           closeCreate()
           setAnchor(appt.appointment_date)
           setView('day')
-          setStatus('all')
+          setTab('active')
         }}
       />
     </>
