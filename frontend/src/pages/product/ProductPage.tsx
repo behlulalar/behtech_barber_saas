@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { ArrowUpRight, Menu, X, Plus, Minus } from 'lucide-react'
 import { CONTACT, DEMO_SITE_URL, PRODUCT_NAME } from './content'
 import { PanelMockup, PhoneBookingMockup, PhonePanelMockup, TenantSiteMockup } from './mockups'
@@ -483,9 +482,6 @@ function Footer() {
         <p>
           © {new Date().getFullYear()} BehTech Labs · {PRODUCT_NAME}
         </p>
-        <Link to="/platform/giris" className="inline-flex min-h-11 items-center text-xs text-muted hover:text-cream">
-          Platform girişi
-        </Link>
       </div>
     </footer>
   )
