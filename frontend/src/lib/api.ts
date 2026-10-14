@@ -14,6 +14,22 @@ import type {
   AdminStaffUpdate,
   AppointmentPublicOut,
   AvailabilityParams,
+  BillingOverview,
+  Payment,
+  PaymentCreate,
+  PaymentsParams,
+  Plan,
+  PlanCreate,
+  PlanUpdate,
+  PlatformSettings,
+  PlatformSettingsOut,
+  PushSubscribeRequest,
+  RunChecksResult,
+  Subscription,
+  SubscriptionCreate,
+  SubscriptionSuggestion,
+  SubscriptionUpdate,
+  TenantBilling,
   CreateAppointmentRequest,
   DashboardOut,
   HealthResponse,
@@ -308,4 +324,48 @@ export const platformApi = {
     request<PlatformTenant>('/platform/tenants', { method: 'POST', body: data, auth: p }),
   updateTenant: (id: number, data: PlatformTenantUpdate) =>
     request<PlatformTenant>(`/platform/tenants/${id}`, { method: 'PATCH', body: data, auth: p }),
+  /* Paketler */
+  listPlans: () => request<Plan[]>('/platform/plans', { auth: p }),
+  createPlan: (data: PlanCreate) => request<Plan>('/platform/plans', { method: 'POST', body: data, auth: p }),
+  updatePlan: (id: number, data: PlanUpdate) =>
+    request<Plan>(`/platform/plans/${id}`, { method: 'PATCH', body: data, auth: p }),
+  deletePlan: (id: number) => request<void>(`/platform/plans/${id}`, { method: 'DELETE', auth: p }),
+
+  /* Billing */
+  getBillingOverview: () => request<BillingOverview>('/platform/billing/overview', { auth: p }),
+  listTenantBilling: () => request<TenantBilling[]>('/platform/billing/tenants', { auth: p }),
+  runChecks: () => request<RunChecksResult>('/platform/billing/run-checks', { method: 'POST', auth: p }),
+
+  /* Dönemler */
+  listSubscriptions: (tenantId: number) =>
+    request<Subscription[]>(`/platform/tenants/${tenantId}/subscriptions`, { auth: p }),
+  suggestSubscription: (tenantId: number, planId: number) =>
+    request<SubscriptionSuggestion>(`/platform/tenants/${tenantId}/subscriptions/suggest`, {
+      auth: p,
+      query: { plan_id: planId },
+    }),
+  createSubscription: (tenantId: number, data: SubscriptionCreate) =>
+    request<Subscription>(`/platform/tenants/${tenantId}/subscriptions`, { method: 'POST', body: data, auth: p }),
+  updateSubscription: (id: number, data: SubscriptionUpdate) =>
+    request<Subscription>(`/platform/subscriptions/${id}`, { method: 'PATCH', body: data, auth: p }),
+  deleteSubscription: (id: number) => request<void>(`/platform/subscriptions/${id}`, { method: 'DELETE', auth: p }),
+  markReminded: (id: number) => request<Subscription>(`/platform/subscriptions/${id}/reminded`, { method: 'POST', auth: p }),
+
+  /* Ödemeler */
+  listPayments: (params?: PaymentsParams) => request<Payment[]>('/platform/payments', { auth: p, query: { ...params } }),
+  createPayment: (data: PaymentCreate) => request<Payment>('/platform/payments', { method: 'POST', body: data, auth: p }),
+  deletePayment: (id: number) => request<void>(`/platform/payments/${id}`, { method: 'DELETE', auth: p }),
+
+  /* Ayarlar */
+  getSettings: () => request<PlatformSettingsOut>('/platform/settings', { auth: p }),
+  updateSettings: (data: PlatformSettings) =>
+    request<PlatformSettingsOut>('/platform/settings', { method: 'PUT', body: data, auth: p }),
+
+  /* Push */
+  getPushPublicKey: () => request<{ public_key: string | null }>('/platform/push/public-key', { auth: p }),
+  pushSubscribe: (data: PushSubscribeRequest) =>
+    request<void>('/platform/push/subscribe', { method: 'POST', body: data, auth: p }),
+  pushUnsubscribe: (endpoint: string) =>
+    request<void>('/platform/push/unsubscribe', { method: 'POST', body: { endpoint }, auth: p }),
+  pushTest: () => request<{ sent: number }>('/platform/push/test', { method: 'POST', auth: p }),
 }

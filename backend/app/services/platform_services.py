@@ -120,5 +120,7 @@ async def update_tenant(db: Session, tenant_id: int, name: str | None, is_active
         tenant.name = name.strip()
     if is_active is not None:
         tenant.is_active = is_active
+        if is_active:
+            tenant.auto_suspended_at = None
     await db.commit()
     return await get_tenant_out(db, tenant_id)

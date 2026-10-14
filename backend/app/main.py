@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.exception_handlers import http_exception_handler
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api import admin, platform, public
+from app.api import admin, billing, platform, public
 
 logging.basicConfig(level=logging.INFO)
 
@@ -15,6 +15,7 @@ app = FastAPI(title="BehTech Berber SaaS API")
 app.include_router(public.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(platform.router, prefix="/api")
+app.include_router(billing.router, prefix="/api")
 
 
 # Framework'ün ürettiği İngilizce hata mesajlarını kullanıcıya Türkçe göster.

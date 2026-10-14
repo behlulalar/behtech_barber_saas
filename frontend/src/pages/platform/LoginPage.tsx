@@ -8,10 +8,12 @@ import AuthLayout from '../../layouts/AuthLayout'
 import { PRODUCT_NAME, useDocumentTitle } from '../../lib/head'
 import { errorMessage } from '../../lib/api'
 import { usePlatformAuth } from '../../lib/auth'
+import { usePlatformManifest } from '../../lib/push'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 
 export default function LoginPage() {
   useDocumentTitle('Platform girişi', PRODUCT_NAME)
+  usePlatformManifest()
   const { status, login } = usePlatformAuth()
 
   const location = useLocation()

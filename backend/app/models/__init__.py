@@ -11,3 +11,8 @@ from app.models.verification_code import VerificationCode
 from app.models.webhook_cooldown import WebhookCooldown
 from app.models.platform_admin import PlatformAdmin
 from app.models.tenant_settings import TenantSettings
+from app.models.plan import Plan
+from app.models.subscription import Subscription
+from app.models.payment import Payment
+from app.models.platform_settings import PlatformSettings
+from app.models.push_subscription import PushSubscription

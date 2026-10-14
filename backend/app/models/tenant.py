@@ -11,6 +11,8 @@ class Tenant(Base):
     slug: Mapped[str] = mapped_column(String(255), unique=True)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    # Abonelik süresi dolduğu için görev tarafından kapatıldıysa dolu (manuel kapatmada null).
+    auto_suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     __table_args__ = (
         CheckConstraint("slug ~ '^[a-z0-9-]+$'"),

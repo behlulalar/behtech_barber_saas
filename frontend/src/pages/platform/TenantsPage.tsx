@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, ExternalLink, Link2, Pencil, Plus, Power, Search, Store } from 'lucide-react'
+import { Check, Copy, ExternalLink, Link2, Pencil, Plus, Power, Receipt, Search, Store } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button, IconButton } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -16,6 +17,7 @@ import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
 import { formatNumber, formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
 import type { PlatformTenant } from '../../types/api'
+import { BillingStatusBadge } from './BillingParts'
 
 type Filter = 'all' | 'active' | 'inactive'
 
@@ -348,6 +350,9 @@ export default function TenantsPage() {
   const qc = useQueryClient()
   const toast = useToast()
   const { data, isLoading, isError, error } = useQuery({ queryKey: ['platform', 'tenants'], queryFn: platformApi.listTenants })
+  const navigate = useNavigate()
+  const billing = useQuery({ queryKey: ['platform', 'billing', 'tenants'], queryFn: platformApi.listTenantBilling })
+  const billingById = useMemo(() => new Map((billing.data ?? []).map((b) => [b.tenant_id, b])), [billing.data])
   const [filter, setFilter] = useState<Filter>('all')
   const [q, setQ] = useState('')
   const [creating, setCreating] = useState(false)
@@ -395,6 +400,9 @@ export default function TenantsPage() {
 
   const actions = (t: PlatformTenant) => (
     <div className="flex items-center justify-end gap-1">
+      <IconButton label={`${t.name} abonelik ve ödemeler`} onClick={() => navigate(`/platform/isletmeler/${t.id}`)}>
+        <Receipt className="size-4" />
+      </IconButton>
       <IconButton label={`${t.name} bağlantıları`} onClick={() => setLinksFor(t)}>
         <Link2 className="size-4" />
       </IconButton>
@@ -414,7 +422,9 @@ export default function TenantsPage() {
       primary: true,
       cell: (t) => (
         <div className="min-w-0">
-          <p className="truncate font-medium text-cream">{t.name}</p>
+          <Link to={`/platform/isletmeler/${t.id}`} className="block truncate font-medium text-cream hover:text-copper-bright">
+            {t.name}
+          </Link>
           <button
             type="button"
             onClick={(e) => {
@@ -453,6 +463,14 @@ export default function TenantsPage() {
       key: 'status',
       header: 'Durum',
       cell: (t) => <Badge tone={t.is_active ? 'success' : 'neutral'}>{t.is_active ? 'Aktif' : 'Pasif'}</Badge>,
+    },
+    {
+      key: 'billing',
+      header: 'Abonelik',
+      cell: (t) => {
+        const b = billingById.get(t.id)
+        return b ? <BillingStatusBadge tb={b} /> : <span className="text-muted">—</span>
+      },
     },
     { key: 'staff', header: 'Personel', align: 'right', cell: (t) => <span className="tabular-nums">{formatNumber(t.staff_count)}</span> },
     { key: 'appts', header: 'Randevu', align: 'right', cell: (t) => <span className="tabular-nums">{formatNumber(t.appointment_count)}</span> },

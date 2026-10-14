@@ -16,6 +16,16 @@ class Settings(BaseSettings):
     # Sadece geliştirmede: WhatsApp bağlanana kadar her OTP bu kod olur. environment
     # "development" değilse yok sayılır. WhatsApp testine geçince .env'den silin.
     otp_fixed_code: str | None = None
+    # Billing bildirimleri (hepsi opsiyonel; yoksa ilgili kanal kapalı)
+    vapid_public_key: str | None = None
+    vapid_private_key: str | None = None
+    vapid_subject: str | None = None
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str | None = None
+    smtp_starttls: bool = True
     model_config = SettingsConfigDict(env_file=".env")
     
 settings = Settings()

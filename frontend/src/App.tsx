@@ -24,6 +24,10 @@ const AdminSettingsPage = lazy(() => import('./pages/admin/SettingsPage'))
 const PlatformLoginPage = lazy(() => import('./pages/platform/LoginPage'))
 const PlatformDashboardPage = lazy(() => import('./pages/platform/DashboardPage'))
 const PlatformTenantsPage = lazy(() => import('./pages/platform/TenantsPage'))
+const PlatformTenantDetailPage = lazy(() => import('./pages/platform/TenantDetailPage'))
+const PlatformPaymentsPage = lazy(() => import('./pages/platform/PaymentsPage'))
+const PlatformPlansPage = lazy(() => import('./pages/platform/PlansPage'))
+const PlatformSettingsPage = lazy(() => import('./pages/platform/SettingsPage'))
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const ProductPage = lazy(() => import('./pages/product/ProductPage'))
@@ -43,6 +47,10 @@ const platformRoutes = (
       <Route element={<PlatformLayout />}>
         <Route index element={<PlatformDashboardPage />} />
         <Route path="isletmeler" element={<PlatformTenantsPage />} />
+        <Route path="isletmeler/:id" element={<PlatformTenantDetailPage />} />
+        <Route path="odemeler" element={<PlatformPaymentsPage />} />
+        <Route path="paketler" element={<PlatformPlansPage />} />
+        <Route path="ayarlar" element={<PlatformSettingsPage />} />
       </Route>
     </Route>
   </>

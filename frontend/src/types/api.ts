@@ -302,3 +302,174 @@ export interface PlatformTenantUpdate {
   name?: string
   is_active?: boolean
 }
+
+/* ---------- Platform: abonelik & ödeme takibi ---------- */
+
+export interface Plan {
+  id: number
+  name: string
+  duration_months: number
+  price: number
+  is_active: boolean
+  sort_order: number
+}
+
+export interface PlanCreate {
+  name: string
+  duration_months: number
+  price: number
+  is_active?: boolean
+  sort_order?: number
+}
+
+export type PlanUpdate = Partial<PlanCreate>
+
+export type BillingStatus = 'untracked' | 'scheduled' | 'active' | 'due_soon' | 'grace' | 'expired'
+export type PaymentStatus = 'paid' | 'partial' | 'unpaid'
+
+export interface Subscription {
+  id: number
+  tenant_id: number
+  plan_id: number | null
+  plan_name: string
+  start_date: string
+  end_date: string
+  price: number
+  note: string | null
+  paid_amount: number
+  balance: number
+  payment_status: PaymentStatus
+  reminded_at: string | null
+  created_at: string
+  is_custom: boolean
+}
+
+export interface InitialPayment {
+  amount: number
+  paid_on: string
+  method?: string
+  note?: string | null
+}
+
+export interface SubscriptionCreate {
+  plan_id?: number | null
+  plan_name?: string
+  start_date: string
+  end_date?: string
+  price?: number
+  note?: string | null
+  initial_payment?: InitialPayment
+}
+
+export interface SubscriptionUpdate {
+  plan_name?: string
+  start_date?: string
+  end_date?: string
+  price?: number
+  note?: string | null
+}
+
+export interface SubscriptionSuggestion {
+  start_date: string
+  end_date: string
+  price: number
+}
+
+export interface TenantBilling {
+  tenant_id: number
+  tenant_name: string
+  slug: string
+  is_active: boolean
+  auto_suspended_at: string | null
+  owner_name: string | null
+  owner_phone: string | null
+  status: BillingStatus
+  coverage_end: string | null
+  days_left: number | null
+  current: Subscription | null
+  next: Subscription | null
+  outstanding: number
+  last_payment_on: string | null
+  reminded_at: string | null
+  /** Son dönemin paketi aktifse güncel liste fiyatı, değilse son dönemin fiyatı. */
+  renewal_plan_name: string | null
+  renewal_price: number | null
+  /** Şu an istenecek tutar: ödenmemiş bakiye, yoksa (yenileme zamanıysa) yenileme tutarı. */
+  amount_due: number
+}
+
+export interface BillingStats {
+  revenue_this_month: number
+  revenue_this_year: number
+  revenue_last_30_days: number
+  outstanding_total: number
+  due_soon_count: number
+  grace_count: number
+  expired_count: number
+  tracked_count: number
+  untracked_count: number
+}
+
+export interface Payment {
+  id: number
+  tenant_id: number
+  tenant_name: string
+  subscription_id: number | null
+  subscription_label: string | null
+  amount: number
+  paid_on: string
+  method: string
+  note: string | null
+  created_at: string
+}
+
+export interface PaymentCreate {
+  tenant_id: number
+  subscription_id?: number | null
+  amount: number
+  paid_on: string
+  method?: string
+  note?: string | null
+}
+
+export interface BillingOverview {
+  stats: BillingStats
+  attention: TenantBilling[]
+  recent_payments: Payment[]
+}
+
+export interface PaymentsParams {
+  tenant_id?: number
+  date_from?: string
+  date_to?: string
+}
+
+export interface PlatformSettings {
+  iban: string | null
+  account_holder: string | null
+  bank_name: string | null
+  reminder_days: number
+  grace_days: number
+  notify_email: string | null
+  reminder_template: string
+  overdue_template: string
+}
+
+export interface PlatformSettingsOut extends PlatformSettings {
+  email_configured: boolean
+  push_configured: boolean
+}
+
+export interface RunChecksResult {
+  checked: number
+  notified: number
+  suspended: string[]
+  reactivated: string[]
+  email_sent: boolean
+  push_sent: number
+}
+
+export interface PushSubscribeRequest {
+  endpoint: string
+  keys: { p256dh: string; auth: string }
+}

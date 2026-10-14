@@ -426,6 +426,16 @@ iyi bir çalışma malzemesi.
       platform panelinde işletme bağlantıları + sahip adı/telefonu, kapak görseli
       olmayan işletmelerde stok fotoğraf yerine işletmeye özgü tipografik kapak,
       yerelde `<slug>.localhost:5173` ile her işletmeye ayrı erişim.
+      2026-10-14 (ajanlarla, elle yazılmadı): platform panelinde abonelik/ödeme takibi —
+      paketler (aylık/6 aylık/yıllık, liste fiyatı panelden), işletme başına abonelik
+      dönemleri (pakete bağlı ya da özel anlaşma: serbest tarih+fiyat), kısmi ödemeler,
+      günlük kontrol (`scripts/run_billing_checks.py` cron'a + panelden elle): bitişe
+      `reminder_days` (3) kala bildirim, `grace_days` (7) ek süre sonra işletmeyi otomatik
+      askıya alır, ödeme/yeni dönemle otomatik geri açar. Hiç dönemi olmayan işletme
+      "takip dışı" — asla askıya alınmaz (demo/sefapertev). Bildirim: PWA web push (VAPID
+      anahtarları .env'de) + SMTP e-posta (SMTP_* .env'e girilince). WhatsApp hatırlatma =
+      wa.me bağlantısı + platform ayarlarındaki şablon (API yok). IBAN/alıcı/banka platform
+      ayarlarından.
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.
