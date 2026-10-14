@@ -442,6 +442,11 @@ iyi bir çalışma malzemesi.
       önceki dönemle karşılaştırma, zaman serisi grafiği, hizmet/ödeme yöntemi/personel
       kırılımı. Personel yalnızca kendini görür. Gider takibi yok (net = iptal/gelmedi/
       tamamlanmamış hariç gerçekleşen gelir).
+      2026-10-14: `backend/scripts/seed_mock_data.py` — geliştirme için tüm dükkânları
+      sahte veriyle doldurur (sahip 5111111111, personel 5222222222/5333333333, şifre 123456;
+      sahte müşteriler 54000000NN telefonlu, `--reset` yalnızca onları siler). sefapertev'e de
+      uygulandı (gerçek kayıtlar yerinde; öncesinde pg_dump yedeği alındı). Bitiş saati 00:00
+      olan çalışma günü artık "günün sonu" sayılıyor (öncesinde o gün hiç boş saat çıkmıyordu).
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

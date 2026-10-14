@@ -93,6 +93,9 @@ async def get_available_slots(
 
     work_start = datetime.combine(appointment_date, working_hours.start_time)
     work_end = datetime.combine(appointment_date, working_hours.end_time)
+    if work_end <= work_start:
+        # Bitiş 00:00 ("gece yarısına kadar açığız") ya da bitiş <= başlangıç: günün sonu kabul edilir.
+        work_end += timedelta(days=1)
     service_duration = timedelta(minutes=service.duration_min)
     step = timedelta(minutes=SLOT_STEP_MINUTES)
 
