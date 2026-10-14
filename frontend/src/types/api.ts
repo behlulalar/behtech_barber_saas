@@ -129,6 +129,64 @@ export interface AdminAppointmentOut {
   customer: { id: number; name: string; surname: string; phone: string }
 }
 
+/* ---------- Gelir raporu ---------- */
+
+export type ReportPeriod = 'day' | 'month' | 'year'
+
+export interface RevenueSeriesPoint {
+  /** day: saat (0-23), month: ayın günü (1-31), year: ay (1-12) */
+  key: number
+  revenue: number
+  count: number
+}
+
+export interface ServiceRevenue {
+  service_id: number
+  name: string
+  count: number
+  revenue: number
+  share_pct: number
+}
+
+export interface PaymentMethodRevenue {
+  /** null = ödeme yöntemi belirtilmemiş */
+  method: string | null
+  count: number
+  revenue: number
+}
+
+export interface StaffRevenue {
+  staff_id: number
+  name: string
+  surname: string
+  count: number
+  revenue: number
+}
+
+export interface RevenueReport {
+  period: ReportPeriod
+  date_from: string
+  date_to: string
+  staff_id: number | null
+  /** Yalnızca "tamamlandı" randevuların hizmet fiyatları toplamı. */
+  revenue: number
+  completed_count: number
+  average_ticket: number
+  cancelled_count: number
+  no_show_count: number
+  /** Henüz tamamlandı işaretlenmemiş (bekleyen/onaylı) randevular; gelire dahil değil. */
+  open_count: number
+  open_revenue: number
+  previous: { revenue: number; completed_count: number }
+  previous_date_from: string
+  previous_date_to: string
+  series: RevenueSeriesPoint[]
+  by_service: ServiceRevenue[]
+  by_payment_method: PaymentMethodRevenue[]
+  /** Sadece yöneticilere dolu. */
+  by_staff: StaffRevenue[]
+}
+
 export interface DashboardOut {
   date: string
   appointments_today: number

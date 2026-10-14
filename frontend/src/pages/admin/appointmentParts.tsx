@@ -39,6 +39,7 @@ export function useUpdateAppointment() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.appointments })
       void qc.invalidateQueries({ queryKey: qk.dashboard })
+      void qc.invalidateQueries({ queryKey: qk.reports })
     },
   })
 }
@@ -474,6 +475,7 @@ function NewAppointmentForm({ onClose, defaultDate, prefill, onCreated }: NewPro
     onSuccess: (appt) => {
       void qc.invalidateQueries({ queryKey: qk.appointments })
       void qc.invalidateQueries({ queryKey: qk.dashboard })
+      void qc.invalidateQueries({ queryKey: qk.reports })
       void qc.invalidateQueries({ queryKey: qk.customers })
       toast.success('Randevu oluşturuldu')
       onCreated(appt)

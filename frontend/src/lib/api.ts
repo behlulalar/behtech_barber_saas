@@ -32,6 +32,8 @@ import type {
   TenantBilling,
   CreateAppointmentRequest,
   DashboardOut,
+  ReportPeriod,
+  RevenueReport,
   HealthResponse,
   LoginRequest,
   PaymentMethod,
@@ -263,6 +265,9 @@ export const authApi = {
 const s = 'staff' as const
 
 export const adminApi = {
+  getRevenueReport: (period: ReportPeriod, date: string, staffId?: number) =>
+    request<RevenueReport>('/admin/reports/revenue', { auth: s, query: { period, date, staff_id: staffId } }),
+
   getDashboard: (date?: string) => request<DashboardOut>('/admin/dashboard', { auth: s, query: { date } }),
 
   listAppointments: (params: AdminAppointmentsParams = {}) =>

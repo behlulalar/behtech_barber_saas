@@ -436,6 +436,12 @@ iyi bir çalışma malzemesi.
       anahtarları .env'de) + SMTP e-posta (SMTP_* .env'e girilince). WhatsApp hatırlatma =
       wa.me bağlantısı + platform ayarlarındaki şablon (API yok). IBAN/alıcı/banka platform
       ayarlarından.
+      2026-10-14: panelde "Gelir Raporu" (`/panel/gelir`, `GET /api/admin/reports/revenue`):
+      günlük/aylık/yıllık, açılışta bu ay; gelir = yalnızca "tamamlandı" randevuların hizmet
+      fiyatı (randevuda fiyat saklanmıyor → hizmet fiyatı değişirse geçmiş rapor da değişir);
+      önceki dönemle karşılaştırma, zaman serisi grafiği, hizmet/ödeme yöntemi/personel
+      kırılımı. Personel yalnızca kendini görür. Gider takibi yok (net = iptal/gelmedi/
+      tamamlanmamış hariç gerçekleşen gelir).
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

@@ -39,7 +39,9 @@ from app.schemas.admin import (
     WorkingHourOut,
 )
 from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.reports import ReportPeriod, RevenueReport
 from app.services import admin_services as svc
+from app.services import report_services
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
 
@@ -79,6 +81,28 @@ async def dashboard(
 ):
     day = date_ or date.today()
     return await svc.build_dashboard(db, current.tenant_id, day, None if is_manager(current) else current.id)
+
+
+# ---------------------------------------------------------------- reports
+@router.get("/admin/reports/revenue", response_model=RevenueReport)
+async def revenue_report(
+    period: ReportPeriod = "month",
+    date_: date | None = Query(default=None, alias="date"),
+    staff_id: int | None = None,
+    current: Staff = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    """Gelir raporu. Yönetici tüm dükkânı (ya da seçtiği berberi), personel yalnızca kendini görür."""
+    manager = is_manager(current)
+    if not manager:
+        if staff_id is not None and staff_id != current.id:
+            raise HTTPException(status_code=403, detail=FORBIDDEN_OTHER)
+        staff_id = current.id
+    elif staff_id is not None:
+        await svc.get_staff_in_tenant(db, current.tenant_id, staff_id)
+    return await report_services.build_revenue_report(
+        db, current.tenant_id, period, date_ or date.today(), staff_id, include_staff=manager
+    )
 
 
 # ---------------------------------------------------------------- appointments
