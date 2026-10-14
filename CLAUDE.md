@@ -452,6 +452,10 @@ iyi bir çalışma malzemesi.
       n = süre/30 ardışık slot. `GET /api/availability/slots` slot ızgarası (free/busy/past +
       bookable, closed_reason); `/availability` ve randevu doğrulaması aynı motoru kullanır.
       Ortak `components/booking/SlotGrid.tsx` (Sabah/Öğle/Akşam; geçmiş saatler gizli).
+      2026-10-14: Kullanıcı kararı — **sistemde şu an gerçek veri yok, her şey demo**
+      (sefapertev dahil; artık "gerçek müşteri verisi" diye korunmuyor, ama canlıya çıkarken
+      gerçek veri yeniden taşınacaksa bu durum tekrar sorulmalı). Tüm randevular 30 dk ızgarasına
+      hizalandı (27 kayıt kaydırıldı, çakışan 1 kayıt silindi; öncesinde pg_dump yedeği).
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.
