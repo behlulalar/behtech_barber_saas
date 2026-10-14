@@ -38,7 +38,7 @@ from app.models.time_off import TimeOff  # noqa: E402
 from app.models.working_hours import WorkingHours  # noqa: E402
 from app.services.appointment_services import _js_day_of_week  # noqa: E402
 
-SHOPS = ["sefapertev", "demo", "deneme", "denemee"]
+SHOPS = ["sefapertev", "demo", "deneme", "denemee", "ustamakas", "keskinberber", "egekuafor", "merkezberber", "baslangic", "yenigelen"]
 PASSWORD = "123456"
 PHONES = ["5111111111", "5222222222", "5333333333"]  # sahip, 2. personel, 3. personel
 MOCK_PREFIX = "54000000"

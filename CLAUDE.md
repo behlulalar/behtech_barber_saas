@@ -460,6 +460,11 @@ iyi bir çalışma malzemesi.
       `pending` olanları `confirmed` yaptı; `pending` DB enum'unda duruyor ama hiçbir yerde
       üretilmiyor, panel API'si `pending` durumunu 422 ile reddeder). Akış:
       confirmed → completed / no_show / cancelled.
+      2026-10-14: `backend/scripts/seed_mock_billing.py` — platform ödeme paneli için sahte
+      abonelik/ödeme (tarihler bugüne göre; `--reset` siler). 6 sahte dükkân eklendi
+      (ustamakas, keskinberber, egekuafor, merkezberber, baslangic, yenigelen; sahip
+      5111111111/123456; içleri seed_mock_data.py ile dolu). `demo`ya ve paket fiyatlarına
+      dokunmaz. Boş IBAN/alıcı/banka sahte değerlerle doldurulur (gerçeğiyle değiştirilecek).
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.
