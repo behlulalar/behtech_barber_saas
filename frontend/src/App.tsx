@@ -5,6 +5,7 @@ import AdminLayout from './layouts/AdminLayout'
 import PlatformLayout from './layouts/PlatformLayout'
 import PublicLayout from './layouts/PublicLayout'
 import { RequirePlatform, RequireStaff } from './lib/auth'
+import { isProductHost } from './lib/site'
 
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
 const BookingPage = lazy(() => import('./pages/public/BookingPage'))
@@ -25,6 +26,7 @@ const PlatformDashboardPage = lazy(() => import('./pages/platform/DashboardPage'
 const PlatformTenantsPage = lazy(() => import('./pages/platform/TenantsPage'))
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const ProductPage = lazy(() => import('./pages/product/ProductPage'))
 
 function PageFallback() {
   return (
@@ -34,10 +36,37 @@ function PageFallback() {
   )
 }
 
+const platformRoutes = (
+  <>
+    <Route path="platform/giris" element={<PlatformLoginPage />} />
+    <Route path="platform" element={<RequirePlatform />}>
+      <Route element={<PlatformLayout />}>
+        <Route index element={<PlatformDashboardPage />} />
+        <Route path="isletmeler" element={<PlatformTenantsPage />} />
+      </Route>
+    </Route>
+  </>
+)
+
 function App() {
+  // Ürünün tanıtım sitesi (randevu.behtechlabs.com): dükkân rotaları yok.
+  if (isProductHost()) {
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          <Route index element={<ProductPage />} />
+          {platformRoutes}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    )
+  }
+
   return (
     <Suspense fallback={<PageFallback />}>
       <Routes>
+        <Route path="tanitim" element={<ProductPage />} />
+
         {/* Müşteri tarafı */}
         <Route element={<PublicLayout />}>
           <Route index element={<LandingPage />} />
@@ -61,13 +90,7 @@ function App() {
         </Route>
 
         {/* Platform */}
-        <Route path="platform/giris" element={<PlatformLoginPage />} />
-        <Route path="platform" element={<RequirePlatform />}>
-          <Route element={<PlatformLayout />}>
-            <Route index element={<PlatformDashboardPage />} />
-            <Route path="isletmeler" element={<PlatformTenantsPage />} />
-          </Route>
-        </Route>
+        {platformRoutes}
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

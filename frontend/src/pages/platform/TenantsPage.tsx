@@ -20,7 +20,7 @@ import type { PlatformTenant } from '../../types/api'
 type Filter = 'all' | 'active' | 'inactive'
 
 const SLUG_RE = /^[a-z0-9-]{3,40}$/
-const RESERVED = ['www', 'api', 'admin', 'platform', 'app', 'mail', 'saleshub', 'panel', 'static']
+const RESERVED = ['www', 'api', 'admin', 'platform', 'app', 'mail', 'saleshub', 'panel', 'static', 'randevu']
 
 function slugError(slug: string): string | null {
   if (!slug) return 'Adres gerekli.'

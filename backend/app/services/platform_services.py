@@ -13,7 +13,7 @@ from app.models.tenant_settings import TenantSettings
 from app.schemas.platform import TenantCreate
 from app.schemas.tenant import TenantOut
 
-RESERVED_SLUGS = {"www", "api", "admin", "platform", "app", "mail", "saleshub", "panel", "static"}
+RESERVED_SLUGS = {"www", "api", "admin", "platform", "app", "mail", "saleshub", "panel", "static", "randevu"}
 SLUG_RE = re.compile(r"^[a-z0-9-]{3,40}$")
 
 
