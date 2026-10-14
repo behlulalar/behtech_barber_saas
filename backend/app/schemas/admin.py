@@ -35,15 +35,9 @@ def _check_image(value: str | None) -> str | None:
     return value
 
 
-# Personel fotoğrafı tarayıcıda ~480px'e küçültülüp gönderilir; 300 KB fazlasıyla yeter.
-_PHOTO_MAX_CHARS = 400_000
-
-
-def _check_photo(value: str | None) -> str | None:
-    value = _check_image(value)
-    if value is not None and len(value) > _PHOTO_MAX_CHARS:
-        raise ValueError("Fotoğraf çok büyük, en fazla 300 KB olabilir")
-    return value
+# Personel fotoğrafı kartta büyük gösterildiği için (Retina'da ~1100x1350px) ayarlar
+# görselleriyle aynı sınırı kullanır; tarayıcı 1400px'e küçültüp gönderir.
+_check_photo = _check_image
 
 
 IdList = Annotated[list[int], Field(max_length=500)]

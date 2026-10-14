@@ -266,7 +266,7 @@ function StaffForm({ member, onClose }: { member: AdminStaff | null; onClose: ()
           value={photo}
           onChange={setPhoto}
           aspect="portrait"
-          maxDim={480}
+          maxDim={1400}
           type="image/jpeg"
           maxChars={STAFF_PHOTO_MAX_CHARS}
           disabled={save.isPending}
