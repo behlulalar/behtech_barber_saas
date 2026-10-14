@@ -2,7 +2,7 @@
 import { SlotGrid, SlotGridSkeleton } from '../../components/booking/SlotGrid'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronRight, Phone, RotateCcw, UserX, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, buttonStyles } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
@@ -367,6 +367,10 @@ export interface NewAppointmentPrefill {
   phone?: string
   name?: string
   surname?: string
+  /** Tablodan boş saate dokunulunca: personel, tarih ve başlangıç saati ("HH:MM"). */
+  staffId?: number
+  date?: string
+  time?: string
 }
 
 interface NewProps {
@@ -394,9 +398,14 @@ function NewAppointmentForm({ onClose, defaultDate, prefill, onCreated }: NewPro
   const [name, setName] = useState(prefill?.name ?? '')
   const [surname, setSurname] = useState(prefill?.surname ?? '')
   const [serviceId, setServiceId] = useState('')
-  const [staffId, setStaffId] = useState(isManager ? '' : String(me?.id ?? ''))
-  const [date, setDate] = useState(defaultDate < todayLocalISO() ? todayLocalISO() : defaultDate)
-  const [time, setTime] = useState('')
+  const [staffId, setStaffId] = useState(
+    isManager ? (prefill?.staffId ? String(prefill.staffId) : '') : String(me?.id ?? ''),
+  )
+  const startDate = prefill?.date ?? defaultDate
+  const [date, setDate] = useState(startDate < todayLocalISO() ? todayLocalISO() : startDate)
+  // Tablodan gelen saat, kullanıcı elle saat seçene kadar korunur (seçilebilir değilse aşağıdaki kontrol temizler).
+  const preselectedTime = useRef(prefill?.time ?? '')
+  const [time, setTime] = useState(prefill?.time ?? '')
   const [touched, setTouched] = useState(false)
 
   const services = useMemo(() => (servicesQ.data ?? []).filter((s) => s.is_active), [servicesQ.data])
@@ -435,7 +444,7 @@ function NewAppointmentForm({ onClose, defaultDate, prefill, onCreated }: NewPro
     staleTime: 15_000,
   })
   useEffect(() => {
-    setTime('')
+    setTime(preselectedTime.current)
   }, [serviceId, staffId, date])
   // Yenilemeden sonra seçili başlangıç artık seçilebilir değilse temizle.
   const slotsData = slots.data
@@ -555,7 +564,15 @@ function NewAppointmentForm({ onClose, defaultDate, prefill, onCreated }: NewPro
               ) : slots.isError || !slots.data ? (
                 <p className="text-sm text-danger">{errorMessage(slots.error)}</p>
               ) : (
-                <SlotGrid data={slots.data} value={time || null} onChange={setTime} maxColumns={3} />
+                <SlotGrid
+                  data={slots.data}
+                  value={time || null}
+                  onChange={(t) => {
+                    preselectedTime.current = ''
+                    setTime(t)
+                  }}
+                  maxColumns={3}
+                />
               )}
             </div>
           )}
