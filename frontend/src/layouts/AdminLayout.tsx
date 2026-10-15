@@ -10,12 +10,12 @@ const NAV: NavItem[] = [
   { to: '/panel', label: 'Genel Bakış', icon: LayoutDashboard, end: true, tab: true },
   { to: '/panel/randevular', label: 'Randevular', icon: CalendarDays, tab: true },
   { to: '/panel/musteriler', label: 'Müşteriler', icon: Users, tab: true },
-  { to: '/panel/hizmetler', label: 'Hizmetler', icon: Scissors, tab: true },
-  { to: '/panel/gelir', label: 'Gelir Raporu', icon: ChartColumn },
-  { to: '/panel/ekip', label: 'Ekip', icon: UserRound },
-  { to: '/panel/calisma-saatleri', label: 'Çalışma Saatleri', icon: Clock },
-  { to: '/panel/odeme-yontemleri', label: 'Ödeme Yöntemleri', icon: Wallet },
-  { to: '/panel/ayarlar', label: 'Ayarlar', icon: Settings },
+  { to: '/panel/hizmetler', label: 'Hizmetler', icon: Scissors, tab: true, managerOnly: true },
+  { to: '/panel/gelir', label: 'Gelir Raporu', icon: ChartColumn, managerOnly: true },
+  { to: '/panel/ekip', label: 'Ekip', icon: UserRound, managerOnly: true },
+  { to: '/panel/calisma-saatleri', label: 'Çalışma Saatleri', icon: Clock, managerOnly: true },
+  { to: '/panel/odeme-yontemleri', label: 'Ödeme Yöntemleri', icon: Wallet, managerOnly: true },
+  { to: '/panel/ayarlar', label: 'Ayarlar', icon: Settings, managerOnly: true },
 ]
 
 export const ROLE_LABELS = {
@@ -26,15 +26,16 @@ export const ROLE_LABELS = {
 
 /** Staff panel iskeleti. <RequireStaff> altında kullanılır. Sayfalar <Outlet/> içinde render edilir. */
 export default function AdminLayout() {
-  const { me, logout } = useStaffAuth()
+  const { me, logout, isManager } = useStaffAuth()
   const tenant = useTenant()
+  const nav = isManager ? NAV : NAV.filter((n) => !n.managerOnly)
   useDocumentTitle(useRouteLabel(NAV), 'Panel', tenant.data?.business_name)
   useFavicon(tenant.data?.logo_image)
   return (
     <PanelShell
       eyebrow="Yönetim"
       brand={tenant.data?.business_name ?? 'Randevu Paneli'}
-      nav={NAV}
+      nav={nav}
       user={{ name: me ? fullName(me) : '', subtitle: me ? ROLE_LABELS[me.role] : '' }}
       onLogout={logout}
       extra={

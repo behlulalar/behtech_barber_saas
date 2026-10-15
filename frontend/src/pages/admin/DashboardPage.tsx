@@ -9,6 +9,7 @@ import { StatCard } from '../../components/ui/StatCard'
 import { StatusBadge } from '../../components/ui/Badge'
 import { adminApi } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
+import { cn } from '../../lib/cn'
 import { formatDateLong, formatDateShort, formatNumber, formatPrice, formatTime, fullName, todayLocalISO } from '../../lib/format'
 import { AppointmentRow, useAppointmentFlow } from './appointmentParts'
 import { ErrorBlock, qk } from './shared'
@@ -21,11 +22,11 @@ function greeting(): string {
   return 'İyi akşamlar'
 }
 
-const SHORTCUTS: { to: string; label: string; hint: string; icon: LucideIcon; state?: unknown }[] = [
+const SHORTCUTS: { to: string; label: string; hint: string; icon: LucideIcon; state?: unknown; managerOnly?: boolean }[] = [
   { to: '/panel/randevular', label: 'Yeni randevu', hint: 'Yüz yüze / telefon', icon: CalendarPlus, state: { newAppointment: {} } },
   { to: '/panel/randevular', label: 'Tüm randevular', hint: 'Gün ve hafta görünümü', icon: CalendarDays },
   { to: '/panel/musteriler', label: 'Müşteriler', hint: 'Ara ve geçmişe bak', icon: Users },
-  { to: '/panel/calisma-saatleri', label: 'Çalışma saatleri', hint: 'Mesai ve izinler', icon: Clock },
+  { to: '/panel/calisma-saatleri', label: 'Çalışma saatleri', hint: 'Mesai ve izinler', icon: Clock, managerOnly: true },
 ]
 
 export default function DashboardPage() {
@@ -58,7 +59,7 @@ export default function DashboardPage() {
 
       {dash.isError && <ErrorBlock className="mb-6" error={dash.error} onRetry={() => void dash.refetch()} />}
 
-      <section aria-label="Özet" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section aria-label="Özet" className={cn('grid grid-cols-2 gap-3', isManager ? 'lg:grid-cols-4' : 'lg:grid-cols-3')}>
         <StatCard
           label="Bugün"
           icon={<CalendarDays />}
@@ -74,14 +75,16 @@ export default function DashboardPage() {
           loading={dash.isLoading}
           hint={d ? `${d.appointments_today - d.completed_today - d.cancelled_today} kaldı` : undefined}
         />
-        <StatCard
-          label="Beklenen ciro"
-          icon={<Coins />}
-          tone="copper"
-          value={d ? formatPrice(d.expected_revenue_today) : ''}
-          loading={dash.isLoading}
-          hint="İptal ve gelmeyenler hariç"
-        />
+        {isManager && (
+          <StatCard
+            label="Beklenen ciro"
+            icon={<Coins />}
+            tone="copper"
+            value={d?.expected_revenue_today != null ? formatPrice(d.expected_revenue_today) : ''}
+            loading={dash.isLoading}
+            hint="İptal ve gelmeyenler hariç"
+          />
+        )}
         <StatCard
           label="Bu hafta"
           icon={<Scissors />}
@@ -158,7 +161,7 @@ export default function DashboardPage() {
 
           {/* Kısayollar */}
           <nav aria-label="Kısayollar" className="grid grid-cols-2 gap-2.5">
-            {SHORTCUTS.map((s) => (
+            {SHORTCUTS.filter((s) => isManager || !s.managerOnly).map((s) => (
               <Link
                 key={s.label}
                 to={s.to}

@@ -137,7 +137,7 @@ class DashboardOut(BaseModel):
     appointments_today: int
     completed_today: int
     cancelled_today: int
-    expected_revenue_today: int
+    expected_revenue_today: int | None = None  # yalnızca yöneticiye; personelde null
     appointments_this_week: int
     total_customers: int
     upcoming: list[AdminAppointmentOut]

@@ -213,7 +213,8 @@ export interface DashboardOut {
   appointments_today: number
   completed_today: number
   cancelled_today: number
-  expected_revenue_today: number
+  /** Yalnızca yöneticiye; personelde null. */
+  expected_revenue_today: number | null
   appointments_this_week: number
   total_customers: number
   upcoming: AdminAppointmentOut[]

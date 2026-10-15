@@ -89,19 +89,14 @@ async def revenue_report(
     period: ReportPeriod = "month",
     date_: date | None = Query(default=None, alias="date"),
     staff_id: int | None = None,
-    current: Staff = Depends(get_current_staff),
+    current: Staff = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ):
-    """Gelir raporu. Yönetici tüm dükkânı (ya da seçtiği berberi), personel yalnızca kendini görür."""
-    manager = is_manager(current)
-    if not manager:
-        if staff_id is not None and staff_id != current.id:
-            raise HTTPException(status_code=403, detail=FORBIDDEN_OTHER)
-        staff_id = current.id
-    elif staff_id is not None:
+    """Gelir raporu: yalnızca yönetici (işletme sahibi). Personel göremez."""
+    if staff_id is not None:
         await svc.get_staff_in_tenant(db, current.tenant_id, staff_id)
     return await report_services.build_revenue_report(
-        db, current.tenant_id, period, date_ or date.today(), staff_id, include_staff=manager
+        db, current.tenant_id, period, date_ or date.today(), staff_id, include_staff=True
     )
 
 
@@ -277,7 +272,10 @@ async def delete_service(service_id: int, current: Staff = Depends(require_manag
 # ---------------------------------------------------------------- staff
 @router.get("/admin/staff", response_model=list[StaffAdminOut])
 async def list_staff(current: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Staff).where(Staff.tenant_id == current.tenant_id).order_by(Staff.name, Staff.id))
+    q = select(Staff).where(Staff.tenant_id == current.tenant_id)
+    if not is_manager(current):
+        q = q.where(Staff.id == current.id)  # personel yalnızca kendi kaydını görür
+    result = await db.execute(q.order_by(Staff.name, Staff.id))
     links = await svc.service_ids_by_staff(db, current.tenant_id)
     return [svc.staff_out(s, links.get(s.id, [])) for s in result.scalars().all()]
 
@@ -376,10 +374,9 @@ async def get_working_hours(
 async def replace_working_hours(
     staff_id: int,
     data: list[WorkingHourIn],
-    current: Staff = Depends(get_current_staff),
+    current: Staff = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ):
-    _require_self_or_manager(current, staff_id)
     await svc.get_staff_in_tenant(db, current.tenant_id, staff_id)
     days = [d.day_of_week for d in data]
     if len(days) != len(set(days)):
@@ -418,9 +415,8 @@ async def list_time_off(
 
 @router.post("/admin/time-off", response_model=TimeOffOut, status_code=201)
 async def create_time_off(
-    data: TimeOffCreate, current: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)
+    data: TimeOffCreate, current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)
 ):
-    _require_self_or_manager(current, data.staff_id)
     await svc.get_staff_in_tenant(db, current.tenant_id, data.staff_id)
     row = TimeOff(
         tenant_id=current.tenant_id,
@@ -437,14 +433,13 @@ async def create_time_off(
 
 @router.delete("/admin/time-off/{time_off_id}", status_code=204)
 async def delete_time_off(
-    time_off_id: int, current: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)
+    time_off_id: int, current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)
 ):
     row = (
         await db.execute(select(TimeOff).where(TimeOff.id == time_off_id, TimeOff.tenant_id == current.tenant_id))
     ).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail="İzin kaydı bulunamadı")
-    _require_self_or_manager(current, row.staff_id)
     await db.delete(row)
     await db.commit()
     return Response(status_code=204)
@@ -472,7 +467,11 @@ async def list_payment_methods(current: Staff = Depends(get_current_staff), db: 
     result = await db.execute(
         select(PaymentMethod).where(PaymentMethod.tenant_id == current.tenant_id).order_by(PaymentMethod.name, PaymentMethod.id)
     )
-    return result.scalars().all()
+    methods = result.scalars().all()
+    if is_manager(current):
+        return methods
+    # Personel "Tamamla" penceresinde yalnızca yöntem adını seçer; IBAN/hesap gibi detaylar yöneticiye özeldir.
+    return [PaymentMethodOut(id=m.id, name=m.name, details=None, is_active=m.is_active) for m in methods]
 
 
 @router.post("/admin/payment-methods", response_model=PaymentMethodOut, status_code=201)
@@ -532,7 +531,7 @@ def _settings_out(tenant: Tenant, row: TenantSettings | None) -> dict:
 
 @router.get("/admin/settings", response_model=SettingsBody)
 async def get_settings(
-    current: Staff = Depends(get_current_staff), tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db)
+    current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db)
 ):
     row = (await db.execute(select(TenantSettings).where(TenantSettings.tenant_id == tenant.id))).scalar_one_or_none()
     return _settings_out(tenant, row)
@@ -571,4 +570,4 @@ async def list_customers(
     current: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    return await svc.list_customers(db, current.tenant_id, q)
+    return await svc.list_customers(db, current.tenant_id, q, only_staff_id=None if is_manager(current) else current.id)

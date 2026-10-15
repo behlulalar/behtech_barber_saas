@@ -13,6 +13,8 @@ export interface NavItem {
   end?: boolean
   /** Mobil alt çubukta doğrudan gösterilsin mi (en fazla 4). Diğerleri "Menü" çekmecesinde. */
   tab?: boolean
+  /** Yalnızca yönetici (işletme sahibi) görür; personelin menüsünde yer almaz. */
+  managerOnly?: boolean
 }
 
 interface PanelShellProps {

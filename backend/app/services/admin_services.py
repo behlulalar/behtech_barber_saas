@@ -282,7 +282,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: int, day: date, only_staf
         "appointments_today": total,
         "completed_today": completed,
         "cancelled_today": cancelled,
-        "expected_revenue_today": int(revenue),
+        "expected_revenue_today": int(revenue) if only_staff_id is None else None,
         "appointments_this_week": week_count,
         "total_customers": total_customers,
         "upcoming": upcoming,
@@ -290,20 +290,25 @@ async def build_dashboard(db: AsyncSession, tenant_id: int, day: date, only_staf
 
 
 # ---------- müşteriler ----------
-async def list_customers(db: AsyncSession, tenant_id: int, q: str | None, limit: int = 200):
+async def list_customers(
+    db: AsyncSession, tenant_id: int, q: str | None, limit: int = 200, only_staff_id: int | None = None
+):
+    """only_staff_id verilirse (personel): yalnızca o personelle randevusu olan müşteriler ve yalnızca o randevular sayılır."""
+    appt_join = and_(Appointment.customer_id == Customers.id, Appointment.tenant_id == tenant_id)
+    if only_staff_id is not None:
+        appt_join = and_(appt_join, Appointment.staff_id == only_staff_id)
     stmt = (
         select(
             Customers,
             func.count(Appointment.id).label("cnt"),
             func.max(Appointment.appointment_date).label("last_date"),
         )
-        .outerjoin(
-            Appointment,
-            and_(Appointment.customer_id == Customers.id, Appointment.tenant_id == tenant_id),
-        )
+        .outerjoin(Appointment, appt_join)
         .where(Customers.tenant_id == tenant_id)
         .group_by(Customers.id)
     )
+    if only_staff_id is not None:
+        stmt = stmt.having(func.count(Appointment.id) > 0)
     if q and q.strip():
         term = q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         pattern = f"%{term}%"
