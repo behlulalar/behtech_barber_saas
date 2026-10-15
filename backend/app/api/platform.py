@@ -1,5 +1,6 @@
 """Platform sahibi (SaaS owner) route'ları. Tenant'tan bağımsızdır, Host header'ına bakmaz."""
 from datetime import date, datetime, timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func, select
@@ -20,6 +21,9 @@ from app.schemas.platform import (
     AuditActionOut,
     AuditPage,
     JobRunOut,
+    OwnerPasswordOut,
+    OwnerPasswordReset,
+    OwnerUpdate,
     PasswordChangeIn,
     PasswordResetIn,
     PlatformAdminCreate,
@@ -31,7 +35,7 @@ from app.schemas.platform import (
     TenantCreate,
     TenantUpdate,
 )
-from app.schemas.tenant import TenantOut
+from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantPage
 from app.services import (
     audit_services,
     job_services,
@@ -223,11 +227,29 @@ async def platform_stats(
     )
 
 
-@router.get("/tenants", response_model=list[TenantOut])
+@router.get("/tenants", response_model=TenantPage)
 async def platform_list_tenants(
-    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)
+    search: str | None = Query(default=None, max_length=100),
+    status: Literal["all", "active", "inactive", "suspended"] = "all",
+    sort: Literal["name", "-name", "created", "-created", "staff", "-staff", "appointments", "-appointments"] = "-created",
+    limit: int = Query(default=25, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: Session = Depends(get_db),
 ):
-    return await platform_services.list_tenants(db)
+    return await platform_services.list_tenants(db, search=search, status=status, sort=sort, limit=limit, offset=offset)
+
+
+@router.get("/tenants/options", response_model=list[TenantOption])
+async def platform_tenant_options(admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+    return await platform_services.list_options(db)
+
+
+@router.get("/tenants/{tenant_id}", response_model=TenantDetailOut)
+async def platform_get_tenant(
+    tenant_id: int, admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)
+):
+    return await platform_services.get_tenant_detail(db, tenant_id)
 
 
 @router.post("/tenants", response_model=TenantOut)
@@ -248,4 +270,29 @@ async def platform_update_tenant(
     admin: PlatformAdmin = Depends(get_current_platform_admin),
     db: Session = Depends(get_db),
 ):
-    return await platform_services.update_tenant(db, tenant_id, data.name, data.is_active, admin, request)
+    return await platform_services.update_tenant(
+        db, tenant_id, data.name, data.is_active, data.note, admin, request
+    )
+
+
+@router.patch("/tenants/{tenant_id}/owner", response_model=TenantDetailOut)
+async def platform_update_owner(
+    tenant_id: int,
+    data: OwnerUpdate,
+    request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: Session = Depends(get_db),
+):
+    return await platform_services.update_owner(db, tenant_id, data, admin, request)
+
+
+@router.post("/tenants/{tenant_id}/owner/reset-password", response_model=OwnerPasswordOut)
+async def platform_reset_owner_password(
+    tenant_id: int,
+    request: Request,
+    data: OwnerPasswordReset | None = None,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: Session = Depends(get_db),
+):
+    pw = await platform_services.reset_owner_password(db, tenant_id, data.password if data else None, admin, request)
+    return OwnerPasswordOut(password=pw)

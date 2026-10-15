@@ -13,11 +13,9 @@ import { formatNumber, formatTimestamp } from '../../lib/format'
 
 export default function DashboardPage() {
   const stats = useQuery({ queryKey: ['platform', 'stats'], queryFn: platformApi.getStats })
-  const tenants = useQuery({ queryKey: ['platform', 'tenants'], queryFn: platformApi.listTenants })
+  const tenants = useQuery({ queryKey: ['platform', 'tenants', 'recent'], queryFn: () => platformApi.listTenants({ limit: 5, sort: '-created' }) })
 
-  const recent = [...(tenants.data ?? [])]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 5)
+  const recent = tenants.data?.items ?? []
   const s = stats.data
   const inactive = s ? s.tenant_count - s.active_tenant_count : 0
 

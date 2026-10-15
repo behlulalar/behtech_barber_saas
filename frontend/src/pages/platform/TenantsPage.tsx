@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, ExternalLink, Link2, Pencil, Plus, Power, Receipt, Search, Store } from 'lucide-react'
-import { useMemo, useState, type FormEvent } from 'react'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Link2, Pencil, Plus, Power, Receipt, Search, Store } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button, IconButton } from '../../components/ui/Button'
@@ -9,6 +9,7 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
 import { PhoneInput } from '../../components/ui/PhoneInput'
+import { Select } from '../../components/ui/Select'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Table, type Column } from '../../components/ui/Table'
@@ -16,10 +17,31 @@ import { Tabs } from '../../components/ui/Tabs'
 import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
 import { formatNumber, formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
-import type { PlatformTenant } from '../../types/api'
+import type { PlatformTenant, TenantSort, TenantStatusFilter } from '../../types/api'
 import { BillingStatusBadge } from './BillingParts'
+import { SetupChip } from './SetupParts'
 
-type Filter = 'all' | 'active' | 'inactive'
+const PAGE_SIZE = 25
+
+const SORTS: { value: TenantSort; label: string }[] = [
+  { value: '-created', label: 'En yeni' },
+  { value: 'created', label: 'En eski' },
+  { value: 'name', label: 'Ad (A-Z)' },
+  { value: '-name', label: 'Ad (Z-A)' },
+  { value: '-staff', label: 'Personel (çok-az)' },
+  { value: 'staff', label: 'Personel (az-çok)' },
+  { value: '-appointments', label: 'Randevu (çok-az)' },
+  { value: 'appointments', label: 'Randevu (az-çok)' },
+]
+
+function useDebounced<T>(value: T, ms = 350): T {
+  const [v, setV] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms)
+    return () => clearTimeout(t)
+  }, [value, ms])
+  return v
+}
 
 const SLUG_RE = /^[a-z0-9-]{3,40}$/
 const RESERVED = ['www', 'api', 'admin', 'platform', 'app', 'mail', 'saleshub', 'panel', 'static', 'randevu']
@@ -349,12 +371,20 @@ function EditModal({ tenant, onClose }: { tenant: PlatformTenant | null; onClose
 export default function TenantsPage() {
   const qc = useQueryClient()
   const toast = useToast()
-  const { data, isLoading, isError, error } = useQuery({ queryKey: ['platform', 'tenants'], queryFn: platformApi.listTenants })
   const navigate = useNavigate()
+  const [filter, setFilter] = useState<TenantStatusFilter>('all')
+  const [sort, setSort] = useState<TenantSort>('-created')
+  const [q, setQ] = useState('')
+  const [page, setPage] = useState(0)
+  const dq = useDebounced(q.trim())
+  const params = { search: dq || undefined, status: filter, sort, limit: PAGE_SIZE, offset: page * PAGE_SIZE }
+  const { data, isLoading, isError, error, isFetching } = useQuery({
+    queryKey: ['platform', 'tenants', params],
+    queryFn: () => platformApi.listTenants(params),
+    placeholderData: keepPreviousData,
+  })
   const billing = useQuery({ queryKey: ['platform', 'billing', 'tenants'], queryFn: platformApi.listTenantBilling })
   const billingById = useMemo(() => new Map((billing.data ?? []).map((b) => [b.tenant_id, b])), [billing.data])
-  const [filter, setFilter] = useState<Filter>('all')
-  const [q, setQ] = useState('')
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<PlatformTenant | null>(null)
   const [deactivating, setDeactivating] = useState<PlatformTenant | null>(null)
@@ -373,25 +403,10 @@ export default function TenantsPage() {
     },
   })
 
-  const all = data ?? []
-  const counts = useMemo(
-    () => ({ all: all.length, active: all.filter((t) => t.is_active).length, inactive: all.filter((t) => !t.is_active).length }),
-    [all],
-  )
-  const rows = useMemo(() => {
-    const needle = q.trim().toLocaleLowerCase('tr-TR')
-    return all.filter((t) => {
-      if (filter === 'active' && !t.is_active) return false
-      if (filter === 'inactive' && t.is_active) return false
-      if (!needle) return true
-      return (
-        t.name.toLocaleLowerCase('tr-TR').includes(needle) ||
-        t.slug.includes(needle) ||
-        (t.owner_name ?? '').toLocaleLowerCase('tr-TR').includes(needle) ||
-        (t.owner_phone ?? '').includes(normalizePhone(needle) || needle)
-      )
-    })
-  }, [all, filter, q])
+  const rows = data?.items ?? []
+  const total = data?.total ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const filtered = !!dq || filter !== 'all'
 
   function onToggle(t: PlatformTenant) {
     if (t.is_active) setDeactivating(t)
@@ -462,7 +477,12 @@ export default function TenantsPage() {
     {
       key: 'status',
       header: 'Durum',
-      cell: (t) => <Badge tone={t.is_active ? 'success' : 'neutral'}>{t.is_active ? 'Aktif' : 'Pasif'}</Badge>,
+      cell: (t) =>
+        t.auto_suspended ? (
+          <Badge tone="danger">Askıda</Badge>
+        ) : (
+          <Badge tone={t.is_active ? 'success' : 'neutral'}>{t.is_active ? 'Aktif' : 'Pasif'}</Badge>
+        ),
     },
     {
       key: 'billing',
@@ -472,9 +492,18 @@ export default function TenantsPage() {
         return b ? <BillingStatusBadge tb={b} /> : <span className="text-muted">—</span>
       },
     },
-    { key: 'staff', header: 'Personel', align: 'right', cell: (t) => <span className="tabular-nums">{formatNumber(t.staff_count)}</span> },
-    { key: 'appts', header: 'Randevu', align: 'right', cell: (t) => <span className="tabular-nums">{formatNumber(t.appointment_count)}</span> },
-    { key: 'created', header: 'Oluşturulma', cell: (t) => <span className="text-muted-strong">{formatTimestamp(t.created_at)}</span> },
+    { key: 'setup', header: 'Kurulum', cell: (t) => <SetupChip setup={t.setup} /> },
+    {
+      key: 'counts',
+      header: 'Kadro/Randevu',
+      align: 'right',
+      cell: (t) => (
+        <span className="whitespace-nowrap tabular-nums">
+          {formatNumber(t.staff_count)} <span className="text-muted">/</span> {formatNumber(t.appointment_count)}
+        </span>
+      ),
+    },
+    { key: 'created', header: 'Oluşturulma', className: 'hidden 2xl:table-cell', cell: (t) => <span className="text-muted-strong">{formatTimestamp(t.created_at)}</span> },
     { key: 'actions', header: 'İşlem', align: 'right', hideOnMobile: true, cell: actions },
   ]
 
@@ -495,22 +524,47 @@ export default function TenantsPage() {
         <Tabs
           label="Durum filtresi"
           value={filter}
-          onChange={setFilter}
+          onChange={(v) => {
+            setFilter(v)
+            setPage(0)
+          }}
           items={[
-            { value: 'all', label: 'Tümü', count: counts.all },
-            { value: 'active', label: 'Aktif', count: counts.active },
-            { value: 'inactive', label: 'Pasif', count: counts.inactive },
+            { value: 'all', label: 'Tümü' },
+            { value: 'active', label: 'Aktif' },
+            { value: 'inactive', label: 'Pasif' },
+            { value: 'suspended', label: 'Askıda' },
           ]}
         />
-        <div className="md:w-72">
-          <Input
-            type="search"
-            aria-label="İşletme ara"
-            placeholder="Ad, adres veya telefon ara"
-            leading={<Search className="size-4" />}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+        <div className="flex flex-col gap-3 sm:flex-row md:w-auto">
+          <div className="sm:w-60">
+            <Select
+              aria-label="Sıralama"
+              value={sort}
+              onChange={(e) => {
+                setSort(e.target.value as TenantSort)
+                setPage(0)
+              }}
+            >
+              {SORTS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="sm:w-72">
+            <Input
+              type="search"
+              aria-label="İşletme ara"
+              placeholder="Ad, adres, sahip veya telefon ara"
+              leading={<Search className="size-4" />}
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value)
+                setPage(0)
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -529,10 +583,10 @@ export default function TenantsPage() {
           empty={
             <EmptyState
               icon={<Store />}
-              title={all.length === 0 ? 'Henüz işletme yok' : 'Sonuç bulunamadı'}
-              description={all.length === 0 ? 'İlk işletmeyi ekleyerek başlayın.' : 'Arama veya filtreyi değiştirmeyi deneyin.'}
+              title={!filtered ? 'Henüz işletme yok' : 'Sonuç bulunamadı'}
+              description={!filtered ? 'İlk işletmeyi ekleyerek başlayın.' : 'Arama veya filtreyi değiştirmeyi deneyin.'}
               action={
-                all.length === 0 ? (
+                !filtered ? (
                   <Button leftIcon={<Plus className="size-4" />} onClick={() => setCreating(true)}>
                     Yeni işletme
                   </Button>
@@ -541,6 +595,25 @@ export default function TenantsPage() {
             />
           }
         />
+      )}
+
+      {!isError && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted" aria-live="polite">
+            {isLoading ? 'Yükleniyor…' : `Toplam ${formatNumber(total)} işletme`}
+            {total > PAGE_SIZE && ` · Sayfa ${page + 1} / ${pageCount}`}
+          </p>
+          {total > PAGE_SIZE && (
+            <div className="flex gap-2">
+              <Button variant="secondary" leftIcon={<ChevronLeft className="size-4" />} disabled={page === 0 || isFetching} onClick={() => setPage((p) => p - 1)}>
+                Önceki
+              </Button>
+              <Button variant="secondary" rightIcon={<ChevronRight className="size-4" />} disabled={page + 1 >= pageCount || isFetching} onClick={() => setPage((p) => p + 1)}>
+                Sonraki
+              </Button>
+            </div>
+          )}
+        </div>
       )}
 
       <CreateModal open={creating} onClose={() => setCreating(false)} onCreated={setLinksFor} />

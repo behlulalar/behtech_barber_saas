@@ -24,8 +24,8 @@ export default function PlatformLayout() {
   const { me, logout } = usePlatformAuth()
   usePlatformManifest()
   const detail = useMatch('/platform/isletmeler/:id')
-  const tenants = useQuery({ queryKey: ['platform', 'tenants'], queryFn: platformApi.listTenants, enabled: !!detail })
-  const detailName = detail ? tenants.data?.find((t) => String(t.id) === detail.params.id)?.name : undefined
+  const tenants = useQuery({ queryKey: ['platform', 'tenant', detail?.params.id], queryFn: () => platformApi.getTenant(Number(detail!.params.id)), enabled: !!detail })
+  const detailName = detail ? tenants.data?.name : undefined
   const label = useRouteLabel(NAV) ?? (detail ? 'İşletme' : undefined)
   useDocumentTitle(detailName ?? label, detailName ? 'İşletmeler' : undefined, 'Platform', PRODUCT_NAME)
   return (

@@ -15,6 +15,7 @@ import { formatPhone, formatPrice } from '../../lib/format'
 import type { Payment, Subscription } from '../../types/api'
 import { formatDateDMY } from './billing'
 import { EditPeriodModal, PaymentModal, RenewModal, useSubscriptions } from './BillingModals'
+import { NoteCard, OwnerCard, RecentEventsCard, SetupCard } from './TenantDetailParts'
 import { BillingStatusBadge, Money, PaymentStatusBadge, RemindButton, RemindedNote, useBillingSettings, useRemind } from './BillingParts'
 
 export default function TenantDetailPage() {
@@ -23,7 +24,7 @@ export default function TenantDetailPage() {
   const qc = useQueryClient()
   const toast = useToast()
 
-  const tenantsQ = useQuery({ queryKey: ['platform', 'tenants'], queryFn: platformApi.listTenants })
+  const tenantQ = useQuery({ queryKey: ['platform', 'tenant', String(id)], queryFn: () => platformApi.getTenant(id), enabled: Number.isFinite(id) })
   const billingQ = useQuery({ queryKey: ['platform', 'billing', 'tenants'], queryFn: platformApi.listTenantBilling })
   const subsQ = useSubscriptions(id)
   const paymentsQ = useQuery({ queryKey: ['platform', 'payments', id], queryFn: () => platformApi.listPayments({ tenant_id: id }) })
@@ -36,7 +37,7 @@ export default function TenantDetailPage() {
   const [delSub, setDelSub] = useState<Subscription | null>(null)
   const [delPay, setDelPay] = useState<Payment | null>(null)
 
-  const tenant = tenantsQ.data?.find((t) => t.id === id)
+  const tenant = tenantQ.data
   const tb = billingQ.data?.find((t) => t.tenant_id === id)
 
   const deleteSub = useMutation({
@@ -68,7 +69,7 @@ export default function TenantDetailPage() {
     return <EmptyState title="İşletme bulunamadı" action={<Link to="/platform/odemeler" className="text-copper-bright hover:underline">Ödemelere dön</Link>} />
   }
 
-  if (tenantsQ.isLoading || billingQ.isLoading) {
+  if (tenantQ.isLoading || billingQ.isLoading) {
     return (
       <div className="flex flex-col gap-4" role="status" aria-label="Yükleniyor">
         <Skeleton className="h-10 w-48" />
@@ -81,7 +82,7 @@ export default function TenantDetailPage() {
     return (
       <EmptyState
         title="İşletme bulunamadı"
-        description={tenantsQ.isError ? errorMessage(tenantsQ.error) : 'Bu işletme silinmiş ya da hiç var olmamış olabilir.'}
+        description={tenantQ.isError ? errorMessage(tenantQ.error) : 'Bu işletme silinmiş ya da hiç var olmamış olabilir.'}
         action={<Link to="/platform/isletmeler" className="inline-flex min-h-11 items-center text-copper-bright hover:underline">İşletmelere dön</Link>}
       />
     )
@@ -220,6 +221,13 @@ export default function TenantDetailPage() {
           <Summary label="Hatırlatma" value={tb.reminded_at ? <RemindedNote at={tb.reminded_at} /> : '—'} />
         </div>
       )}
+
+      <div className="mb-6 grid grid-cols-1 gap-4 md:mb-8 lg:grid-cols-2">
+        <SetupCard tenant={tenant} />
+        <OwnerCard tenant={tenant} />
+        <NoteCard key={tenant.note ?? ''} tenant={tenant} />
+        <RecentEventsCard tenantId={tenant.id} />
+      </div>
 
       <Card>
         <CardHeader title="Abonelik dönemleri" description="Her yenileme yeni bir dönemdir." />

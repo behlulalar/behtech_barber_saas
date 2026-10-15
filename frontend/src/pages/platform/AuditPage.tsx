@@ -55,7 +55,7 @@ export default function AuditPage() {
   const dq = useDebounced(q.trim())
 
   const actionsQ = useQuery({ queryKey: ['platform', 'audit', 'actions'], queryFn: platformApi.listAuditActions, staleTime: 5 * 60_000 })
-  const tenantsQ = useQuery({ queryKey: ['platform', 'tenants'], queryFn: platformApi.listTenants })
+  const tenantsQ = useQuery({ queryKey: ['platform', 'tenant-options'], queryFn: platformApi.listTenantOptions, staleTime: 60_000 })
 
   const groups = useMemo(() => [...new Set((actionsQ.data ?? []).map((a) => a.group))], [actionsQ.data])
   const actionOptions = useMemo(() => (actionsQ.data ?? []).filter((a) => !group || a.group === group), [actionsQ.data, group])

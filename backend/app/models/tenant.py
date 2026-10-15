@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, CheckConstraint, DateTime, String, func, true
+from sqlalchemy import Boolean, CheckConstraint, DateTime, String, Text, func, true
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 from datetime import datetime
@@ -13,6 +13,8 @@ class Tenant(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
     # Abonelik süresi dolduğu için görev tarafından kapatıldıysa dolu (manuel kapatmada null).
     auto_suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         CheckConstraint("slug ~ '^[a-z0-9-]+$'"),

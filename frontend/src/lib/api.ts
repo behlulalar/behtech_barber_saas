@@ -51,6 +51,11 @@ import type {
   PlatformMe,
   PlatformStats,
   PlatformTenant,
+  PlatformTenantDetail,
+  PlatformTenantOption,
+  PlatformTenantPage,
+  OwnerUpdate,
+  TenantListParams,
   PlatformTenantCreate,
   PlatformTenantUpdate,
   PublicService,
@@ -335,7 +340,18 @@ export const platformApi = {
   login: (data: LoginRequest) => request<TokenResponse>('/platform/login', { method: 'POST', body: data }),
   me: () => request<PlatformMe>('/platform/me', { auth: p }),
   getStats: () => request<PlatformStats>('/platform/stats', { auth: p }),
-  listTenants: () => request<PlatformTenant[]>('/platform/tenants', { auth: p }),
+  listTenants: (params?: TenantListParams) =>
+    request<PlatformTenantPage>('/platform/tenants', { auth: p, query: { ...params } }),
+  listTenantOptions: () => request<PlatformTenantOption[]>('/platform/tenants/options', { auth: p }),
+  getTenant: (id: number) => request<PlatformTenantDetail>(`/platform/tenants/${id}`, { auth: p }),
+  updateOwner: (id: number, data: OwnerUpdate) =>
+    request<PlatformTenantDetail>(`/platform/tenants/${id}/owner`, { method: 'PATCH', body: data, auth: p }),
+  resetOwnerPassword: (id: number, password?: string) =>
+    request<{ password: string }>(`/platform/tenants/${id}/owner/reset-password`, {
+      method: 'POST',
+      body: password ? { password } : {},
+      auth: p,
+    }),
   createTenant: (data: PlatformTenantCreate) =>
     request<PlatformTenant>('/platform/tenants', { method: 'POST', body: data, auth: p }),
   updateTenant: (id: number, data: PlatformTenantUpdate) =>

@@ -367,6 +367,63 @@ export interface PlatformTenant {
   /** İlk eklenen super_admin; yoksa null. */
   owner_name: string | null
   owner_phone: string | null
+  auto_suspended: boolean
+  note: string | null
+  setup: TenantSetup | null
+}
+
+export interface SetupCheck {
+  key: string
+  label: string
+  ok: boolean
+  hint: string
+}
+
+export interface TenantSetup {
+  ready: boolean
+  missing_count: number
+  checks: SetupCheck[]
+}
+
+export interface TenantOwner {
+  id: number
+  name: string
+  surname: string
+  phone: string
+}
+
+export interface PlatformTenantDetail extends PlatformTenant {
+  owner: TenantOwner | null
+}
+
+export interface PlatformTenantPage {
+  items: PlatformTenant[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface PlatformTenantOption {
+  id: number
+  name: string
+  slug: string
+}
+
+export type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'suspended'
+export type TenantSort = 'name' | '-name' | 'created' | '-created' | 'staff' | '-staff' | 'appointments' | '-appointments'
+
+export interface TenantListParams {
+  search?: string
+  status?: TenantStatusFilter
+  sort?: TenantSort
+  limit?: number
+  offset?: number
+}
+
+export interface OwnerUpdate {
+  name?: string
+  surname?: string
+  phone?: string
 }
 
 export interface PlatformTenantCreate {
@@ -381,6 +438,7 @@ export interface PlatformTenantCreate {
 export interface PlatformTenantUpdate {
   name?: string
   is_active?: boolean
+  note?: string
 }
 
 /* ---------- Platform: abonelik & ödeme takibi ---------- */

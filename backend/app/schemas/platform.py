@@ -24,6 +24,21 @@ class TenantCreate(BaseModel):
 class TenantUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     is_active: bool | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+
+class OwnerUpdate(BaseModel):
+    name: PersonName | None = None
+    surname: PersonName | None = None
+    phone: Phone | None = None
+
+
+class OwnerPasswordReset(BaseModel):
+    password: str | None = Field(default=None, min_length=6, max_length=128)
+
+
+class OwnerPasswordOut(BaseModel):
+    password: str
 
 
 class PlatformMe(BaseModel):

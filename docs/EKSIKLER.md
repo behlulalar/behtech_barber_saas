@@ -39,13 +39,13 @@
 Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler) **tamamlandı** (commit `8e5f8f5`, `c1467e0`).
 
 ### Aşama B — İşletme yönetimi ve ölçek (sıradaki)
-- [ ] **P1 Sunucu tarafı sayfalama/arama/sıralama:** `GET /platform/tenants` ve `/platform/billing/tenants`, `/platform/payments` tüm kayıtları tek seferde döndürüyor
+- [x] (2026-10-15, commit B-1) ~~Sunucu tarafı sayfalama/arama/sıralama~~ **işletme listesi için YAPILDI**; `billing/tenants` ve `payments` listeleri hâlâ tamamını döndürüyor (25+ işletmede sayfalayın): `GET /platform/tenants` ve `/platform/billing/tenants`, `/platform/payments` tüm kayıtları tek seferde döndürüyor
   (payments en fazla 500). 25+ işletmede yavaşlar; N+1 sorgular var (billing özeti işletme başına). Arama (ad/slug/sahip/telefon), durum filtresi, sıralama.
-- [ ] **P1 Kurulum kontrol listesi** (işletme başına "hazır mı" rozeti): hizmet var mı · her berberin çalışma saati var mı · her berber en az bir hizmete bağlı mı · adres/logo dolu mu ·
+- [x] (2026-10-15) **Kurulum kontrol listesi YAPILDI** (liste rozeti + detay kartı): (işletme başına "hazır mı" rozeti): hizmet var mı · her berberin çalışma saati var mı · her berber en az bir hizmete bağlı mı · adres/logo dolu mu ·
   ilk randevu alındı mı. (Gerçek hayatta yaşandı: personelin saati/hizmeti olmayınca müşteri sitesinde görünmedi.)
-- [ ] **P1 Sahip şifresi sıfırlama** (platformdan; işletme sahibi unutacak) + sahip/personel **kendi başına "şifremi unuttum"** (OTP ile) — şu an hiçbiri yok.
-- [ ] **P1 İşletme detayında düzeltme:** sahip telefonu/adı, **slug (adres) değiştirme** (eski adrese yönlendirme düşün), işletme adı (var).
-- [ ] **P1 İşletme notu + zaman çizelgesi** (açıldı/ödeme/hatırlatma/askı/şifre sıfırlandı olayları tek listede; denetim kaydından türetilebilir).
+- [x] (2026-10-15) Platformdan **sahip şifresi sıfırlama YAPILDI** (geçici şifre bir kez gösterilir, WhatsApp mesajı hazır). **Hâlâ yok (P1):** sahip/personelin kendi başına "şifremi unuttum" (OTP ile) ve **panel içinde kendi şifresini değiştirme** — sıfırlama mesajı bu yüzden "şifrenizi değiştirin" demiyor.
+- [x] (2026-10-15) Sahip adı/telefonu düzeltme YAPILDI. **Kalan (P1): slug (adres) değiştirme** (eski adrese yönlendirme düşün).
+- [x] (2026-10-15) İşletme notu + "son olaylar" kartı (son 10 denetim kaydı) YAPILDI. Eski satır: (açıldı/ödeme/hatırlatma/askı/şifre sıfırlandı olayları tek listede; denetim kaydından türetilebilir).
 - [ ] **P1 "İşletme olarak gir"** (karar §1). Önkoşul: denetim kaydı (var).
 - [ ] **P2 İşletmeyi arşivleme/silme:** soft delete + 30 gün geri alma; müşteri verisini dışa aktarma (CSV/JSON) — KVKK silme/taşıma talebi için.
 - [ ] **P2 Yalnızca-okuma platform yöneticisi rolü** (takip elemanı için).
