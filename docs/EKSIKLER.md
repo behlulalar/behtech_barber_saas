@@ -54,7 +54,7 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
   **Bilinen sınırlar:** destek token'ı 60 dk dolmadan sunucuda iptal edilemez (yöneticiyi pasife almak ya da personel `token_version` artırmak gerekir); tam yetki modunda parola değiştirme uç noktaları da çalışır (denetim kaydı var); engellenen salt-görüntüleme yazması kayıt bırakmaz.
 - [ ] **P1 Kayıt ol — kalanlar (2026-10-16):** (a) ~~Onayla/Reddet detay sayfasında yok~~ **YAPILDI** (`SignupReviewCard`; liste ve detayda diyalog kodu iki yerde duruyor, ortaklaştırılabilir).
   (b) Başvuru onaylanınca/reddedilince sahibe **otomatik mesaj gitmiyor** (şimdilik wa.me ile elle); onay/ret mesaj şablonu (`platform_settings`) + wa.me bağlantısı eklenmeli.
-  (c) **İşletme panelinde kurulum rehberi yok:** kayıt olan işletme boş panelle karşılaşıyor; panelde "Kurulumu tamamla" kartı (hizmet → personel → çalışma saati → hizmet ataması → adres) gerekli. Platform tarafındaki `SETUP_CHECKS` mantığı yeniden kullanılabilir.
+  (c) ~~İşletme panelinde kurulum rehberi yok~~ **YAPILDI (2026-10-16):** `GET /api/admin/setup` (yalnızca yönetici) + Genel Bakış'ta `SetupGuide` kartı (5 adım, hepsi bitince kaybolur). Kalan: rehberde 'müşteri sitenizin adresini paylaşın' adımı ve ilk randevu adımı yok.
 - [ ] **P2 İşletmeyi arşivleme/silme:** soft delete + 30 gün geri alma; müşteri verisini dışa aktarma (CSV/JSON) — KVKK silme/taşıma talebi için.
 - [ ] **P2 Yalnızca-okuma platform yöneticisi rolü** (takip elemanı için).
 - [ ] **P2 Platform girişi için 2FA** (TOTP) — platform hesabı tüm dükkânlara hükmediyor.

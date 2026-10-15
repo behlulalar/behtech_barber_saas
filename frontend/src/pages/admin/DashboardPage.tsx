@@ -12,6 +12,7 @@ import { useStaffAuth } from '../../lib/auth'
 import { cn } from '../../lib/cn'
 import { formatDateLong, formatDateShort, formatNumber, formatPrice, formatTime, fullName, todayLocalISO } from '../../lib/format'
 import { AppointmentRow, useAppointmentFlow } from './appointmentParts'
+import { SetupGuide } from './SetupGuide'
 import { ErrorBlock, qk } from './shared'
 
 function greeting(): string {
@@ -56,6 +57,8 @@ export default function DashboardPage() {
             : undefined
         }
       />
+
+      {isManager && <SetupGuide />}
 
       {dash.isError && <ErrorBlock className="mb-6" error={dash.error} onRetry={() => void dash.refetch()} />}
 

@@ -5,6 +5,7 @@ import type {
   AnnouncementOut,
   AnnouncementUpdate,
   PanelAnnouncement,
+  TenantSetup,
   SignupRequest,
   SignupResponse,
   AdminAppointmentCreate,
@@ -302,6 +303,7 @@ const s = 'staff' as const
 
 export const adminApi = {
   listAnnouncements: () => request<PanelAnnouncement[]>('/admin/announcements', { auth: s }),
+  getSetup: () => request<TenantSetup>('/admin/setup', { auth: s }),
 
   getRevenueReport: (period: ReportPeriod, date: string, staffId?: number) =>
     request<RevenueReport>('/admin/reports/revenue', { auth: s, query: { period, date, staff_id: staffId } }),

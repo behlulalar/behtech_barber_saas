@@ -122,3 +122,22 @@ async def test_system_status_whatsapp_stats(api, shop, platform_admin):
     assert w["sent_24h"] == 2 and w["failed_24h"] == 0 and w["hourly_limit"] == settings.whatsapp_tenant_hourly_limit
     assert w["top_tenants"][0]["tenant_id"] == shop.tenant.id and w["top_tenants"][0]["sent"] == 2
     assert "whatsapp_state" in r.json()["channels"]
+
+
+# ------------------------------------------------------------------ kurulum rehberi
+async def test_admin_setup_guide(api, shop):
+    r = await api.get("/api/admin/setup", slug="alfa", token=shop.owner_token)
+    assert r.status_code == 200
+    keys = [c["key"] for c in r.json()["checks"]]
+    assert keys == ["services", "staff", "working_hours", "staff_services", "address", "first_appointment"]
+    assert (await api.get("/api/admin/setup", slug="alfa", token=shop.staff_token)).status_code == 403
+    assert (await api.get("/api/admin/setup", slug="alfa")).status_code == 401
+
+
+async def test_admin_setup_empty_tenant_is_not_ready(api):
+    t = await make_tenant("bosdukkan")
+    owner = await make_staff(t.id, "Ali", "Veli", "5559998801", role=RoleType.SUPER_ADMIN)
+    r = await api.get("/api/admin/setup", slug="bosdukkan", token=mint_staff_token(owner))
+    s = r.json()
+    by = {c["key"]: c["ok"] for c in s["checks"]}
+    assert s["ready"] is False and by["services"] is False and by["working_hours"] is False and by["address"] is True  # fabrika adres girer

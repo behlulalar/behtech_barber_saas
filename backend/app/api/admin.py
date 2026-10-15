@@ -49,7 +49,8 @@ from app.services import impersonation_services
 from app.services import login_throttle, otp_services
 from app.services.otp_delivery import deliver_code
 from app.services import report_services
-from app.services import announcement_services
+from app.services import announcement_services, platform_services
+from app.schemas.tenant import SetupOut
 from app.schemas.announcement import AnnouncementPublic
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
@@ -781,3 +782,9 @@ async def list_customers(
 async def admin_announcements(staff: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
     """Platformdan gelen, bu işletme için şu an geçerli duyurular (kapatma tarayıcıda hatırlanır)."""
     return await announcement_services.active_for_tenant(db, staff.tenant_id)
+
+
+@router.get("/admin/setup", response_model=SetupOut)
+async def admin_setup(current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)):
+    """Kurulum rehberi: işletmenin müşteri randevusu alabilmesi için eksikler (platformdaki kontrol listesiyle aynı mantık)."""
+    return (await platform_services._setup_for(db, [current.tenant_id]))[current.tenant_id]
