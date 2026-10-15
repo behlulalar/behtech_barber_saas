@@ -469,7 +469,7 @@ iyi bir çalışma malzemesi.
       Randevular (kendi), Müşteriler (yalnızca kendi randevusu olanlar). Yönetici-only (API
       require_manager + arayüzde gizli + adres koruması): gelir raporu, ayarlar, hizmet/ekip/
       ödeme yöntemi düzenleme, çalışma saati ve izin düzenleme. Personel için kısıtlı okumalar:
-      GET /admin/staff yalnızca kendini döner, ödeme yöntemlerinde `details` (IBAN vb.) null,
+      GET /admin/staff tüm ekibi döner (Ekip sayfası personelde salt okunur) ama meslektaşların telefonu (giriş adı) boş, ödeme yöntemlerinde `details` (IBAN vb.) null,
       GET working-hours/time-off yalnızca kendi (randevu tablosu gölgelemesi için gerekli).
       MANAGER_ROLES = super_admin, technical_support.
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;

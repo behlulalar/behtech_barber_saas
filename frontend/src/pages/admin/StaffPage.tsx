@@ -69,12 +69,16 @@ export default function StaffPage() {
     {
       key: 'phone',
       header: 'Telefon',
-      cell: (s) => (
-        <a href={telHref(s.phone)} className="inline-flex min-h-11 items-center gap-2 text-copper-bright hover:underline md:pointer-fine:min-h-0">
-          <Phone className="size-3.5" aria-hidden="true" />
-          <span className="tabular-nums">{formatPhone(s.phone)}</span>
-        </a>
-      ),
+      cell: (s) =>
+        // Personel meslektaşlarının telefonunu göremez (backend boş döner).
+        s.phone ? (
+          <a href={telHref(s.phone)} className="inline-flex min-h-11 items-center gap-2 text-copper-bright hover:underline md:pointer-fine:min-h-0">
+            <Phone className="size-3.5" aria-hidden="true" />
+            <span className="tabular-nums">{formatPhone(s.phone)}</span>
+          </a>
+        ) : (
+          <span className="text-muted">—</span>
+        ),
     },
     { key: 'role', header: 'Rol', cell: (s) => <Badge tone={ROLE_TONES[s.role]}>{ROLE_LABELS[s.role]}</Badge> },
   ]

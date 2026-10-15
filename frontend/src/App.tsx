@@ -93,11 +93,12 @@ function App() {
             <Route index element={<AdminDashboardPage />} />
             <Route path="randevular" element={<AdminAppointmentsPage />} />
             <Route path="musteriler" element={<AdminCustomersPage />} />
+            {/* Ekip: herkes görür, yalnızca yönetici düzenler (sayfa kendi içinde yetkiye göre davranır) */}
+            <Route path="ekip" element={<AdminStaffPage />} />
             {/* Yalnızca yönetici (işletme sahibi): personel bu adreslere girerse Genel Bakış'a döner */}
             <Route element={<RequireStaff managerOnly />}>
               <Route path="hizmetler" element={<AdminServicesPage />} />
               <Route path="gelir" element={<AdminRevenuePage />} />
-              <Route path="ekip" element={<AdminStaffPage />} />
               <Route path="calisma-saatleri" element={<AdminSchedulePage />} />
               <Route path="odeme-yontemleri" element={<AdminPaymentMethodsPage />} />
               <Route path="ayarlar" element={<AdminSettingsPage />} />

@@ -12,7 +12,7 @@ const NAV: NavItem[] = [
   { to: '/panel/musteriler', label: 'Müşteriler', icon: Users, tab: true },
   { to: '/panel/hizmetler', label: 'Hizmetler', icon: Scissors, tab: true, managerOnly: true },
   { to: '/panel/gelir', label: 'Gelir Raporu', icon: ChartColumn, managerOnly: true },
-  { to: '/panel/ekip', label: 'Ekip', icon: UserRound, managerOnly: true },
+  { to: '/panel/ekip', label: 'Ekip', icon: UserRound },
   { to: '/panel/calisma-saatleri', label: 'Çalışma Saatleri', icon: Clock, managerOnly: true },
   { to: '/panel/odeme-yontemleri', label: 'Ödeme Yöntemleri', icon: Wallet, managerOnly: true },
   { to: '/panel/ayarlar', label: 'Ayarlar', icon: Settings, managerOnly: true },

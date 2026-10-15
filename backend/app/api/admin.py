@@ -272,12 +272,13 @@ async def delete_service(service_id: int, current: Staff = Depends(require_manag
 # ---------------------------------------------------------------- staff
 @router.get("/admin/staff", response_model=list[StaffAdminOut])
 async def list_staff(current: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
-    q = select(Staff).where(Staff.tenant_id == current.tenant_id)
-    if not is_manager(current):
-        q = q.where(Staff.id == current.id)  # personel yalnızca kendi kaydını görür
-    result = await db.execute(q.order_by(Staff.name, Staff.id))
+    result = await db.execute(select(Staff).where(Staff.tenant_id == current.tenant_id).order_by(Staff.name, Staff.id))
     links = await svc.service_ids_by_staff(db, current.tenant_id)
-    return [svc.staff_out(s, links.get(s.id, [])) for s in result.scalars().all()]
+    out = [svc.staff_out(s, links.get(s.id, [])) for s in result.scalars().all()]
+    if not is_manager(current):
+        # Personel ekibi görür ama düzenleyemez; telefon aynı zamanda giriş adı olduğu için yalnızca kendisininki görünür.
+        out = [o if o.id == current.id else o.model_copy(update={"phone": ""}) for o in out]
+    return out
 
 
 async def _phone_taken(db: AsyncSession, tid: int, phone: str, exclude_id: int | None = None) -> bool:
