@@ -44,6 +44,8 @@ import type {
   ReportPeriod,
   RevenueReport,
   HealthResponse,
+  ImpersonateStart,
+  ImpersonateStartOut,
   LoginRequest,
   PaymentMethod,
   PaymentMethodCreate,
@@ -272,6 +274,9 @@ export const customerApi = {
 export const authApi = {
   login: (data: LoginRequest) => request<TokenResponse>('/auth/login', { method: 'POST', body: data }),
   me: () => request<StaffMe>('/auth/me', { auth: 'staff' }),
+  /** Destek girişi: platform panelinden alınan tek kullanımlık kodu personel token'ına çevirir. */
+  impersonate: (code: string) => request<TokenResponse>('/auth/impersonate', { method: 'POST', body: { code } }),
+  endImpersonation: () => request<void>('/auth/impersonate/end', { method: 'POST', auth: 'staff' }),
 }
 
 /* ------------------------------------------------------------------ */
@@ -354,6 +359,10 @@ export const platformApi = {
     }),
   createTenant: (data: PlatformTenantCreate) =>
     request<PlatformTenant>('/platform/tenants', { method: 'POST', body: data, auth: p }),
+  startImpersonation: (id: number, data: ImpersonateStart) =>
+    request<ImpersonateStartOut>(`/platform/tenants/${id}/impersonate`, { method: 'POST', body: data, auth: p }),
+  startTrial: (tenantId: number, data?: { days?: number; start_date?: string }) =>
+    request<Subscription>(`/platform/tenants/${tenantId}/trial`, { method: 'POST', body: data ?? {}, auth: p }),
   updateTenant: (id: number, data: PlatformTenantUpdate) =>
     request<PlatformTenant>(`/platform/tenants/${id}`, { method: 'PATCH', body: data, auth: p }),
   /* Paketler */

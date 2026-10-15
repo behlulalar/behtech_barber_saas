@@ -13,8 +13,8 @@ from app.models.staff import Staff
 from app.models.tenant import Tenant
 from app.schemas.platform import AuditActionOut, AuditLogOut, AuditPage
 
-G_ACCOUNT, G_ADMIN, G_TENANT, G_PLAN, G_SUB, G_PAYMENT, G_SETTINGS, G_SYSTEM = (
-    "Hesap", "Yönetici", "İşletme", "Paket", "Abonelik", "Ödeme", "Ayarlar", "Sistem",
+G_ACCOUNT, G_ADMIN, G_TENANT, G_PLAN, G_SUB, G_PAYMENT, G_SETTINGS, G_SYSTEM, G_SUPPORT = (
+    "Hesap", "Yönetici", "İşletme", "Paket", "Abonelik", "Ödeme", "Ayarlar", "Sistem", "Destek",
 )
 
 # (value, label, group)
@@ -47,6 +47,9 @@ CATALOG: list[tuple[str, str, str]] = [
     ("billing.run_checks", "Günlük kontrol çalıştı", G_SYSTEM),
     ("billing.auto_suspend", "İşletme otomatik askıya alındı", G_SYSTEM),
     ("billing.auto_reactivate", "İşletme otomatik yeniden açıldı", G_SYSTEM),
+    ("impersonation.start", "Destek girişi başlatıldı", G_SUPPORT),
+    ("impersonation.end", "Destek girişi bitti", G_SUPPORT),
+    ("impersonation.action", "Destek modunda işlem", G_SUPPORT),
 ]
 LABELS = {v: label for v, label, _ in CATALOG}
 

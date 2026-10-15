@@ -19,6 +19,8 @@ class TenantCreate(BaseModel):
     owner_surname: PersonName
     owner_phone: Phone
     owner_password: str = Field(min_length=6, max_length=128)
+    start_trial: bool = False
+    trial_days: int = Field(default=14, ge=1, le=60)
 
 
 class TenantUpdate(BaseModel):
@@ -172,3 +174,14 @@ class SystemStatus(BaseModel):
     backup: BackupStatus
     channels: ChannelsStatus
     counts: CountsStatus
+
+
+class ImpersonateIn(BaseModel):
+    read_only: bool = False
+    staff_id: int | None = None
+
+
+class ImpersonateOut(BaseModel):
+    code: str
+    slug: str
+    expires_in: int

@@ -20,6 +20,8 @@ from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.platform import (
     AuditActionOut,
     AuditPage,
+    ImpersonateIn,
+    ImpersonateOut,
     JobRunOut,
     OwnerPasswordOut,
     OwnerPasswordReset,
@@ -39,6 +41,7 @@ from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantP
 from app.services import (
     audit_services,
     job_services,
+    impersonation_services,
     login_throttle,
     platform_admin_services as admin_svc,
     platform_services,
@@ -296,3 +299,15 @@ async def platform_reset_owner_password(
 ):
     pw = await platform_services.reset_owner_password(db, tenant_id, data.password if data else None, admin, request)
     return OwnerPasswordOut(password=pw)
+
+
+@router.post("/tenants/{tenant_id}/impersonate", response_model=ImpersonateOut)
+async def platform_impersonate(
+    tenant_id: int,
+    request: Request,
+    data: ImpersonateIn | None = None,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: Session = Depends(get_db),
+):
+    """Destek girişi için 60 sn geçerli tek kullanımlık kod üretir."""
+    return await impersonation_services.start(db, tenant_id, data or ImpersonateIn(), admin, request)

@@ -23,6 +23,7 @@ from app.schemas.admin import (
     AdminServiceOut,
     CustomerAdminOut,
     DashboardOut,
+    ImpersonatedBy,
     PaymentMethodCreate,
     PaymentMethodOut,
     PaymentMethodUpdate,
@@ -38,9 +39,10 @@ from app.schemas.admin import (
     WorkingHourIn,
     WorkingHourOut,
 )
-from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.auth import ImpersonateExchange, LoginRequest, TokenResponse
 from app.schemas.reports import ReportPeriod, RevenueReport
 from app.services import admin_services as svc
+from app.services import impersonation_services
 from app.services import login_throttle
 from app.services import report_services
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
@@ -83,8 +85,37 @@ async def login(
 
 
 @router.get("/auth/me", response_model=StaffMe)
-async def read_current_staff(current_staff: Staff = Depends(get_current_staff)):
-    return current_staff
+async def read_current_staff(request: Request, current_staff: Staff = Depends(get_current_staff)):
+    me = StaffMe.model_validate(current_staff)
+    admin = getattr(request.state, "impersonator", None)
+    if admin is not None:
+        me.impersonated_by = ImpersonatedBy(id=admin.id, name=admin.name, phone=admin.phone)
+        me.read_only = bool(getattr(request.state, "read_only", False))
+    return me
+
+
+@router.post("/auth/impersonate", response_model=TokenResponse)
+async def impersonate_exchange(
+    data: ImpersonateExchange,
+    request: Request,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform panelinden alınan tek kullanımlık kodu işletme personeli token'ına çevirir (herkese açık rota)."""
+    return await impersonation_services.exchange(db, data.code, tenant, request)
+
+
+@router.post("/auth/impersonate/end", status_code=204)
+async def impersonate_end(
+    request: Request,
+    current_staff: Staff = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    admin = getattr(request.state, "impersonator", None)
+    if admin is None:
+        raise HTTPException(status_code=400, detail="Bu oturum bir destek oturumu değil")
+    await impersonation_services.end(db, admin, current_staff, getattr(request.state, "impersonation_started", None), request)
+    return Response(status_code=204)
 
 
 # ---------------------------------------------------------------- dashboard

@@ -28,6 +28,7 @@ from app.schemas.billing import (
     SubscriptionUpdate,
     SuggestOut,
     TenantBilling,
+    TrialCreate,
 )
 from app.services import billing_services as svc
 from app.services import job_services, notify_services
@@ -96,6 +97,11 @@ async def suggest_subscription(tenant_id: int, plan_id: int, db: AsyncSession = 
 @router.post("/tenants/{tenant_id}/subscriptions", response_model=SubscriptionOut, status_code=201)
 async def create_subscription(tenant_id: int, data: SubscriptionCreate, request: Request, admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
     return await svc.create_subscription(db, tenant_id, data, admin, request)
+
+
+@router.post("/tenants/{tenant_id}/trial", response_model=SubscriptionOut, status_code=201)
+async def start_trial(tenant_id: int, request: Request, data: TrialCreate | None = None, admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
+    return await svc.create_trial(db, tenant_id, data or TrialCreate(), admin, request)
 
 
 @router.patch("/subscriptions/{sub_id}", response_model=SubscriptionOut)

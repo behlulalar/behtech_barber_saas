@@ -69,6 +69,18 @@ class StaffMe(_Orm):
     surname: str
     phone: str
     role: RoleType | None
+    # Destek modu: platform yöneticisi bu hesapla girdiyse dolu (token'dan gelir, DB alanı değil).
+    impersonated_by: "ImpersonatedBy | None" = None
+    read_only: bool = False
+
+
+class ImpersonatedBy(BaseModel):
+    id: int
+    name: str | None = None
+    phone: str
+
+
+StaffMe.model_rebuild()
 
 
 # ---------- nested refs ----------

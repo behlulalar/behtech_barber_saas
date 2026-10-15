@@ -209,6 +209,7 @@ function SettingsForm({ data }: { data: PlatformSettingsOut }) {
   const [email, setEmail] = useState(data.notify_email ?? '')
   const [reminderTpl, setReminderTpl] = useState(data.reminder_template)
   const [overdueTpl, setOverdueTpl] = useState(data.overdue_template)
+  const [trialTpl, setTrialTpl] = useState(data.trial_template)
   const [touched, setTouched] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -242,6 +243,7 @@ function SettingsForm({ data }: { data: PlatformSettingsOut }) {
         notify_email: email.trim() || null,
         reminder_template: reminderTpl,
         overdue_template: overdueTpl,
+        trial_template: trialTpl,
       }),
     onSuccess: (s) => {
       qc.setQueryData(['platform', 'settings'], s)
@@ -286,7 +288,7 @@ function SettingsForm({ data }: { data: PlatformSettingsOut }) {
             <Field label="Hatırlatma günü" error={show('rd')} hint="Bitişe bu kadar gün kala “yaklaşan” sayılır.">
               <Input inputMode="numeric" value={reminderDays} onChange={(e) => setReminderDays(e.target.value)} />
             </Field>
-            <Field label="Ek süre (gün)" error={show('gd')} hint="Bitişten sonra bu kadar gün beklenir, sonra işletme askıya alınır.">
+            <Field label="Ek süre (gün)" error={show('gd')} hint="Bitişten sonra bu kadar gün beklenir, sonra işletme askıya alınır. Deneme sürelerinde ek süre uygulanmaz.">
               <Input inputMode="numeric" value={graceDays} onChange={(e) => setGraceDays(e.target.value)} />
             </Field>
             <Field label="Bildirim e-postası" error={show('email')} className="sm:col-span-2" hint="Günlük özet bu adrese gönderilir.">
@@ -304,6 +306,7 @@ function SettingsForm({ data }: { data: PlatformSettingsOut }) {
           <div className="flex flex-col gap-8">
             <TemplateEditor label="Hatırlatma (süresi yaklaşan / aktif)" value={reminderTpl} onChange={setReminderTpl} vars={vars} />
             <TemplateEditor label="Gecikmiş (ek süre / süresi dolmuş)" value={overdueTpl} onChange={setOverdueTpl} vars={vars} />
+            <TemplateEditor label="Deneme bitiyor (“Devam etmek istiyor musunuz?”)" value={trialTpl} onChange={setTrialTpl} vars={vars} />
           </div>
         </Card>
 

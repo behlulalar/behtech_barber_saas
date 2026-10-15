@@ -134,6 +134,9 @@ export interface StaffMe {
   surname: string
   phone: string
   role: StaffRole
+  /** Destek modu: platform yöneticisi bu hesapla girdiyse dolu. */
+  impersonated_by?: { id: number; name: string | null; phone: string } | null
+  read_only?: boolean
 }
 
 /* ---------- Admin ---------- */
@@ -433,6 +436,8 @@ export interface PlatformTenantCreate {
   owner_surname: string
   owner_phone: string
   owner_password: string
+  start_trial?: boolean
+  trial_days?: number
 }
 
 export interface PlatformTenantUpdate {
@@ -462,7 +467,7 @@ export interface PlanCreate {
 
 export type PlanUpdate = Partial<PlanCreate>
 
-export type BillingStatus = 'untracked' | 'scheduled' | 'active' | 'due_soon' | 'grace' | 'expired'
+export type BillingStatus = 'untracked' | 'scheduled' | 'trial' | 'active' | 'due_soon' | 'grace' | 'expired'
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid'
 
 export interface Subscription {
@@ -480,6 +485,7 @@ export interface Subscription {
   reminded_at: string | null
   created_at: string
   is_custom: boolean
+  is_trial: boolean
 }
 
 export interface InitialPayment {
@@ -534,6 +540,9 @@ export interface TenantBilling {
   renewal_price: number | null
   /** Şu an istenecek tutar: ödenmemiş bakiye, yoksa (yenileme zamanıysa) yenileme tutarı. */
   amount_due: number
+  /** Son dönem deneme mi (status=expired + is_trial => "Deneme bitti"). */
+  is_trial: boolean
+  trial_ending: boolean
 }
 
 export interface BillingStats {
@@ -546,6 +555,10 @@ export interface BillingStats {
   expired_count: number
   tracked_count: number
   untracked_count: number
+  trial_count: number
+  trial_ending_count: number
+  /** 0..1; hiç biten deneme yoksa null. */
+  trial_conversion_rate: number | null
 }
 
 export interface Payment {
@@ -591,6 +604,7 @@ export interface PlatformSettings {
   notify_email: string | null
   reminder_template: string
   overdue_template: string
+  trial_template: string
 }
 
 export interface PlatformSettingsOut extends PlatformSettings {
@@ -726,4 +740,15 @@ export interface SystemStatus {
     audit_logs_last_24h: number
     failed_logins_last_24h: number
   }
+}
+
+export interface ImpersonateStart {
+  read_only?: boolean
+  staff_id?: number
+}
+
+export interface ImpersonateStartOut {
+  code: string
+  slug: string
+  expires_in: number
 }

@@ -53,6 +53,14 @@ _PS_DEFAULTS: dict = {}
 KEEP_TABLES = {"alembic_version", "platform_settings"}  # migration ile tohumlanan tek satırlık ayar tablosu
 
 
+def _trial_default() -> str:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("trial_migration", BACKEND_DIR / "alembic/versions/b3c4d5e6f7a8_support_impersonation_and_trial.py")
+    mig = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mig)
+    return mig.TRIAL_TEMPLATE
+
+
 def pytest_sessionstart(session):
     """Şemayı hazırlar (run_tests.sh zaten yapar; doğrudan `pytest` için güvence)."""
     from tests.bootstrap_db import bootstrap
@@ -71,14 +79,15 @@ async def clean_db():
             await conn.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
         # platform_settings truncate edilmez; ilk halini her testte geri yükle (testler ayarı değiştirebilir)
         cols = ["iban", "account_holder", "bank_name", "reminder_days", "grace_days", "notify_email",
-                "reminder_template", "overdue_template"]
+                "reminder_template", "overdue_template", "trial_template"]
         if not _PS_DEFAULTS:
             import importlib.util
             spec = importlib.util.spec_from_file_location("billing_migration", BACKEND_DIR / "alembic/versions/c8d9e0f1a2b3_billing.py")
             mig = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mig)
             _PS_DEFAULTS.update(iban=None, account_holder=None, bank_name=None, notify_email=None, reminder_days=3,
-                                grace_days=7, reminder_template=mig.REMINDER_TEMPLATE, overdue_template=mig.OVERDUE_TEMPLATE)
+                                grace_days=7, reminder_template=mig.REMINDER_TEMPLATE, overdue_template=mig.OVERDUE_TEMPLATE,
+                                trial_template=_trial_default())
         sets = ", ".join(f"{c} = :{c}" for c in cols)
         await conn.execute(text(f"update platform_settings set {sets} where id=1"), dict(_PS_DEFAULTS))
     yield

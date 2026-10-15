@@ -1,5 +1,8 @@
-import { CalendarDays, ChartColumn, Clock, LayoutDashboard, Scissors, Settings, Store, UserRound, Users, Wallet } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserRound, Users, Wallet } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Button } from '../components/ui/Button'
+import { authApi } from '../lib/api'
 import { useStaffAuth } from '../lib/auth'
 import { fullName } from '../lib/format'
 import { useDocumentTitle, useFavicon, useRouteLabel } from '../lib/head'
@@ -24,6 +27,45 @@ export const ROLE_LABELS = {
   staff: 'Berber',
 } as const
 
+/** Destek modu bandı: platform yöneticisi işletme adına görüntülüyor/işlem yapıyor. */
+function SupportBanner({ who, readOnly }: { who: string; readOnly: boolean }) {
+  const { logout } = useStaffAuth()
+  const navigate = useNavigate()
+  const [ending, setEnding] = useState(false)
+
+  async function end() {
+    setEnding(true)
+    try {
+      await authApi.endImpersonation()
+    } catch {
+      /* oturum zaten düşmüş olabilir; yine de çıkış yap */
+    }
+    logout()
+    // window.open ile açıldıysa sekmeyi kapatmayı dene; kapanmazsa giriş sayfasına git.
+    if (window.opener) window.close()
+    navigate('/panel/giris', { replace: true })
+  }
+
+  return (
+    <div role="status" className="border-b border-danger/40 bg-[#3a1d18] text-cream">
+      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 md:px-8">
+        <p className="flex min-w-0 items-start gap-2 text-sm leading-snug">
+          <LifeBuoy className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden="true" />
+          <span className="min-w-0">
+            <strong className="font-semibold">Destek modu</strong> — {who} olarak görüntülüyorsunuz
+            {readOnly ? ' (yalnızca görüntüleme)' : ''}
+          </span>
+        </p>
+        <div className="shrink-0 [&>button]:w-full sm:[&>button]:w-auto">
+          <Button size="sm" variant="danger" loading={ending} onClick={end}>
+            Destek oturumunu bitir
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** Staff panel iskeleti. <RequireStaff> altında kullanılır. Sayfalar <Outlet/> içinde render edilir. */
 export default function AdminLayout() {
   const { me, logout, isManager } = useStaffAuth()
@@ -31,8 +73,10 @@ export default function AdminLayout() {
   const nav = isManager ? NAV : NAV.filter((n) => !n.managerOnly)
   useDocumentTitle(useRouteLabel(NAV), 'Panel', tenant.data?.business_name)
   useFavicon(tenant.data?.logo_image)
+  const imp = me?.impersonated_by
   return (
     <PanelShell
+      banner={imp ? <SupportBanner who={imp.name || imp.phone} readOnly={!!me?.read_only} /> : undefined}
       eyebrow="Yönetim"
       brand={tenant.data?.business_name ?? 'Randevu Paneli'}
       nav={nav}

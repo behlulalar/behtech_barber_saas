@@ -68,6 +68,12 @@ class SubscriptionOut(BaseModel):
     reminded_at: datetime | None
     created_at: datetime | None
     is_custom: bool
+    is_trial: bool = False
+
+
+class TrialCreate(BaseModel):
+    days: int = Field(default=14, ge=1, le=60)
+    start_date: date | None = None
 
 
 class SuggestOut(BaseModel):
@@ -106,7 +112,7 @@ class TenantBilling(BaseModel):
     auto_suspended_at: datetime | None
     owner_name: str | None
     owner_phone: str | None
-    status: str  # untracked | scheduled | active | due_soon | grace | expired
+    status: str  # untracked | scheduled | trial | active | due_soon | grace | expired
     coverage_end: date | None
     days_left: int | None
     current: SubscriptionOut | None
@@ -120,6 +126,9 @@ class TenantBilling(BaseModel):
     # Şu an istenmesi gereken tutar: ödenmemiş bakiye varsa o; yoksa yenileme zamanı geldiyse
     # (due_soon/grace/expired ve henüz yeni dönem açılmamışsa) yenileme tutarı; aksi halde 0.
     amount_due: int = 0
+    # Son dönem deneme mi? (status=expired + is_trial => "Deneme bitti"). trial_ending: deneme bitmek üzere.
+    is_trial: bool = False
+    trial_ending: bool = False
 
 
 class BillingStats(BaseModel):
@@ -132,6 +141,10 @@ class BillingStats(BaseModel):
     expired_count: int
     tracked_count: int
     untracked_count: int
+    trial_count: int = 0
+    trial_ending_count: int = 0
+    # Biten (ya da ücretliye geçen) denemelerden ücretliye geçenlerin oranı (0..1); hiç yoksa None.
+    trial_conversion_rate: float | None = None
 
 
 class BillingOverview(BaseModel):
@@ -152,10 +165,12 @@ class PlatformSettingsBase(BaseModel):
 
 
 class PlatformSettingsUpdate(PlatformSettingsBase):
-    pass
+    # Gönderilmezse (eski istemciler) mevcut deneme şablonu korunur.
+    trial_template: str | None = Field(default=None, min_length=1, max_length=2000)
 
 
 class PlatformSettingsOut(PlatformSettingsBase):
+    trial_template: str
     email_configured: bool
     push_configured: bool
 

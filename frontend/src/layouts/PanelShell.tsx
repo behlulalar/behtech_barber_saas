@@ -1,5 +1,5 @@
 import { LogOut, Menu } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
@@ -26,6 +26,8 @@ interface PanelShellProps {
   onLogout: () => void
   /** Kenar çubuğunun / çekmecenin altına ek bağlantılar */
   extra?: ReactNode
+  /** Sayfanın en üstünde yapışık duran bant (ör. destek modu). Yüksekliği kenar çubuğu/üst çubuğa yansıtılır. */
+  banner?: ReactNode
 }
 
 function NavList({ nav, onNavigate, variant }: { nav: NavItem[]; onNavigate?: () => void; variant: 'sidebar' | 'drawer' }) {
@@ -80,16 +82,37 @@ function UserBlock({ user, onLogout }: { user: PanelShellProps['user']; onLogout
 }
 
 /** Admin ve Platform layout'larının ortak iskeleti: masaüstü kenar çubuğu, mobil üst çubuk + alt sekme çubuğu + çekmece. */
-export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra }: PanelShellProps) {
+export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner }: PanelShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const bannerRef = useRef<HTMLDivElement>(null)
+  const [bannerH, setBannerH] = useState(0)
+  // Bant mobilde satır kırabilir; yapışık başlık/kenar çubuğu bandın altından başlasın diye yüksekliği ölçeriz.
+  useLayoutEffect(() => {
+    const el = bannerRef.current
+    if (!el) {
+      setBannerH(0)
+      return
+    }
+    const measure = () => setBannerH(el.getBoundingClientRect().height)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [banner])
   const location = useLocation()
   const tabs = nav.filter((n) => n.tab).slice(0, 4)
   const current = nav.find((n) => (n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)))
 
   return (
-    <div className="min-h-svh bg-ink lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
+    <div className="min-h-svh bg-ink" style={{ '--banner-h': `${bannerH}px` } as CSSProperties}>
+      {banner && (
+        <div ref={bannerRef} className="pt-safe sticky top-0 z-40">
+          {banner}
+        </div>
+      )}
+      <div className="lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
       {/* Masaüstü kenar çubuğu */}
-      <aside className="sticky top-0 hidden h-svh flex-col border-r border-panel-line bg-panel lg:flex">
+      <aside className="sticky top-[var(--banner-h)] hidden h-[calc(100svh-var(--banner-h))] flex-col border-r border-panel-line bg-panel lg:flex">
         <div className="px-6 pb-6 pt-7">
           <p className="eyebrow">{eyebrow}</p>
           <p className="mt-3 break-words font-display text-xl font-medium leading-tight text-cream">{brand}</p>
@@ -103,7 +126,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra }: Panel
 
       <div className="min-w-0">
         {/* Mobil üst çubuk */}
-        <header className="pt-safe sticky top-0 z-30 border-b border-panel-line bg-panel/95 backdrop-blur-sm lg:hidden">
+        <header className={cn(!banner && 'pt-safe', 'sticky top-[var(--banner-h)] z-30 border-b border-panel-line bg-panel/95 backdrop-blur-sm lg:hidden')}>
           <div className="flex h-14 items-center justify-between gap-3 px-4">
             <div className="min-w-0">
               <p className="eyebrow">{eyebrow}</p>
@@ -171,6 +194,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra }: Panel
           <UserBlock user={user} onLogout={onLogout} />
         </div>
       </Drawer>
+      </div>
     </div>
   )
 }

@@ -14,3 +14,9 @@ export function isProductHost(hostname: string = window.location.hostname): bool
 export function tenantSiteUrl(slug: string): string {
   return `https://${slug}.${BASE_DOMAIN}`
 }
+
+/** Destek girişi için dükkânın panel adresi: yerelde `<slug>.localhost:<port>`, canlıda `<slug>.behtechlabs.com`. */
+export function tenantOrigin(slug: string): string {
+  if (import.meta.env.DEV) return `http://${slug}.localhost:${window.location.port || '80'}`
+  return tenantSiteUrl(slug)
+}

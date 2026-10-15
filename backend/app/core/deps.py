@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.core.database import get_db
+from app.core.database import SessionFactory, get_db
 from app.core.security import decode_access_token
 from app.models.staff import Staff, RoleType
 from app.models.tenant import Tenant
@@ -52,7 +52,13 @@ async def get_current_tenant(request: Request, db: Session = Depends(get_db)) ->
     return tenant
 
 
+READ_METHODS = {"GET", "HEAD", "OPTIONS"}
+RO_MSG = "Destek modu salt görüntüleme: değişiklik yapılamaz"
+IMPERSONATE_END_PATH = "/api/auth/impersonate/end"
+
+
 async def get_current_staff(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
@@ -66,6 +72,28 @@ async def get_current_staff(
     # Şifre değişince sürüm artar; sürümü olmayan eski token'lar 0 sayılır.
     if payload.get("tv", 0) != staff.token_version:
         raise _INVALID
+    imp = payload.get("imp")
+    if imp is not None:
+        # Destek oturumu: yönetici pasifleştirilir/silinirse oturum anında düşer.
+        admin = (await db.execute(select(PlatformAdmin).where(PlatformAdmin.id == int(imp)))).scalar_one_or_none()
+        if admin is None or not admin.is_active:
+            raise _INVALID
+        read_only = bool(payload.get("ro"))
+        request.state.impersonator = admin
+        request.state.impersonation_started = payload.get("iat_imp")
+        request.state.read_only = read_only
+        # Oturumu bitirme salt görüntülemede de serbest; ayrı bir impersonation.end kaydı yazar.
+        if request.method not in READ_METHODS and request.url.path != IMPERSONATE_END_PATH:
+            if read_only:
+                raise HTTPException(status_code=403, detail=RO_MSG)
+            # Gövde (body) ASLA yazılmaz; ayrı oturum: işlem rollback olsa da deneme izi kalsın.
+            from app.services.audit_services import audit
+            async with SessionFactory() as audit_db:
+                await audit(audit_db, actor=admin, request=request, action="impersonation.action",
+                            entity_type="tenant", entity_id=tenant.id, tenant_id=tenant.id,
+                            summary=f"Destek modunda: {request.method} {request.url.path}",
+                            details={"staff_id": staff.id, "method": request.method, "path": request.url.path})
+                await audit_db.commit()
     return staff
 
 

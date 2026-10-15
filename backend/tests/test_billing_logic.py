@@ -10,8 +10,8 @@ TODAY = date(2026, 10, 15)
 PS = SimpleNamespace(reminder_days=3, grace_days=7)
 
 
-def sub(id, start, end, price=1000):
-    return SimpleNamespace(id=id, start_date=start, end_date=end, price=price)
+def sub(id, start, end, price=1000, is_trial=False):
+    return SimpleNamespace(id=id, start_date=start, end_date=end, price=price, is_trial=is_trial)
 
 
 # ---- ay sonu / artık yıl ----

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ExternalLink, Pencil, Receipt, RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowLeft, ExternalLink, FlaskConical, Pencil, Receipt, RefreshCw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
@@ -15,7 +15,7 @@ import { formatPhone, formatPrice } from '../../lib/format'
 import type { Payment, Subscription } from '../../types/api'
 import { formatDateDMY } from './billing'
 import { EditPeriodModal, PaymentModal, RenewModal, useSubscriptions } from './BillingModals'
-import { NoteCard, OwnerCard, RecentEventsCard, SetupCard } from './TenantDetailParts'
+import { NoteCard, OwnerCard, RecentEventsCard, SetupCard, SupportCard } from './TenantDetailParts'
 import { BillingStatusBadge, Money, PaymentStatusBadge, RemindButton, RemindedNote, useBillingSettings, useRemind } from './BillingParts'
 
 export default function TenantDetailPage() {
@@ -31,6 +31,14 @@ export default function TenantDetailPage() {
   const settingsQ = useBillingSettings()
   const { remind } = useRemind(settingsQ.data)
 
+  const startTrial = useMutation({
+    mutationFn: () => platformApi.startTrial(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['platform'] })
+      toast.success('14 günlük deneme başlatıldı')
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
   const [renewing, setRenewing] = useState(false)
   const [paying, setPaying] = useState<{ subId: number | null } | null>(null)
   const [editing, setEditing] = useState<Subscription | null>(null)
@@ -99,7 +107,7 @@ export default function TenantDetailPage() {
       cell: (s) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-cream">
-            {s.plan_name} {s.is_custom && <span className="text-xs font-normal text-muted">(özel)</span>}
+            {s.plan_name} {s.is_trial ? <span className="text-xs font-normal text-info">(deneme)</span> : s.is_custom && <span className="text-xs font-normal text-muted">(özel)</span>}
           </p>
           <p className="text-xs font-normal tabular-nums text-muted">
             {formatDateDMY(s.start_date)} – {formatDateDMY(s.end_date)}
@@ -206,6 +214,11 @@ export default function TenantDetailPage() {
           <Button leftIcon={<RefreshCw className="size-4" />} onClick={() => setRenewing(true)}>
             Yenile / dönem ekle
           </Button>
+          {subsQ.data?.length === 0 && (
+            <Button variant="secondary" leftIcon={<FlaskConical className="size-4" />} onClick={() => startTrial.mutate()} loading={startTrial.isPending}>
+              Deneme başlat
+            </Button>
+          )}
           <Button variant="secondary" leftIcon={<Receipt className="size-4" />} onClick={() => setPaying({ subId: null })}>
             Ödeme al
           </Button>
@@ -227,6 +240,7 @@ export default function TenantDetailPage() {
         <OwnerCard tenant={tenant} />
         <NoteCard key={tenant.note ?? ''} tenant={tenant} />
         <RecentEventsCard tenantId={tenant.id} />
+        <SupportCard tenant={tenant} />
       </div>
 
       <Card>
@@ -246,7 +260,12 @@ export default function TenantDetailPage() {
                 icon={<RefreshCw />}
                 title="Henüz dönem yok"
                 description="Bu işletme takip dışı. İlk dönemi ekleyince takip başlar."
-                action={<Button onClick={() => setRenewing(true)}>Dönem ekle</Button>}
+                action={
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button onClick={() => startTrial.mutate()} loading={startTrial.isPending}>14 günlük deneme başlat</Button>
+                    <Button variant="secondary" onClick={() => setRenewing(true)}>Dönem ekle</Button>
+                  </div>
+                }
               />
             }
           />

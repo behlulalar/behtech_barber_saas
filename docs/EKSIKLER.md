@@ -46,14 +46,16 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 - [x] (2026-10-15) Platformdan **sahip şifresi sıfırlama YAPILDI** (geçici şifre bir kez gösterilir, WhatsApp mesajı hazır). **Hâlâ yok (P1):** sahip/personelin kendi başına "şifremi unuttum" (OTP ile) ve **panel içinde kendi şifresini değiştirme** — sıfırlama mesajı bu yüzden "şifrenizi değiştirin" demiyor.
 - [x] (2026-10-15) Sahip adı/telefonu düzeltme YAPILDI. **Kalan (P1): slug (adres) değiştirme** (eski adrese yönlendirme düşün).
 - [x] (2026-10-15) İşletme notu + "son olaylar" kartı (son 10 denetim kaydı) YAPILDI. Eski satır: (açıldı/ödeme/hatırlatma/askı/şifre sıfırlandı olayları tek listede; denetim kaydından türetilebilir).
-- [ ] **P1 "İşletme olarak gir"** (karar §1). Önkoşul: denetim kaydı (var).
+- [x] (2026-10-15) **"İşletme olarak gir" YAPILDI** (tam yetki varsayılan, "yalnızca görüntüle" seçeneği; 60 sn tek kullanımlık kod, 60 dk oturum, destek şeridi, denetim kaydı).
+  **Bilinen sınırlar:** destek token'ı 60 dk dolmadan sunucuda iptal edilemez (yöneticiyi pasife almak ya da personel `token_version` artırmak gerekir); tam yetki modunda parola değiştirme uç noktaları da çalışır (denetim kaydı var); engellenen salt-görüntüleme yazması kayıt bırakmaz.
 - [ ] **P2 İşletmeyi arşivleme/silme:** soft delete + 30 gün geri alma; müşteri verisini dışa aktarma (CSV/JSON) — KVKK silme/taşıma talebi için.
 - [ ] **P2 Yalnızca-okuma platform yöneticisi rolü** (takip elemanı için).
 - [ ] **P2 Platform girişi için 2FA** (TOTP) — platform hesabı tüm dükkânlara hükmediyor.
 - [ ] **P3 Tüm "platform yöneticisi" eylemlerinin dışarı bildirimi** (kritik eylemde e-posta).
 
 ### Aşama C — Gelir, deneme ve metrikler
-- [ ] **P1 Deneme süresi akışı** (karar §1). Yeni işletme formunda "14 gün deneme başlat" seçeneği; "Ücretliye geçir" eylemi; deneme biterken `wa.me` şablonu.
+- [x] (2026-10-15) **Deneme süresi akışı YAPILDI** (14 gün, ek süre yok, bitmeden `trial_template` ile "devam etmek istiyor musunuz?", bitince anında otomatik askı, geliri etkilemez, dönüşüm oranı).
+  **Kalan (P2):** aynı işletmeye tekrar tekrar deneme başlatmayı engelleyen kural yok; "Deneme" filtre sekmesi yok (bitenler "Yaklaşan" altında); dönüşüm oranı yalnızca platform istatistiğinde.
 - [ ] **P1 Gelir metrikleri (Genel Bakış şu an sadece 4 sayı):** MRR/ARR (dönem fiyatı ÷ ay sayısı, deneme hariç), plan dağılımı, bu ay tahsilat/beklenen, **yenileme takvimi** (önümüzdeki 30 gün),
   kaybedilen işletme, deneme→ücretli dönüşüm.
 - [ ] **P2 Kullanım metrikleri:** işletme başına aylık randevu, aktif müşteri, son aktivite; **30+ gündür randevusu olmayan işletme = ayrılma riski** listesi.

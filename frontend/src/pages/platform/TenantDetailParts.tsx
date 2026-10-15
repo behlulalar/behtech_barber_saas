@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, KeyRound, MessageCircle, Pencil, ScrollText } from 'lucide-react'
+import { Check, Copy, KeyRound, LifeBuoy, MessageCircle, Pencil, ScrollText } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card, CardHeader } from '../../components/ui/Card'
+import { Checkbox } from '../../components/ui/Checkbox'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
@@ -13,6 +14,7 @@ import { Skeleton } from '../../components/ui/Skeleton'
 import { Textarea } from '../../components/ui/Textarea'
 import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
+import { tenantOrigin } from '../../lib/site'
 import { formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
 import type { PlatformTenantDetail } from '../../types/api'
 import { SetupList } from './SetupParts'
@@ -323,6 +325,49 @@ export function RecentEventsCard({ tenantId }: { tenantId: number }) {
           ))}
         </ul>
       )}
+    </Card>
+  )
+}
+
+/* ------------------------------ Destek ------------------------------ */
+
+export function SupportCard({ tenant }: { tenant: PlatformTenantDetail }) {
+  const toast = useToast()
+  const [readOnly, setReadOnly] = useState(false)
+  const mutation = useMutation({
+    mutationFn: () => platformApi.startImpersonation(tenant.id, { read_only: readOnly }),
+    onSuccess: (res) => {
+      const url = `${tenantOrigin(res.slug)}/panel/destek?code=${encodeURIComponent(res.code)}`
+      // Kod 60 sn geçerli ve tek kullanımlık; yeni sekme hemen açılır.
+      if (!window.open(url, '_blank')) toast.error('Yeni sekme açılamadı. Tarayıcının açılır pencere engelini kaldırın.')
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+  return (
+    <Card>
+      <CardHeader
+        title="Destek"
+        description="İşletmenin paneline onun yönetici hesabıyla girin. Oturum 60 dakika sürer; girişiniz ve yaptığınız işlemler Denetim kaydına yazılır."
+      />
+      <Checkbox
+        checked={readOnly}
+        onChange={(e) => setReadOnly(e.target.checked)}
+        label="Yalnızca görüntüle"
+        description="Açıkken değişiklik yapılamaz (WhatsApp bağlama, ayar değiştirme vb. engellenir)."
+      />
+      <div className="mt-3 flex flex-col gap-2">
+        <div>
+          <Button
+            leftIcon={<LifeBuoy className="size-4" />}
+            onClick={() => mutation.mutate()}
+            loading={mutation.isPending}
+            disabled={!tenant.is_active}
+          >
+            İşletme olarak gir
+          </Button>
+        </div>
+        {!tenant.is_active && <p className="text-xs text-muted">İşletme pasif; önce aktifleştirin.</p>}
+      </div>
     </Card>
   )
 }

@@ -63,8 +63,17 @@ export function isOverdue(status: BillingStatus): boolean {
   return status === 'grace' || status === 'expired'
 }
 
+/** Deneme dönemindeki işletme (devam etmek istiyor mu mesajı) */
+export function isTrialTenant(tb: Pick<TenantBilling, 'status' | 'is_trial'>): boolean {
+  return tb.is_trial && (tb.status === 'trial' || tb.status === 'expired')
+}
+
 export function whatsappMessage(tb: TenantBilling, settings: PlatformSettings): string {
-  const tpl = isOverdue(tb.status) ? settings.overdue_template : settings.reminder_template
+  const tpl = isTrialTenant(tb)
+    ? settings.trial_template
+    : isOverdue(tb.status)
+      ? settings.overdue_template
+      : settings.reminder_template
   return renderTemplate(tpl, templateVars(tb, settings))
 }
 
@@ -79,6 +88,7 @@ export const STATUS_TONES: Record<BillingStatus, BadgeTone> = {
   expired: 'danger',
   grace: 'warning',
   due_soon: 'copper',
+  trial: 'info',
   active: 'success',
   scheduled: 'info',
   untracked: 'neutral',
@@ -88,14 +98,21 @@ export const STATUS_ORDER: Record<BillingStatus, number> = {
   expired: 0,
   grace: 1,
   due_soon: 2,
-  active: 3,
-  scheduled: 4,
-  untracked: 5,
+  trial: 3,
+  active: 4,
+  scheduled: 5,
+  untracked: 6,
 }
 
-export function statusLabel(tb: Pick<TenantBilling, 'status' | 'days_left' | 'auto_suspended_at'>, graceDays?: number): string {
+export function statusLabel(
+  tb: Pick<TenantBilling, 'status' | 'days_left' | 'auto_suspended_at'> & { is_trial?: boolean },
+  graceDays?: number,
+): string {
   switch (tb.status) {
+    case 'trial':
+      return tb.days_left === 0 ? 'Deneme (bugün bitiyor)' : `Deneme (${tb.days_left} gün kaldı)`
     case 'expired':
+      if (tb.is_trial) return 'Deneme bitti'
       return tb.auto_suspended_at ? 'Süresi doldu – askıya alındı' : 'Süresi doldu'
     case 'grace': {
       const left = graceDays !== undefined && tb.days_left !== null ? graceDays + tb.days_left : null
@@ -124,6 +141,11 @@ export function formatRelative(ts: string, now: number = Date.now()): string {
   if (abs < 3600) return rtf.format(Math.round(diffSec / 60), 'minute')
   if (abs < 86400) return rtf.format(Math.round(diffSec / 3600), 'hour')
   return rtf.format(Math.round(diffSec / 86400), 'day')
+}
+
+/** 0..1 oranı "%50" olarak; yoksa "—". */
+export function formatRate(rate: number | null | undefined): string {
+  return rate === null || rate === undefined ? '—' : `%${Math.round(rate * 100)}`
 }
 
 /** Kullanıcı girdisini (örn. "1.500") tam sayıya çevirir; geçersizse null. */

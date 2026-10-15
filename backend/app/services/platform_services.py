@@ -249,6 +249,9 @@ async def create_tenant(
         await audit(db, actor=actor, request=request, action="tenant.create", entity_type="tenant",
                     entity_id=tenant.id, tenant_id=tenant.id, summary=f"'{tenant.name}' işletmesi oluşturuldu",
                     details={"slug": tenant.slug, "owner_phone": data.owner_phone})
+        if data.start_trial:
+            from app.services import billing_services  # döngüsel import'u önlemek için yerelde
+            await billing_services.add_trial(db, tenant, data.trial_days, None, actor, request)
         await db.commit()
     except IntegrityError:
         await db.rollback()

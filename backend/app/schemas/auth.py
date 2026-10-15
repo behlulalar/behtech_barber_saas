@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 class LoginRequest(BaseModel):
 
@@ -11,3 +11,6 @@ class TokenResponse(BaseModel):
     token_type: str
 
     
+
+class ImpersonateExchange(BaseModel):
+    code: str = Field(min_length=10, max_length=200)

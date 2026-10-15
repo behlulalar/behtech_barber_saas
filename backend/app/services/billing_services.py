@@ -35,6 +35,7 @@ from app.schemas.billing import (
     SubscriptionUpdate,
     SuggestOut,
     TenantBilling,
+    TrialCreate,
 )
 from app.services import notify_services, platform_services
 from app.services.audit_services import audit
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 MAX_PAYMENT = 10_000_000
 OVERLAP_MSG = "Bu tarihler başka bir dönemle çakışıyor"
-COVERED_STATUSES = {"active", "due_soon", "scheduled"}
+COVERED_STATUSES = {"active", "due_soon", "scheduled", "trial"}
 ATTENTION_ORDER = {"expired": 0, "grace": 1, "due_soon": 2}
 IBAN_RE = re.compile(r"^TR\d{24}$")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -87,6 +88,8 @@ class BillingState:
     next: Subscription | None
     relevant: Subscription | None  # bildirim/hatırlatma işaretinin tutulduğu dönem (current ya da latest)
     outstanding: int
+    is_trial: bool = False  # son (en geç biten) dönem deneme mi
+    trial_ending: bool = False
 
 
 def payment_status(price: int, paid: int) -> str:
@@ -109,19 +112,27 @@ def compute_state(
     days_left = (coverage_end - today).days
     has_past = any(s.start_date <= today for s in subs)
 
-    if coverage_end + timedelta(days=ps.grace_days) < today:
+    trial_latest = latest.is_trial
+    if trial_latest and coverage_end < today:
+        status = "expired"  # deneme bitince ek süre (grace) YOK: anında askıya alınır
+    elif coverage_end + timedelta(days=ps.grace_days) < today:
         status = "expired"
     elif coverage_end < today:
         status = "grace"
     elif current is None and nxt is not None and not has_past:
         status = "scheduled"
+    elif trial_latest and current is latest:
+        status = "trial"
     elif days_left <= ps.reminder_days:
         status = "due_soon"
     else:
         status = "active"
 
     outstanding = sum(max(s.price - paid.get(s.id, 0), 0) for s in subs if s.start_date <= today)
-    return BillingState(status, coverage_end, days_left, current, nxt, current or latest, outstanding)
+    return BillingState(
+        status, coverage_end, days_left, current, nxt, current or latest, outstanding,
+        is_trial=trial_latest, trial_ending=status == "trial" and days_left <= ps.reminder_days,
+    )
 
 
 async def get_settings_row(db: AsyncSession) -> PlatformSettings:
@@ -165,6 +176,7 @@ def sub_out(s: Subscription, paid_amount: int) -> SubscriptionOut:
         reminded_at=s.reminded_at,
         created_at=s.created_at,
         is_custom=s.plan_id is None,
+        is_trial=s.is_trial,
     )
 
 
@@ -350,9 +362,11 @@ async def suggest_period(db: AsyncSession, tenant_id: int, plan_id: int) -> Sugg
     subs = (await _subs_by_tenant(db, tenant_id)).get(tenant_id, [])
     start = today
     if subs:
-        latest_end = max(s.end_date for s in subs)
-        if latest_end >= today - timedelta(days=ps.grace_days):
-            start = latest_end + timedelta(days=1)
+        latest = max(subs, key=lambda s: s.end_date)
+        if latest.is_trial:
+            start = max(today, latest.end_date + timedelta(days=1))
+        elif latest.end_date >= today - timedelta(days=ps.grace_days):
+            start = latest.end_date + timedelta(days=1)
     return SuggestOut(start_date=start, end_date=period_end(start, plan.duration_months), price=plan.price)
 
 
@@ -406,6 +420,38 @@ async def create_subscription(
                     entity_id=first_payment.id, tenant_id=tenant_id,
                     summary=f"'{tenant.name}' için {fmt_money(data.initial_payment.amount)} ilk ödeme alındı",
                     details={"amount": data.initial_payment.amount, "subscription_id": sub.id})
+    await reactivate_if_covered(db, tenant_id, actor, request)
+    await db.commit()
+    return await _sub_out_by_id(db, sub)
+
+
+async def add_trial(
+    db: AsyncSession, tenant: Tenant, days: int, start: date | None, actor: PlatformAdmin | None, request: Request | None
+) -> Subscription:
+    """Deneme dönemi ekler (commit ETMEZ; çağıran transaction'ı kapatır)."""
+    start = start or date.today()
+    end = start + timedelta(days=days - 1)
+    await _check_overlap(db, tenant.id, start, end)
+    sub = Subscription(
+        tenant_id=tenant.id, plan_id=None, plan_name="Deneme", start_date=start, end_date=end, price=0,
+        note=f"{days} günlük deneme", is_trial=True,
+    )
+    db.add(sub)
+    await db.flush()
+    await audit(db, actor=actor, request=request, action="subscription.create", entity_type="subscription",
+                entity_id=sub.id, tenant_id=tenant.id,
+                summary=f"'{tenant.name}' için Deneme dönemi başlatıldı ({fmt_date(start)} - {fmt_date(end)})",
+                details={"plan_name": "Deneme", "start_date": str(start), "end_date": str(end), "price": 0,
+                         "is_trial": True, "days": days})
+    return sub
+
+
+async def create_trial(
+    db: AsyncSession, tenant_id: int, data: TrialCreate,
+    actor: PlatformAdmin | None = None, request: Request | None = None,
+) -> SubscriptionOut:
+    tenant = await _get_tenant(db, tenant_id)
+    sub = await add_trial(db, tenant, data.days, data.start_date, actor, request)
     await reactivate_if_covered(db, tenant_id, actor, request)
     await db.commit()
     return await _sub_out_by_id(db, sub)
@@ -601,6 +647,7 @@ async def _build_tenant_billings(db: AsyncSession) -> list[tuple[Tenant, TenantB
             outstanding=state.outstanding, last_payment_on=last_paid.get(tenant.id),
             reminded_at=state.relevant.reminded_at if state.relevant else None,
             renewal_plan_name=renewal_name, renewal_price=renewal_price, amount_due=amount_due,
+            is_trial=state.is_trial, trial_ending=state.trial_ending,
         )
         result.append((tenant, tb, state))
     return result
@@ -624,6 +671,17 @@ async def overview(db: AsyncSession) -> BillingOverview:
         return sum(1 for b in billings if b.status == status)
 
     tracked = sum(1 for b in billings if b.status != "untracked")
+    subs_map = await _subs_by_tenant(db)
+    eligible = converted = 0
+    for subs in subs_map.values():
+        trials = [x for x in subs if x.is_trial]
+        if not trials:
+            continue
+        first_start = min(x.start_date for x in trials)
+        did_convert = any(not x.is_trial and x.start_date >= first_start for x in subs)
+        if did_convert or any(x.end_date < today for x in trials):
+            eligible += 1
+            converted += did_convert
     stats = BillingStats(
         revenue_this_month=await revenue(today.replace(day=1)),
         revenue_this_year=await revenue(today.replace(month=1, day=1)),
@@ -631,9 +689,14 @@ async def overview(db: AsyncSession) -> BillingOverview:
         outstanding_total=sum(b.outstanding for b in billings),
         due_soon_count=count("due_soon"), grace_count=count("grace"), expired_count=count("expired"),
         tracked_count=tracked, untracked_count=len(billings) - tracked,
+        trial_count=count("trial"), trial_ending_count=sum(1 for b in billings if b.trial_ending),
+        trial_conversion_rate=round(converted / eligible, 4) if eligible else None,
     )
-    attention = [b for b in billings if b.status in ATTENTION_ORDER or b.outstanding > 0]
-    attention.sort(key=lambda b: (ATTENTION_ORDER.get(b.status, 3), b.days_left if b.days_left is not None else 0))
+    attention = [b for b in billings if b.status in ATTENTION_ORDER or b.trial_ending or b.outstanding > 0]
+    attention.sort(key=lambda b: (
+        ATTENTION_ORDER["due_soon"] if b.trial_ending else ATTENTION_ORDER.get(b.status, 3),
+        b.days_left if b.days_left is not None else 0,
+    ))
     return BillingOverview(
         stats=stats, attention=attention, recent_payments=await list_payments(db, None, None, None, limit=10)
     )
@@ -646,6 +709,7 @@ def _settings_out(row: PlatformSettings) -> PlatformSettingsOut:
         iban=row.iban, account_holder=row.account_holder, bank_name=row.bank_name,
         reminder_days=row.reminder_days, grace_days=row.grace_days, notify_email=row.notify_email,
         reminder_template=row.reminder_template, overdue_template=row.overdue_template,
+        trial_template=row.trial_template,
         email_configured=notify_services.email_configured(), push_configured=notify_services.push_configured(),
     )
 
@@ -674,6 +738,8 @@ async def update_settings(
         "reminder_template": data.reminder_template,
         "overdue_template": data.overdue_template,
     }
+    if data.trial_template is not None:
+        new_values["trial_template"] = data.trial_template
     # Denetim kaydına yalnızca değişen ALAN ADLARI yazılır (IBAN/e-posta/şablon içeriği asla).
     changed = [k for k, v in new_values.items() if getattr(row, k) != v]
     for k, v in new_values.items():
@@ -709,7 +775,7 @@ async def push_unsubscribe(db: AsyncSession, endpoint: str) -> None:
 
 # ---------- günlük görev ----------
 
-STATUS_TR = {"due_soon": "Ödeme yaklaşıyor", "grace": "Süresi doldu (ek süre)", "expired": "Askıya alındı"}
+STATUS_TR = {"trial_ending": "Deneme bitiyor", "due_soon": "Ödeme yaklaşıyor", "grace": "Süresi doldu (ek süre)", "expired": "Askıya alındı"}
 
 
 def _build_email(items: list[dict]) -> tuple[str, str]:
@@ -762,8 +828,10 @@ async def run_billing_checks(db: AsyncSession) -> RunChecksResult:
             tenant.auto_suspended_at = now
             suspended.append(tenant.name)
             newly_suspended = True
+            summary = (f"'{tenant.name}' deneme süresi bitti, otomatik askıya alındı" if state.is_trial
+                       else f"'{tenant.name}' aboneliği bittiği için otomatik askıya alındı")
             await audit(db, actor=None, action="billing.auto_suspend", entity_type="tenant", entity_id=tenant.id,
-                        tenant_id=tenant.id, summary=f"'{tenant.name}' aboneliği bittiği için otomatik askıya alındı",
+                        tenant_id=tenant.id, summary=summary,
                         details={"coverage_end": str(state.coverage_end)})
         elif state.status in COVERED_STATUSES and tenant.auto_suspended_at is not None:
             tenant.is_active = True
@@ -777,11 +845,15 @@ async def run_billing_checks(db: AsyncSession) -> RunChecksResult:
         if state.status in ("due_soon", "grace") and rel is not None and rel.last_notified_on != today:
             rel.last_notified_on = today
             notify = True
+        elif state.trial_ending and rel is not None and rel.last_notified_on != today:
+            rel.last_notified_on = today
+            notify = True
         if notify:
             items.append({
-                "name": tenant.name, "status": STATUS_TR.get(state.status, state.status),
+                "name": tenant.name, "status": STATUS_TR.get("trial_ending" if state.trial_ending else state.status, state.status),
                 "end": state.coverage_end, "balance": tb.amount_due,
-                "owner": tb.owner_name, "phone": tb.owner_phone, "kind": state.status,
+                "owner": tb.owner_name, "phone": tb.owner_phone,
+                "kind": "trial_ending" if state.trial_ending else state.status,
             })
     await db.commit()
 
@@ -790,10 +862,12 @@ async def run_billing_checks(db: AsyncSession) -> RunChecksResult:
         soon = sum(1 for i in items if i["kind"] == "due_soon")
         late = sum(1 for i in items if i["kind"] == "grace")
         susp = sum(1 for i in items if i["kind"] == "expired")
+        trial = sum(1 for i in items if i["kind"] == "trial_ending")
         parts = [p for p in (
             f"{soon} ödemesi yaklaşıyor" if soon else "",
             f"{late} gecikmiş" if late else "",
             f"{susp} askıya alındı" if susp else "",
+            f"{trial} deneme bitiyor — devam etmek istiyor mu?" if trial else "",
         ) if p]
         body = f"{len(items)} işletme: " + ", ".join(parts)
         try:

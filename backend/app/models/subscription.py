@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -17,6 +17,7 @@ class Subscription(Base):
     end_date: Mapped[date] = mapped_column(Date)
     price: Mapped[int] = mapped_column(Integer, server_default="0")
     note: Mapped[str | None] = mapped_column(Text)
+    is_trial: Mapped[bool] = mapped_column(Boolean, server_default="false")
     reminded_at: Mapped[datetime | None] = mapped_column(DateTime)
     last_notified_on: Mapped[date | None] = mapped_column(Date)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())

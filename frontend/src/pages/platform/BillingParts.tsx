@@ -7,7 +7,7 @@ import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
 import { formatPrice } from '../../lib/format'
 import type { PaymentStatus, PlatformSettingsOut, TenantBilling } from '../../types/api'
-import { formatRelative, STATUS_TONES, statusLabel, whatsappUrl } from './billing'
+import { formatRelative, isTrialTenant, STATUS_TONES, statusLabel, whatsappUrl } from './billing'
 
 export function useBillingSettings() {
   return useQuery({ queryKey: ['platform', 'settings'], queryFn: platformApi.getSettings })
@@ -64,7 +64,7 @@ export function useRemind(settings: PlatformSettingsOut | undefined) {
       return
     }
     // Şablon IBAN/alıcı/banka kullanıyor ama ayarlarda boşsa mesaj "( , )" gibi bozuk gider.
-    const tpl = `${settings.reminder_template} ${settings.overdue_template}`
+    const tpl = `${settings.reminder_template} ${settings.overdue_template} ${settings.trial_template}`
     const missing = [
       tpl.includes('{iban}') && !settings.iban && 'IBAN',
       tpl.includes('{alici}') && !settings.account_holder && 'alıcı adı',
@@ -103,7 +103,7 @@ export function RemindButton({
       leftIcon={<MessageCircle className="size-4" />}
       onClick={() => remind(tb)}
     >
-      WhatsApp'tan hatırlat
+      {isTrialTenant(tb) ? 'Devam etmek istiyor mu?' : "WhatsApp'tan hatırlat"}
     </Button>
   )
 }

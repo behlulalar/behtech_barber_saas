@@ -11,6 +11,7 @@ const LandingPage = lazy(() => import('./pages/public/LandingPage'))
 const BookingPage = lazy(() => import('./pages/public/BookingPage'))
 const MyAppointmentsPage = lazy(() => import('./pages/public/MyAppointmentsPage'))
 
+const AdminSupportEntryPage = lazy(() => import('./pages/admin/SupportEntryPage'))
 const AdminLoginPage = lazy(() => import('./pages/admin/LoginPage'))
 const AdminDashboardPage = lazy(() => import('./pages/admin/DashboardPage'))
 const AdminAppointmentsPage = lazy(() => import('./pages/admin/AppointmentsPage'))
@@ -94,6 +95,7 @@ function App() {
 
         {/* Personel paneli */}
         <Route path="panel/giris" element={<AdminLoginPage />} />
+        <Route path="panel/destek" element={<AdminSupportEntryPage />} />
         <Route path="panel" element={<RequireStaff />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminDashboardPage />} />

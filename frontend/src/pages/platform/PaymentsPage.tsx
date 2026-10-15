@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Banknote, CalendarClock, CircleCheck, Hourglass, Receipt, RefreshCw, Search, Settings2, Wallet } from 'lucide-react'
+import { ArrowRight, Banknote, CalendarClock, CircleCheck, FlaskConical, Hourglass, Percent, Receipt, RefreshCw, Search, Settings2, Wallet } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button, buttonStyles } from '../../components/ui/Button'
@@ -15,7 +15,7 @@ import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
 import { formatPhone, formatPrice } from '../../lib/format'
 import type { TenantBilling } from '../../types/api'
-import { formatDateDMY, STATUS_ORDER } from './billing'
+import { formatDateDMY, formatRate, STATUS_ORDER } from './billing'
 import { PaymentModal, RenewModal, type TenantRef } from './BillingModals'
 import { BillingStatusBadge, Money, RemindButton, RemindedNote, useBillingSettings, useRemind } from './BillingParts'
 
@@ -44,6 +44,15 @@ export default function PaymentsPage() {
   const [paying, setPaying] = useState<TenantRef | null>(null)
   const [renewing, setRenewing] = useState<TenantRef | null>(null)
 
+  const startTrial = useMutation({
+    mutationFn: (t: TenantBilling) => platformApi.startTrial(t.tenant_id),
+    onSuccess: (_s, t) => {
+      qc.invalidateQueries({ queryKey: ['platform'] })
+      toast.success(`${t.tenant_name} için 14 günlük deneme başlatıldı`)
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+
   const runChecks = useMutation({
     mutationFn: platformApi.runChecks,
     onSuccess: (r) => {
@@ -64,7 +73,7 @@ export default function PaymentsPage() {
   const counts = useMemo(
     () => ({
       all: all.length,
-      upcoming: all.filter((t) => t.status === 'due_soon').length,
+      upcoming: all.filter((t) => t.status === 'due_soon' || t.trial_ending).length,
       overdue: all.filter((t) => t.status === 'grace' || t.status === 'expired').length,
       untracked: all.filter((t) => t.status === 'untracked').length,
     }),
@@ -74,7 +83,7 @@ export default function PaymentsPage() {
     const needle = q.trim().toLocaleLowerCase('tr-TR')
     return all
       .filter((t) => {
-        if (filter === 'upcoming' && t.status !== 'due_soon') return false
+        if (filter === 'upcoming' && t.status !== 'due_soon' && !t.trial_ending) return false
         if (filter === 'overdue' && t.status !== 'grace' && t.status !== 'expired') return false
         if (filter === 'untracked' && t.status !== 'untracked') return false
         if (!needle) return true
@@ -108,7 +117,26 @@ export default function PaymentsPage() {
       cell: (t) => (t.outstanding > 0 ? <Money value={t.outstanding} className="text-warning" /> : <span className="text-muted">—</span>),
     },
     { key: 'last', header: 'Son ödeme', cell: (t) => <span className="tabular-nums text-muted-strong">{t.last_payment_on ? formatDateDMY(t.last_payment_on) : '—'}</span> },
+    { key: 'actions', header: 'İşlem', align: 'right', hideOnMobile: true, cell: (t) => trialAction(t) },
   ]
+
+  function trialAction(t: TenantBilling) {
+    if (t.status !== 'untracked') return null
+    return (
+      <Button
+        size="sm"
+        variant="secondary"
+        leftIcon={<FlaskConical className="size-4" />}
+        loading={startTrial.isPending && startTrial.variables?.tenant_id === t.tenant_id}
+        onClick={(e) => {
+          e.stopPropagation()
+          startTrial.mutate(t)
+        }}
+      >
+        Deneme başlat
+      </Button>
+    )
+  }
 
   return (
     <>
@@ -141,6 +169,24 @@ export default function PaymentsPage() {
           hint={s ? `${s.due_soon_count} yaklaşan · ${s.grace_count + s.expired_count} gecikmiş` : undefined}
           icon={<Hourglass />}
           tone={s && s.outstanding_total > 0 ? 'warning' : 'default'}
+          loading={overview.isLoading}
+        />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 md:mt-4 md:gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Aktif deneme"
+          value={s ? String(s.trial_count) : ''}
+          hint={s ? `bitmek üzere ${s.trial_ending_count}` : undefined}
+          icon={<FlaskConical />}
+          tone={s && s.trial_ending_count > 0 ? 'copper' : 'default'}
+          loading={overview.isLoading}
+        />
+        <StatCard
+          label="Deneme→ücretli"
+          value={s ? formatRate(s.trial_conversion_rate) : ''}
+          hint="dönüşüm oranı"
+          icon={<Percent />}
           loading={overview.isLoading}
         />
       </div>
@@ -228,6 +274,7 @@ export default function PaymentsPage() {
             rowKey={(t) => t.tenant_id}
             loading={tenants.isLoading}
             onRowClick={(t) => navigate(detail(t))}
+            mobileActions={trialAction}
             empty={<EmptyState icon={<Search />} title="Sonuç bulunamadı" description="Filtreyi veya aramayı değiştirmeyi deneyin." />}
           />
         )}

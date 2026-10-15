@@ -18,5 +18,6 @@ class PlatformSettings(Base):
     notify_email: Mapped[str | None] = mapped_column(String(255))
     reminder_template: Mapped[str] = mapped_column(Text)
     overdue_template: Mapped[str] = mapped_column(Text)
+    trial_template: Mapped[str] = mapped_column(Text)
 
     __table_args__ = (CheckConstraint("id = 1", name="ck_platform_settings_single_row"),)

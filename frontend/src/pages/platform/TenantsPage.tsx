@@ -10,6 +10,7 @@ import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
 import { PhoneInput } from '../../components/ui/PhoneInput'
 import { Select } from '../../components/ui/Select'
+import { Checkbox } from '../../components/ui/Checkbox'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Table, type Column } from '../../components/ui/Table'
@@ -196,6 +197,7 @@ function CreateModal({
   const toast = useToast()
   const [form, setForm] = useState(EMPTY)
   const [touched, setTouched] = useState(false)
+  const [startTrial, setStartTrial] = useState(true)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const set = (k: keyof typeof EMPTY) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
@@ -225,6 +227,7 @@ function CreateModal({
   function close() {
     setForm(EMPTY)
     setTouched(false)
+    setStartTrial(true)
     setServerError(null)
     onClose()
   }
@@ -241,6 +244,8 @@ function CreateModal({
       owner_surname: form.owner_surname.trim(),
       owner_phone: normalizePhone(form.owner_phone),
       owner_password: form.owner_password,
+      start_trial: startTrial,
+      trial_days: 14,
     })
   }
 
@@ -298,6 +303,12 @@ function CreateModal({
         <Field label="Geçici şifre" required error={show('owner_password')}>
           <Input type="password" autoComplete="new-password" value={form.owner_password} onChange={(e) => set('owner_password')(e.target.value)} />
         </Field>
+        <Checkbox
+          checked={startTrial}
+          onChange={(e) => setStartTrial(e.target.checked)}
+          label="14 günlük deneme başlat"
+          description="Deneme bitince ödeme alınmazsa işletme otomatik askıya alınır; veriler silinmez."
+        />
         {serverError && (
           <p role="alert" className="rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
             {serverError}
