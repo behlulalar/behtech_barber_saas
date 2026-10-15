@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CalendarCheck, Clock, MapPin, Scissors, Smartphone, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ContactLinks } from '../../components/ContactLinks'
 import { buttonStyles } from '../../components/ui/Button'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { publicApi } from '../../lib/api'
@@ -267,6 +268,7 @@ export default function LandingPage() {
                 <span className="min-w-0 break-words">{address}</span>
               </p>
             )}
+            <ContactLinks info={tenant.data} variant="list" className="mt-2" />
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row md:mt-0 md:shrink-0">
             {address && (

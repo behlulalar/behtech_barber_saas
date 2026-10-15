@@ -56,6 +56,9 @@ async def public_tenant_route(tenant: Tenant = Depends(get_current_tenant), db: 
         business_address=(tenant_settings.business_adress or None) if tenant_settings else None,
         logo_image=tenant_settings.logo_image if tenant_settings else None,
         banner_image=tenant_settings.banner_image if tenant_settings else None,
+        contact_phone=tenant_settings.contact_phone if tenant_settings else None,
+        whatsapp_phone=tenant_settings.whatsapp_phone if tenant_settings else None,
+        instagram=tenant_settings.instagram if tenant_settings else None,
     )
 
 

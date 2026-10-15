@@ -29,6 +29,34 @@ def _check_phone(value: str) -> str:
     return value
 
 
+def _norm_contact_phone(value: str | None) -> str | None:
+    """Müşteri sitesinde gösterilecek numara: cep (5xx) ya da sabit hat (2xx/3xx/4xx), 10 hane.
+    "0555 123 45 67", "+90 555 123 45 67" gibi girdiler normalize edilir; boş → None."""
+    if value is None or not value.strip():
+        return None
+    digits = re.sub(r"\D", "", value)
+    if digits.startswith("90") and len(digits) > 10:
+        digits = digits[2:]
+    if digits.startswith("0"):
+        digits = digits[1:]
+    if not re.fullmatch(r"[2-5]\d{9}", digits):
+        raise ValueError("Telefon numarası 10 haneli olmalı (örn. 5551234567 ya da 2125551234)")
+    return digits
+
+
+_IG_PREFIX = re.compile(r"^(?:https?://)?(?:www\.)?instagram\.com/", re.IGNORECASE)
+
+
+def _norm_instagram(value: str | None) -> str | None:
+    """"@berberali", "berberali" ya da profil bağlantısı → "berberali" (yalnızca kullanıcı adı saklanır)."""
+    if value is None or not value.strip():
+        return None
+    v = _IG_PREFIX.sub("", value.strip()).split("?")[0].split("#")[0].strip("/ ").lstrip("@")
+    if not re.fullmatch(r"[A-Za-z0-9._]{1,30}", v):
+        raise ValueError("Instagram kullanıcı adı geçersiz (yalnızca harf, rakam, nokta ve alt çizgi; en fazla 30 karakter)")
+    return v.lower()
+
+
 # ~1.5 MB'lık görsel base64 ile ~2.1M karakter eder.
 _IMG_MAX_CHARS = 2_100_000
 _IMG_RE = re.compile(r"^data:image/(png|jpe?g|webp|gif);base64,")
@@ -328,8 +356,13 @@ class SettingsBody(BaseModel):
     logo_image: str | None = None
     banner_image: str | None = None
     notification_banner_enabled: bool = False
+    contact_phone: str | None = None
+    whatsapp_phone: str | None = None
+    instagram: str | None = None
 
     _images = field_validator("logo_image", "banner_image")(_check_image)
+    _phones = field_validator("contact_phone", "whatsapp_phone")(_norm_contact_phone)
+    _instagram = field_validator("instagram")(_norm_instagram)
 
 
 # ---------- customers ----------

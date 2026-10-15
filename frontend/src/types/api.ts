@@ -38,6 +38,9 @@ export interface PublicTenant {
   business_address: string | null
   logo_image: string | null
   banner_image: string | null
+  contact_phone: string | null
+  whatsapp_phone: string | null
+  instagram: string | null
 }
 
 export interface PublicStaff extends StaffBrief {
@@ -336,6 +339,10 @@ export interface TenantSettings {
   logo_image: string | null
   banner_image: string | null
   notification_banner_enabled: boolean
+  /** Müşteri sitesinde gösterilir; 10 hane (başında 0 yok) ve Instagram kullanıcı adı. */
+  contact_phone: string | null
+  whatsapp_phone: string | null
+  instagram: string | null
 }
 
 export interface AdminCustomer {

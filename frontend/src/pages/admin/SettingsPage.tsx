@@ -5,6 +5,7 @@ import { Card, CardHeader } from '../../components/ui/Card'
 import { Field } from '../../components/ui/Field'
 import { ImagePicker } from '../../components/ui/ImagePicker'
 import { Input } from '../../components/ui/Input'
+import { PhoneInput } from '../../components/ui/PhoneInput'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { Switch } from '../../components/ui/Switch'
@@ -46,12 +47,17 @@ function SettingsForm({ initial }: { initial: TenantSettings }) {
     (form.business_address ?? '') !== (initial.business_address ?? '') ||
     form.logo_image !== initial.logo_image ||
     form.banner_image !== initial.banner_image ||
-    form.notification_banner_enabled !== initial.notification_banner_enabled
+    form.notification_banner_enabled !== initial.notification_banner_enabled ||
+    (form.contact_phone ?? '') !== (initial.contact_phone ?? '') ||
+    (form.whatsapp_phone ?? '') !== (initial.whatsapp_phone ?? '') ||
+    (form.instagram ?? '') !== (initial.instagram ?? '')
 
   const save = useMutation({
     mutationFn: () => adminApi.updateSettings({ ...form, business_name: form.business_name.trim(), business_address: form.business_address?.trim() || null }),
     onSuccess: (data) => {
       qc.setQueryData(qk.settings, data)
+      // Sunucu değerleri normalize eder (ör. Instagram bağlantısı → kullanıcı adı); formu temiz haliyle yenile.
+      setForm({ ...data, business_address: data.business_address ?? '' })
       void qc.invalidateQueries({ queryKey: ['public', 'tenant'] })
       toast.success('Ayarlar kaydedildi')
     },
@@ -88,6 +94,31 @@ function SettingsForm({ initial }: { initial: TenantSettings }) {
           <Field label="Adres" hint="Müşterilerin sizi bulabilmesi için açık adres.">
             <Textarea rows={3} maxLength={1000} value={form.business_address ?? ''} onChange={(e) => set('business_address', e.target.value)} />
           </Field>
+        </fieldset>
+      </Card>
+
+      <Card>
+        <CardHeader title="İletişim" description="Müşteri sitenizde ikonlarla gösterilir. Boş bıraktığınız alan gösterilmez." />
+        <fieldset disabled={!isManager} className="grid min-w-0 gap-4 md:grid-cols-2">
+          <Field label="Telefon" hint="Cep ya da sabit hat. Müşteriler dokunarak arar.">
+            <PhoneInput value={form.contact_phone ?? ''} onValueChange={(v) => set('contact_phone', v || null)} autoComplete="off" />
+          </Field>
+          <Field label="WhatsApp numarası" hint="Müşteriler WhatsApp'tan yazabilir.">
+            <PhoneInput value={form.whatsapp_phone ?? ''} onValueChange={(v) => set('whatsapp_phone', v || null)} autoComplete="off" />
+          </Field>
+          <div className="md:col-span-2">
+            <Field label="Instagram" hint="Kullanıcı adınızı ya da profil bağlantınızı yazın (örn. berberali).">
+              <Input
+                value={form.instagram ?? ''}
+                maxLength={120}
+                leading={<span aria-hidden="true">@</span>}
+                onChange={(e) => set('instagram', e.target.value || null)}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+            </Field>
+          </div>
         </fieldset>
       </Card>
 

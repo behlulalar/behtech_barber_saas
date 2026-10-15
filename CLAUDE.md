@@ -497,6 +497,9 @@ iyi bir çalışma malzemesi.
       kilitleyebilir); migration zinciri BOŞ DB'de çalışmıyor (ilk migration schema.sql varsayıyor) —
       yeni kurulum öncesi düzelt; OTP kodları WhatsApp'a bağlanmadan müşteriye ulaşmaz; şifreler ve
       sabit OTP (123456) gerçek değerlerle değiştirilecek; cron kurulacak.
+      2026-10-15: işletme iletişim bilgileri — `tenant_settings.contact_phone/whatsapp_phone/instagram`
+      (panel Ayarlar → İletişim, yalnızca sahip düzenler; müşteri sitesinde ziyaret bölümü + footer ikonları).
+      Girdi normalize edilir (0/+90 temizlenir, Instagram bağlantısı → kullanıcı adı).
       **Açık kalanlar:** (giriş sınırı artık var;)
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

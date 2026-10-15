@@ -1,6 +1,7 @@
 import { CalendarCheck, LogIn, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { ContactLinks } from '../components/ContactLinks'
 import { buttonStyles } from '../components/ui/Button'
 import { useScrollLock } from '../components/ui/useDialog'
 import { useCustomerAuth } from '../lib/auth'
@@ -130,6 +131,7 @@ export default function PublicLayout() {
           <div className="min-w-0">
             <p className="break-words font-display text-lg font-semibold text-cream">{name ?? ''}</p>
             {tenant.data?.business_address && <p className="mt-1.5 break-words text-sm text-muted">{tenant.data.business_address}</p>}
+            <ContactLinks info={tenant.data} className="mt-4" />
           </div>
           <div className="flex flex-col gap-2 text-sm text-muted md:items-end">
             <Link to="/panel/giris" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">

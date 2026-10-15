@@ -8,6 +8,9 @@ class TenantPublicOut(BaseModel):
     business_address: str | None = None
     logo_image: str | None = None
     banner_image: str | None = None
+    contact_phone: str | None = None
+    whatsapp_phone: str | None = None
+    instagram: str | None = None
 
 
 class StaffPublicOut(BaseModel):

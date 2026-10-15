@@ -711,6 +711,9 @@ def _settings_out(tenant: Tenant, row: TenantSettings | None) -> dict:
             "logo_image": None,
             "banner_image": None,
             "notification_banner_enabled": False,
+            "contact_phone": None,
+            "whatsapp_phone": None,
+            "instagram": None,
         }
     return {
         "business_name": row.business_name,
@@ -718,6 +721,9 @@ def _settings_out(tenant: Tenant, row: TenantSettings | None) -> dict:
         "logo_image": row.logo_image,
         "banner_image": row.banner_image,
         "notification_banner_enabled": row.notification_banner_enabled,
+        "contact_phone": row.contact_phone,
+        "whatsapp_phone": row.whatsapp_phone,
+        "instagram": row.instagram,
     }
 
 
@@ -743,6 +749,9 @@ async def put_settings(
         "logo_image": data.logo_image,
         "banner_image": data.banner_image,
         "notification_banner_enabled": data.notification_banner_enabled,
+        "contact_phone": data.contact_phone,
+        "whatsapp_phone": data.whatsapp_phone,
+        "instagram": data.instagram,
         "updated_at": datetime.now(),
     }
     if row is None:
