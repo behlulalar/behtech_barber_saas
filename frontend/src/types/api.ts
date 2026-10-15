@@ -124,6 +124,7 @@ export interface AppointmentPublicOut {
 export interface LoginRequest {
   phone: string
   password: string
+  remember?: boolean
 }
 
 export interface TokenResponse {

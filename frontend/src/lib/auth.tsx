@@ -50,7 +50,7 @@ interface StaffAuthValue {
   isManager: boolean
   isOwner: boolean
   /** Giriş yapar; yanlış bilgilerde ApiError fırlatır. */
-  login: (phone: string, password: string) => Promise<void>
+  login: (phone: string, password: string, remember?: boolean) => Promise<void>
   logout: () => void
 }
 
@@ -80,8 +80,8 @@ function StaffAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token])
 
-  const login = useCallback(async (phone: string, password: string) => {
-    const res = await authApi.login({ phone, password })
+  const login = useCallback(async (phone: string, password: string, remember = false) => {
+    const res = await authApi.login({ phone, password, remember })
     setLoaded(false)
     tokenStore.set('staff', res.access_token)
   }, [])
@@ -135,7 +135,7 @@ interface PlatformAuthValue {
   status: AuthStatus
   token: string | null
   me: PlatformMe | null
-  login: (phone: string, password: string) => Promise<void>
+  login: (phone: string, password: string, remember?: boolean) => Promise<void>
   logout: () => void
 }
 
@@ -163,8 +163,8 @@ function PlatformAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token])
 
-  const login = useCallback(async (phone: string, password: string) => {
-    const res = await platformApi.login({ phone, password })
+  const login = useCallback(async (phone: string, password: string, remember = false) => {
+    const res = await platformApi.login({ phone, password, remember })
     setLoaded(false)
     tokenStore.set('platform', res.access_token)
   }, [])

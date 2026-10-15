@@ -89,7 +89,7 @@ async def login(
     # Parola doğrulandıktan SONRA bakılır: yanlış parolayla pasif hesap varlığı öğrenilemez.
     if not staff.is_active:
         raise HTTPException(status_code=403, detail="Bu hesap pasif. İşletme sahibiyle görüşün")
-    return TokenResponse(access_token=_staff_token(staff), token_type="bearer")
+    return TokenResponse(access_token=_staff_token(staff, remember=data.remember), token_type="bearer")
 
 
 @router.get("/auth/me", response_model=StaffMe)
@@ -102,9 +102,10 @@ async def read_current_staff(request: Request, current_staff: Staff = Depends(ge
     return me
 
 
-def _staff_token(staff: Staff) -> str:
+def _staff_token(staff: Staff, remember: bool = False) -> str:
     return create_access_token(
-        {"sub": str(staff.id), "tenant_id": staff.tenant_id, "type": "staff", "tv": staff.token_version}
+        {"sub": str(staff.id), "tenant_id": staff.tenant_id, "type": "staff", "tv": staff.token_version},
+        expires_minutes=settings.remember_token_expire_minutes if remember else None,
     )
 
 

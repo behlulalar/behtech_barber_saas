@@ -74,7 +74,10 @@ async def platform_login(data: LoginRequest, request: Request, db: AsyncSession 
     await audit(db, actor=admin, request=request, action="platform.login", entity_type="platform_admin",
                 entity_id=admin.id, summary="Platform girişi yapıldı")
     await db.commit()
-    token = create_access_token({"sub": str(admin.id), "type": "platform_admin", "tv": admin.token_version})
+    token = create_access_token(
+        {"sub": str(admin.id), "type": "platform_admin", "tv": admin.token_version},
+        expires_minutes=settings.remember_token_expire_minutes if data.remember else None,
+    )
     return TokenResponse(access_token=token, token_type="bearer")
 
 

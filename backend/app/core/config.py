@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     jwt_secret: str
     jwt_algorithm: str
     access_token_expire_minutes: int
+    remember_token_expire_minutes: int = 60 * 24 * 30
     base_domain: str
     environment: str
     daily_appointment_limit: int

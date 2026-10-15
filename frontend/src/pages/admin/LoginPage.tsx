@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
+import { Checkbox } from '../../components/ui/Checkbox'
+import { RememberedAccount } from '../../components/RememberedAccount'
+import { Spinner } from '../../components/ui/Spinner'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
 import { PhoneInput } from '../../components/ui/PhoneInput'
@@ -13,7 +16,7 @@ import { ForgotPasswordFlow } from './ForgotPasswordFlow'
 import { useDocumentTitle, useFavicon } from '../../lib/head'
 
 export default function LoginPage() {
-  const { status, login } = useStaffAuth()
+  const { status, login, logout, me } = useStaffAuth()
   const tenant = useTenant()
   useDocumentTitle('Personel girişi', tenant.data?.business_name)
   useFavicon(tenant.data?.logo_image)
@@ -22,10 +25,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [remember, setRemember] = useState(true)
+  const [justLoggedIn, setJustLoggedIn] = useState(false)
+  const navigate = useNavigate()
   const [forgot, setForgot] = useState(false)
 
   const from = (location.state as { from?: string } | null)?.from ?? '/panel'
-  if (status === 'authenticated') return <Navigate to={from} replace />
+  // Giriş formundan yeni girildiyse doğrudan panele; yoksa hesap kartı gösterilir.
+  if (justLoggedIn && status === 'authenticated') return <Navigate to={from} replace />
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -36,7 +43,8 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
     try {
-      await login(normalizePhone(phone), password)
+      await login(normalizePhone(phone), password, remember)
+      setJustLoggedIn(true)
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -54,6 +62,16 @@ export default function LoginPage() {
       {forgot ? (
         <ForgotPasswordFlow onDone={() => setForgot(false)} onCancel={() => setForgot(false)} />
       ) : (
+      status === 'loading' ? (
+        <div className="flex justify-center py-8"><Spinner label="Yükleniyor" /></div>
+      ) : status === 'authenticated' && !justLoggedIn ? (
+        <RememberedAccount
+          name={`${me?.name ?? ''} ${me?.surname ?? ''}`.trim()}
+          detail={me?.role === 'super_admin' ? 'İşletme sahibi' : 'Personel'}
+          onContinue={() => navigate(from, { replace: true })}
+          onSwitch={logout}
+        />
+      ) : (
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         <Field label="Telefon" required>
           <PhoneInput
@@ -70,6 +88,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
+        <Checkbox label="Beni hatırla" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
         {error && (
           <p role="alert" className="rounded-sm border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger">
             {error}
@@ -82,6 +101,7 @@ export default function LoginPage() {
           Şifremi unuttum
         </button>
       </form>
+      )
       )}
     </AuthLayout>
   )

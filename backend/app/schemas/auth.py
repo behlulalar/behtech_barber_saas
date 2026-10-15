@@ -6,6 +6,7 @@ class LoginRequest(BaseModel):
 
     phone: str
     password: str
+    remember: bool = False
 
 class TokenResponse(BaseModel):
 
