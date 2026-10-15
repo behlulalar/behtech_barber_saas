@@ -8,7 +8,8 @@ import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
 import type { PlatformTenant } from '../../types/api'
 
-export function SignupReviewCard({ tenant }: { tenant: PlatformTenant }) {
+/** Onayla/Reddet düğmeleri + onay diyaloğu (Başvurular sayfası ve işletme detayı ortak kullanır). */
+export function ReviewActions({ tenant, className }: { tenant: PlatformTenant; className?: string }) {
   const qc = useQueryClient()
   const toast = useToast()
   const [action, setAction] = useState<'approve' | 'reject' | null>(null)
@@ -28,23 +29,14 @@ export function SignupReviewCard({ tenant }: { tenant: PlatformTenant }) {
 
   return (
     <>
-      <section role="status" className="mb-6 flex flex-col gap-4 rounded-md border border-copper/50 bg-copper/10 p-4 md:mb-8 md:flex-row md:items-center md:justify-between md:p-5">
-        <div className="flex min-w-0 items-start gap-3">
-          <UserCheck className="mt-0.5 size-5 shrink-0 text-copper-bright" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="font-medium text-cream">Kayıt başvurusu onay bekliyor</p>
-            <p className="mt-1 text-sm text-muted-strong">Onaylarsanız işletme aktifleşir ve 14 günlük deneme başlar. Reddederseniz işletme pasif kalır.</p>
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button variant="secondary" leftIcon={<XCircle className="size-4" />} onClick={() => setAction('reject')}>
-            Reddet
-          </Button>
-          <Button leftIcon={<CheckCircle2 className="size-4" />} onClick={() => setAction('approve')}>
-            Onayla
-          </Button>
-        </div>
-      </section>
+      <div className={className ?? 'flex shrink-0 flex-wrap gap-2'}>
+        <Button variant="secondary" leftIcon={<XCircle className="size-4" />} onClick={() => setAction('reject')}>
+          Reddet
+        </Button>
+        <Button leftIcon={<CheckCircle2 className="size-4" />} onClick={() => setAction('approve')}>
+          Onayla
+        </Button>
+      </div>
       <ConfirmDialog
         open={!!action}
         onClose={() => setAction(null)}
@@ -66,5 +58,20 @@ export function SignupReviewCard({ tenant }: { tenant: PlatformTenant }) {
         }
       />
     </>
+  )
+}
+
+export function SignupReviewCard({ tenant }: { tenant: PlatformTenant }) {
+  return (
+    <section role="status" className="mb-6 flex flex-col gap-4 rounded-md border border-copper/50 bg-copper/10 p-4 md:mb-8 md:flex-row md:items-center md:justify-between md:p-5">
+      <div className="flex min-w-0 items-start gap-3">
+        <UserCheck className="mt-0.5 size-5 shrink-0 text-copper-bright" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="font-medium text-cream">Kayıt başvurusu onay bekliyor</p>
+          <p className="mt-1 text-sm text-muted-strong">Onaylarsanız işletme aktifleşir ve 14 günlük deneme başlar. Reddederseniz işletme pasif kalır.</p>
+        </div>
+      </div>
+      <ReviewActions tenant={tenant} />
+    </section>
   )
 }

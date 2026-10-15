@@ -94,7 +94,7 @@ async def _notify_platform(db: AsyncSession, tenant: Tenant, data: SignupRequest
                 f"\nE-posta: {data.email or '-'}\nPlatform panelinden onaylayın.")
         html = "<p>" + text.replace("\n", "<br>") + "</p>"
         await notify_services.send_email(ps.notify_email, f"BehTech: yeni başvuru - {tenant.name}", html, text)
-        await notify_services.send_push_to_all(db, "Yeni işletme başvurusu", f"{tenant.name} onay bekliyor", "/platform/isletmeler")
+        await notify_services.send_push_to_all(db, "Yeni işletme başvurusu", f"{tenant.name} onay bekliyor", "/platform/basvurular")
     except Exception:
         logger.exception("Signup notification failed")
 

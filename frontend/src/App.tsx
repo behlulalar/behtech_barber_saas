@@ -26,6 +26,7 @@ const AdminRevenuePage = lazy(() => import('./pages/admin/RevenuePage'))
 
 const PlatformLoginPage = lazy(() => import('./pages/platform/LoginPage'))
 const PlatformDashboardPage = lazy(() => import('./pages/platform/DashboardPage'))
+const PlatformApplicationsPage = lazy(() => import('./pages/platform/ApplicationsPage'))
 const PlatformTenantsPage = lazy(() => import('./pages/platform/TenantsPage'))
 const PlatformTenantDetailPage = lazy(() => import('./pages/platform/TenantDetailPage'))
 const PlatformPaymentsPage = lazy(() => import('./pages/platform/PaymentsPage'))
@@ -56,6 +57,7 @@ const platformRoutes = (
     <Route path="platform" element={<RequirePlatform />}>
       <Route element={<PlatformLayout />}>
         <Route index element={<PlatformDashboardPage />} />
+        <Route path="basvurular" element={<PlatformApplicationsPage />} />
         <Route path="isletmeler" element={<PlatformTenantsPage />} />
         <Route path="isletmeler/:id" element={<PlatformTenantDetailPage />} />
         <Route path="odemeler" element={<PlatformPaymentsPage />} />

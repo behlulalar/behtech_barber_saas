@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Building2, HeartPulse, Megaphone, LayoutDashboard, Package, Receipt, ScrollText, Settings, ShieldCheck } from 'lucide-react'
+import { Building2, HeartPulse, Megaphone, LayoutDashboard, Package, Receipt, ScrollText, Settings, ShieldCheck, UserPlus } from 'lucide-react'
 import { useMemo } from 'react'
 import { useMatch } from 'react-router-dom'
 import { platformApi } from '../lib/api'
@@ -12,6 +12,7 @@ import { PanelShell, type NavItem } from './PanelShell'
 const BASE_NAV: NavItem[] = [
   { to: '/platform', label: 'Genel Bakış', icon: LayoutDashboard, end: true, tab: true },
   { to: '/platform/odemeler', label: 'Ödemeler', icon: Receipt, tab: true },
+  { to: '/platform/basvurular', label: 'Başvurular', icon: UserPlus, tab: true },
   { to: '/platform/isletmeler', label: 'İşletmeler', icon: Building2, tab: true },
   { to: '/platform/paketler', label: 'Paketler', icon: Package },
   { to: '/platform/duyurular', label: 'Duyurular', icon: Megaphone },
@@ -31,7 +32,7 @@ export default function PlatformLayout() {
     refetchInterval: 60_000,
   })
   const pending = pendingQ.data?.total ?? 0
-  const NAV = useMemo(() => BASE_NAV.map((n) => (n.to === '/platform/isletmeler' ? { ...n, badge: pending } : n)), [pending])
+  const NAV = useMemo(() => BASE_NAV.map((n) => (n.to === '/platform/basvurular' ? { ...n, badge: pending } : n)), [pending])
   usePlatformManifest()
   const detail = useMatch('/platform/isletmeler/:id')
   const tenants = useQuery({ queryKey: ['platform', 'tenant', detail?.params.id], queryFn: () => platformApi.getTenant(Number(detail!.params.id)), enabled: !!detail })

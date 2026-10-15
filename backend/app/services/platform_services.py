@@ -177,12 +177,16 @@ async def list_tenants(
         ))
     if status == "pending":
         q = q.where(Tenant.signup_status == "pending")
+    elif status == "rejected":
+        q = q.where(Tenant.signup_status == "rejected")
     elif status == "active":
         q = q.where(Tenant.is_active == True)  # noqa: E712
     elif status == "inactive":
         q = q.where(Tenant.is_active == False, Tenant.signup_status.is_distinct_from("pending"))
     elif status == "suspended":
         q = q.where(Tenant.auto_suspended_at.is_not(None))
+    if status != "pending":
+        q = q.where(Tenant.signup_status.is_distinct_from("pending"))
 
     total = (await db.execute(select(func.count()).select_from(q.order_by(None).subquery()))).scalar_one()
 

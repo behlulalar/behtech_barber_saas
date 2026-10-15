@@ -469,7 +469,7 @@ export interface PlatformTenantOption {
   slug: string
 }
 
-export type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'suspended' | 'pending'
+export type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'suspended' | 'pending' | 'rejected'
 export type TenantSort = 'name' | '-name' | 'created' | '-created' | 'staff' | '-staff' | 'appointments' | '-appointments'
 
 export interface TenantListParams {

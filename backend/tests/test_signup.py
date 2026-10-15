@@ -55,6 +55,9 @@ async def test_platform_approve_starts_trial_and_opens_site(api):
         tid = (await db.execute(select(Tenant.id).where(Tenant.slug == "yeniberber"))).scalar_one()
     pending = (await api.get("/api/platform/tenants?status=pending", token=tok)).json()
     assert [x["id"] for x in pending["items"]] == [tid]
+    # Bekleyen başvuru işletme listesinde (Tümü/Pasif) görünmez; Başvurular sayfasında görünür
+    for st in ("all", "inactive"):
+        assert tid not in [x["id"] for x in (await api.get(f"/api/platform/tenants?status={st}", token=tok)).json()["items"]]
     # Elle aktifleştirme başvuruyu atlayamaz
     assert (await api.patch(f"/api/platform/tenants/{tid}", token=tok, json={"is_active": True})).status_code == 409
     r = await api.post(f"/api/platform/tenants/{tid}/signup/approve", token=tok)
@@ -74,6 +77,8 @@ async def test_platform_reject_keeps_closed(api):
         tid = (await db.execute(select(Tenant.id).where(Tenant.slug == "yeniberber"))).scalar_one()
     r = await api.post(f"/api/platform/tenants/{tid}/signup/reject", token=tok)
     assert r.status_code == 200 and r.json()["signup_status"] == "rejected"
+    rej = (await api.get("/api/platform/tenants?status=rejected", token=tok)).json()
+    assert [x["id"] for x in rej["items"]] == [tid]
     assert (await api.get("/api/public/tenant", slug="yeniberber")).status_code == 403
 
 

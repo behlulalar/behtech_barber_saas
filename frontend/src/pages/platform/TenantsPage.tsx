@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, CheckCircle2, ChevronLeft, ChevronRight, Copy, ExternalLink, Link2, Pencil, Plus, Power, Receipt, Search, Store, XCircle } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Link2, Pencil, Plus, Power, Receipt, Search, Store } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
@@ -400,22 +400,6 @@ export default function TenantsPage() {
   const [editing, setEditing] = useState<PlatformTenant | null>(null)
   const [deactivating, setDeactivating] = useState<PlatformTenant | null>(null)
   const [linksFor, setLinksFor] = useState<PlatformTenant | null>(null)
-  const [reviewing, setReviewing] = useState<{ tenant: PlatformTenant; action: 'approve' | 'reject' } | null>(null)
-
-  const review = useMutation({
-    mutationFn: ({ tenant, action }: { tenant: PlatformTenant; action: 'approve' | 'reject' }) =>
-      action === 'approve' ? platformApi.approveSignup(tenant.id) : platformApi.rejectSignup(tenant.id),
-    onSuccess: (t, v) => {
-      qc.invalidateQueries({ queryKey: ['platform'] })
-      toast.success(v.action === 'approve' ? `${t.name} onaylandı, 14 günlük deneme başladı` : `${t.name} başvurusu reddedildi`)
-      setReviewing(null)
-    },
-    onError: (err) => {
-      toast.error(errorMessage(err))
-      setReviewing(null)
-    },
-  })
-
   const toggle = useMutation({
     mutationFn: (t: PlatformTenant) => platformApi.updateTenant(t.id, { is_active: !t.is_active }),
     onSuccess: (t) => {
@@ -439,22 +423,8 @@ export default function TenantsPage() {
     else toggle.mutate(t)
   }
 
-  // Onayla/Reddet: masaüstünde Durum sütununda (işlem sütunu geniş olup tabloyu taşırmasın), mobilde kartın işlem alanında.
-  const reviewButtons = (t: PlatformTenant, className: string) =>
-    t.signup_status === 'pending' && (
-      <div className={className}>
-        <Button size="sm" leftIcon={<CheckCircle2 className="size-4" />} onClick={() => setReviewing({ tenant: t, action: 'approve' })}>
-          Onayla
-        </Button>
-        <Button size="sm" variant="secondary" leftIcon={<XCircle className="size-4" />} onClick={() => setReviewing({ tenant: t, action: 'reject' })}>
-          Reddet
-        </Button>
-      </div>
-    )
-
   const actions = (t: PlatformTenant, mobile = false) => (
     <div className={mobile ? 'flex flex-wrap items-center justify-end gap-1' : 'flex items-center justify-end gap-1 whitespace-nowrap'}>
-      {mobile && reviewButtons(t, 'flex w-full flex-wrap gap-2 pb-1')}
       <IconButton label={`${t.name} abonelik ve ödemeler`} onClick={() => navigate(`/platform/isletmeler/${t.id}`)}>
         <Receipt className="size-4" />
       </IconButton>
@@ -467,7 +437,7 @@ export default function TenantsPage() {
       <IconButton
         label={t.is_active ? `${t.name} devre dışı bırak` : `${t.name} aktifleştir`}
         onClick={() => onToggle(t)}
-        disabled={toggle.isPending || t.signup_status === 'pending'}
+        disabled={toggle.isPending}
       >
         <Power className={t.is_active ? 'size-4' : 'size-4 text-success'} />
       </IconButton>
@@ -513,17 +483,6 @@ export default function TenantsPage() {
                 {formatPhone(t.owner_phone)}
               </a>
             )}
-            {t.owner_phone && t.signup_status === 'pending' && (
-              <a
-                href={`https://wa.me/90${t.owner_phone}`}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="ml-3 inline-flex min-h-11 items-center text-sm text-copper-bright hover:underline md:pointer-fine:min-h-0"
-              >
-                WhatsApp
-              </a>
-            )}
           </div>
         ) : (
           <span className="text-muted">—</span>
@@ -533,12 +492,7 @@ export default function TenantsPage() {
       key: 'status',
       header: 'Durum',
       cell: (t) =>
-        t.signup_status === 'pending' ? (
-          <div className="flex flex-col items-start gap-2">
-            <Badge tone="warning">Onay bekliyor</Badge>
-            {reviewButtons(t, 'hidden flex-col gap-1.5 md:flex')}
-          </div>
-        ) : t.signup_status === 'rejected' ? (
+        t.signup_status === 'rejected' ? (
           <Badge tone="danger">Reddedildi</Badge>
         ) : t.auto_suspended ? (
           <Badge tone="danger">Askıda</Badge>
@@ -592,7 +546,6 @@ export default function TenantsPage() {
           }}
           items={[
             { value: 'all', label: 'Tümü' },
-            { value: 'pending', label: 'Onay bekleyen' },
             { value: 'active', label: 'Aktif' },
             { value: 'inactive', label: 'Pasif' },
             { value: 'suspended', label: 'Askıda' },
@@ -682,27 +635,6 @@ export default function TenantsPage() {
       <CreateModal open={creating} onClose={() => setCreating(false)} onCreated={setLinksFor} />
       <LinksModal tenant={linksFor} onClose={() => setLinksFor(null)} />
       <EditModal key={editing?.id ?? 'none'} tenant={editing} onClose={() => setEditing(null)} />
-      <ConfirmDialog
-        open={!!reviewing}
-        onClose={() => setReviewing(null)}
-        onConfirm={() => reviewing && review.mutate(reviewing)}
-        destructive={reviewing?.action === 'reject'}
-        loading={review.isPending}
-        title={reviewing?.action === 'approve' ? 'Başvuru onaylansın mı?' : 'Başvuru reddedilsin mi?'}
-        confirmLabel={reviewing?.action === 'approve' ? 'Onayla' : 'Reddet'}
-        description={
-          reviewing &&
-          (reviewing.action === 'approve' ? (
-            <>
-              <strong className="text-cream">{reviewing.tenant.name}</strong> aktifleştirilir ve 14 günlük deneme başlar.
-            </>
-          ) : (
-            <>
-              <strong className="text-cream">{reviewing.tenant.name}</strong> başvurusu reddedilir; işletme pasif kalır.
-            </>
-          ))
-        }
-      />
       <ConfirmDialog
         open={!!deactivating}
         onClose={() => setDeactivating(null)}

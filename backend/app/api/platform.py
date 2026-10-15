@@ -248,7 +248,7 @@ async def platform_stats(
 @router.get("/tenants", response_model=TenantPage)
 async def platform_list_tenants(
     search: str | None = Query(default=None, max_length=100),
-    status: Literal["all", "active", "inactive", "suspended", "pending"] = "all",
+    status: Literal["all", "active", "inactive", "suspended", "pending", "rejected"] = "all",
     sort: Literal["name", "-name", "created", "-created", "staff", "-staff", "appointments", "-appointments"] = "-created",
     limit: int = Query(default=25, ge=1, le=100),
     offset: int = Query(default=0, ge=0),

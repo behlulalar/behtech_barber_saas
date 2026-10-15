@@ -36,7 +36,7 @@
 
 - **Aşama D kararları (2026-10-16):** paket limitleri/özellik bayrağı YOK (tek paket, her özellik açık); özel alan adı ve çoklu şube YOK (gerek yok).
   Yapılacak: WhatsApp durum paneli + işletme başına hız sınırı; duyuru (yalnızca panel banner'ı, WhatsApp'a gönderim yok); indirim (kod yok — abonelik oluştururken/yenilerken elle yüzde girilir, dönem fiyatı = liste − indirim).
-- **Kayıt ol (2026-10-16):** `POST /api/public/signup` -> işletme `signup_status='pending'`, `is_active=false`; platform onaylarsa (`/platform/tenants/{id}/signup/approve`) 14 günlük deneme başlar, reddederse kapalı kalır. Doğrulama yok (OTP'siz), spam için IP başına 5 kayıt/gün + telefon başına tek aktif başvuru. Bildirim: e-posta (platform ayarlarındaki bildirim e-postası) + web push. Boş işletme gelir; kurulum rehberi panelde.
+- **Kayıt ol (2026-10-16):** `POST /api/public/signup` -> işletme `signup_status='pending'`, `is_active=false`; platform onaylarsa (`/platform/tenants/{id}/signup/approve`) 14 günlük deneme başlar, reddederse kapalı kalır. Doğrulama yok (OTP'siz), spam için IP başına 5 kayıt/gün + telefon başına tek aktif başvuru. Bildirim: e-posta (platform ayarlarındaki bildirim e-postası) + web push. Başvurular platform menüsünde ayrı sayfada (`/platform/basvurular`, kart görünümü, rozetli); İşletmeler listesinde bekleyenler görünmez. Boş işletme gelir; kurulum rehberi panelde.
 
 ## 2. Platform paneli (Aşama B / C / D)
 
