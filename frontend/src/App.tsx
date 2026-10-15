@@ -33,6 +33,7 @@ const PlatformPlansPage = lazy(() => import('./pages/platform/PlansPage'))
 const PlatformSettingsPage = lazy(() => import('./pages/platform/SettingsPage'))
 const PlatformAdminsPage = lazy(() => import('./pages/platform/AdminsPage'))
 const PlatformAuditPage = lazy(() => import('./pages/platform/AuditPage'))
+const PlatformAnnouncementsPage = lazy(() => import('./pages/platform/AnnouncementsPage'))
 const PlatformSystemPage = lazy(() => import('./pages/platform/SystemPage'))
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
@@ -62,6 +63,7 @@ const platformRoutes = (
         <Route path="ayarlar" element={<PlatformSettingsPage />} />
         <Route path="yoneticiler" element={<PlatformAdminsPage />} />
         <Route path="denetim" element={<PlatformAuditPage />} />
+        <Route path="duyurular" element={<PlatformAnnouncementsPage />} />
         <Route path="sistem" element={<PlatformSystemPage />} />
       </Route>
     </Route>

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Building2, HeartPulse, LayoutDashboard, Package, Receipt, ScrollText, Settings, ShieldCheck } from 'lucide-react'
+import { Building2, HeartPulse, Megaphone, LayoutDashboard, Package, Receipt, ScrollText, Settings, ShieldCheck } from 'lucide-react'
 import { useMemo } from 'react'
 import { useMatch } from 'react-router-dom'
 import { platformApi } from '../lib/api'
@@ -14,6 +14,7 @@ const BASE_NAV: NavItem[] = [
   { to: '/platform/odemeler', label: 'Ödemeler', icon: Receipt, tab: true },
   { to: '/platform/isletmeler', label: 'İşletmeler', icon: Building2, tab: true },
   { to: '/platform/paketler', label: 'Paketler', icon: Package },
+  { to: '/platform/duyurular', label: 'Duyurular', icon: Megaphone },
   { to: '/platform/ayarlar', label: 'Ayarlar', icon: Settings },
   { to: '/platform/yoneticiler', label: 'Yöneticiler', icon: ShieldCheck },
   { to: '/platform/denetim', label: 'Denetim kaydı', icon: ScrollText },

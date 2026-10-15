@@ -1,6 +1,7 @@
 import { CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserCog, UserRound, Users, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { AnnouncementBanner } from '../components/AnnouncementBanner'
 import { Button } from '../components/ui/Button'
 import { authApi } from '../lib/api'
 import { useStaffAuth } from '../lib/auth'
@@ -78,6 +79,7 @@ export default function AdminLayout() {
   return (
     <PanelShell
       banner={imp ? <SupportBanner who={imp.name || imp.phone} readOnly={!!me?.read_only} /> : undefined}
+      notice={<AnnouncementBanner />}
       eyebrow="Yönetim"
       brand={tenant.data?.business_name ?? 'Randevu Paneli'}
       nav={nav}

@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     smtp_from: str | None = None
     smtp_starttls: bool = True
     # Giriş denemesi sınırı: aynı hesap için LOGIN_LOCK_MINUTES içinde LOGIN_MAX_FAILURES hatalı deneme kilitler.
+    # İşletme başına saatlik WhatsApp (OTP) mesaj üst sınırı: bir işletme spam yaparsa ortak hat yanmasın.
+    whatsapp_tenant_hourly_limit: int = 60
     login_max_failures: int = 5
     login_lock_minutes: int = 15
     # Reverse proxy (nginx) arkasında True yapın: IP, X-Forwarded-For'un ilk değerinden alınır.

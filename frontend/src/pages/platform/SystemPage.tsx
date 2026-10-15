@@ -113,14 +113,59 @@ function BackupCard({ b }: { b: SystemStatus['backup'] }) {
   )
 }
 
+function waState(c: SystemStatus['channels']): { state: MarkState; label: string } {
+  if (!c.whatsapp_configured) return { state: 'off', label: 'Yapılandırılmadı' }
+  if (c.whatsapp_reachable === false) return { state: 'error', label: 'Erişilemiyor' }
+  switch (c.whatsapp_state) {
+    case 'open':
+      return { state: 'ok', label: 'Bağlı' }
+    case 'connecting':
+      return { state: 'unknown', label: 'Bağlanıyor — QR bekliyor' }
+    case 'close':
+      return { state: 'error', label: 'Bağlı değil' }
+    default:
+      return c.whatsapp_reachable ? { state: 'ok', label: 'Erişilebilir' } : { state: 'unknown', label: 'Bilinmiyor' }
+  }
+}
+
+function WhatsappCard({ c, w }: { c: SystemStatus['channels']; w: SystemStatus['whatsapp'] }) {
+  const st = waState(c)
+  const cols: Column<SystemStatus['whatsapp']['top_tenants'][number]>[] = [
+    { key: 'name', header: 'İşletme', primary: true, cell: (t) => <span className="break-words">{t.name}</span> },
+    { key: 'sent', header: 'Gönderilen', align: 'right', cell: (t) => <span className="tabular-nums">{formatNumber(t.sent)}</span> },
+    {
+      key: 'failed',
+      header: 'Başarısız',
+      align: 'right',
+      cell: (t) => <span className={t.failed > 0 ? 'font-medium tabular-nums text-danger' : 'tabular-nums text-muted'}>{formatNumber(t.failed)}</span>,
+    },
+  ]
+  return (
+    <Card>
+      <CardHeader title="WhatsApp" description="Randevu bildirimleri için bağlantı ve gönderim durumu." />
+      <Rows>
+        <Row label="Bağlantı">
+          <StatusMark state={st.state} label={st.label} />
+        </Row>
+        <Row label="Gönderilen (24 sa)">{formatNumber(w.sent_24h)}</Row>
+        <Row label="Başarısız (24 sa)">
+          <span className={w.failed_24h > 0 ? 'font-medium text-danger' : undefined}>{formatNumber(w.failed_24h)}</span>
+        </Row>
+        <Row label="İşletme başına saatlik sınır">{formatNumber(w.hourly_limit)} mesaj</Row>
+      </Rows>
+      <h3 className="mb-2 mt-5 text-sm font-medium text-cream">En çok mesaj gönderen 5 işletme (24 sa)</h3>
+      <Table
+        columns={cols}
+        rows={w.top_tenants.slice(0, 5)}
+        rowKey={(t) => `${t.tenant_id ?? 'x'}-${t.name}`}
+        caption="WhatsApp gönderimi en yüksek işletmeler"
+        empty={<EmptyState title="Gönderim yok" description="Son 24 saatte WhatsApp mesajı gönderilmedi." />}
+      />
+    </Card>
+  )
+}
+
 function ChannelsCard({ c }: { c: SystemStatus['channels'] }) {
-  const wa: { state: MarkState; label: string } = !c.whatsapp_configured
-    ? { state: 'off', label: 'Yapılandırılmadı' }
-    : c.whatsapp_reachable === null
-      ? { state: 'unknown', label: 'Bilinmiyor' }
-      : c.whatsapp_reachable
-        ? { state: 'ok', label: 'Erişilebilir' }
-        : { state: 'error', label: 'Erişilemiyor' }
   return (
     <Card>
       <CardHeader title="Bildirim kanalları" />
@@ -132,9 +177,6 @@ function ChannelsCard({ c }: { c: SystemStatus['channels'] }) {
           <StatusMark state={c.push_configured ? 'ok' : 'off'} label={c.push_configured ? 'Yapılandırıldı' : 'Yapılandırılmadı'} />
         </Row>
         <Row label="Push aboneleri">{formatNumber(c.push_subscribers)} cihaz</Row>
-        <Row label="WhatsApp">
-          <StatusMark state={wa.state} label={wa.label} />
-        </Row>
       </Rows>
     </Card>
   )
@@ -209,6 +251,8 @@ export default function SystemPage() {
             <StatCard label="İşlem kaydı (24 sa)" icon={<Workflow />} loading={!s} value={s ? formatNumber(s.counts.audit_logs_last_24h) : ''} hint={s ? `${s.counts.platform_admins} yönetici` : undefined} />
             <StatCard label="Hatalı giriş (24 sa)" icon={<TriangleAlert />} loading={!s} tone={s && s.counts.failed_logins_last_24h > 10 ? 'warning' : 'default'} value={s ? formatNumber(s.counts.failed_logins_last_24h) : ''} hint="başarısız deneme" />
           </div>
+
+          {s && <WhatsappCard c={s.channels} w={s.whatsapp} />}
 
           <div className="grid gap-6 lg:grid-cols-3">
             {s ? <BillingCard s={s.billing_job} /> : <CardSkeleton />}

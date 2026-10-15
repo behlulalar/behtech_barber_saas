@@ -92,6 +92,13 @@ class BillingState:
     trial_ending: bool = False
 
 
+def apply_discount(base: int, percent: int) -> tuple[int | None, int]:
+    """(liste fiyatı, ödenecek tutar). İndirim yoksa liste fiyatı None. Tutar en yakın liraya yuvarlanır."""
+    if percent <= 0:
+        return None, base
+    return base, (base * (100 - percent) + 50) // 100
+
+
 def payment_status(price: int, paid: int) -> str:
     if price <= 0 or price - paid <= 0:
         return "paid"
@@ -169,6 +176,8 @@ def sub_out(s: Subscription, paid_amount: int) -> SubscriptionOut:
         start_date=s.start_date,
         end_date=s.end_date,
         price=s.price,
+        list_price=s.list_price,
+        discount_percent=s.discount_percent,
         note=s.note,
         paid_amount=paid_amount,
         balance=s.price - paid_amount,
@@ -392,9 +401,10 @@ async def create_subscription(
         raise HTTPException(status_code=400, detail="Bitiş tarihi başlangıçtan önce olamaz")
     await _check_overlap(db, tenant_id, data.start_date, end)
 
+    list_price, price = apply_discount(price, data.discount_percent)
     sub = Subscription(
         tenant_id=tenant_id, plan_id=data.plan_id, plan_name=plan_name, start_date=data.start_date,
-        end_date=end, price=price, note=(data.note or None),
+        end_date=end, price=price, list_price=list_price, discount_percent=data.discount_percent, note=(data.note or None),
     )
     db.add(sub)
     await db.flush()
@@ -414,7 +424,8 @@ async def create_subscription(
                 entity_id=sub.id, tenant_id=tenant_id,
                 summary=f"'{tenant.name}' için {fmt_date(sub.start_date)} - {fmt_date(sub.end_date)} dönemi eklendi",
                 details={"plan_name": plan_name, "start_date": str(sub.start_date), "end_date": str(end),
-                         "price": price, "initial_payment": data.initial_payment.amount if data.initial_payment else None})
+                         "price": price, "list_price": list_price, "discount_percent": data.discount_percent,
+                         "initial_payment": data.initial_payment.amount if data.initial_payment else None})
     if data.initial_payment is not None:
         await audit(db, actor=actor, request=request, action="payment.create", entity_type="payment",
                     entity_id=first_payment.id, tenant_id=tenant_id,
@@ -474,10 +485,15 @@ async def update_subscription(
         if sub.plan_name != fields["plan_name"].strip():
             changed.append("plan_name")
         sub.plan_name = fields["plan_name"].strip()
-    if fields.get("price") is not None:
-        if sub.price != fields["price"]:
+    if fields.get("price") is not None or fields.get("discount_percent") is not None:
+        d = fields["discount_percent"] if fields.get("discount_percent") is not None else sub.discount_percent
+        base = fields["price"] if fields.get("price") is not None else (sub.list_price if sub.list_price is not None else sub.price)
+        new_list, new_price = apply_discount(base, d)
+        if sub.price != new_price:
             changed.append("price")
-        sub.price = fields["price"]
+        if sub.discount_percent != d:
+            changed.append("discount_percent")
+        sub.list_price, sub.price, sub.discount_percent = new_list, new_price, d
     if "note" in fields:
         if sub.note != (fields["note"] or None):
             changed.append("note")

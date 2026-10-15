@@ -49,6 +49,8 @@ from app.services import impersonation_services
 from app.services import login_throttle, otp_services
 from app.services.otp_delivery import deliver_code
 from app.services import report_services
+from app.services import announcement_services
+from app.schemas.announcement import AnnouncementPublic
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
 
@@ -167,7 +169,7 @@ async def forgot_send_code(
     ).scalar_one_or_none()
     code = await otp_services.send_code(db, tenant.id, data.phone, purpose=otp_services.RESET_PURPOSE)
     if staff is not None:
-        await deliver_code(data.phone, f"{tenant.name} şifre sıfırlama kodunuz: {code}. Kodu kimseyle paylaşmayın.")
+        await deliver_code(db, tenant.id, "password_reset", data.phone, f"{tenant.name} şifre sıfırlama kodunuz: {code}. Kodu kimseyle paylaşmayın.")
     is_dev = settings.environment == "development"
     return SendCodeResponse(message=FORGOT_MESSAGE, dev_code=code if (is_dev and staff is not None) else None)
 
@@ -773,3 +775,9 @@ async def list_customers(
     db: AsyncSession = Depends(get_db),
 ):
     return await svc.list_customers(db, current.tenant_id, q, only_staff_id=None if is_manager(current) else current.id)
+
+
+@router.get("/admin/announcements", response_model=list[AnnouncementPublic])
+async def admin_announcements(staff: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
+    """Platformdan gelen, bu işletme için şu an geçerli duyurular (kapatma tarayıcıda hatırlanır)."""
+    return await announcement_services.active_for_tenant(db, staff.tenant_id)

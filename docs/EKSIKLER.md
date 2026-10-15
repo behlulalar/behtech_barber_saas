@@ -52,6 +52,9 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 - [x] (2026-10-15) İşletme notu + "son olaylar" kartı (son 10 denetim kaydı) YAPILDI. Eski satır: (açıldı/ödeme/hatırlatma/askı/şifre sıfırlandı olayları tek listede; denetim kaydından türetilebilir).
 - [x] (2026-10-15) **"İşletme olarak gir" YAPILDI** (tam yetki varsayılan, "yalnızca görüntüle" seçeneği; 60 sn tek kullanımlık kod, 60 dk oturum, destek şeridi, denetim kaydı).
   **Bilinen sınırlar:** destek token'ı 60 dk dolmadan sunucuda iptal edilemez (yöneticiyi pasife almak ya da personel `token_version` artırmak gerekir); tam yetki modunda parola değiştirme uç noktaları da çalışır (denetim kaydı var); engellenen salt-görüntüleme yazması kayıt bırakmaz.
+- [ ] **P1 Kayıt ol — kalanlar (2026-10-16):** (a) ~~Onayla/Reddet detay sayfasında yok~~ **YAPILDI** (`SignupReviewCard`; liste ve detayda diyalog kodu iki yerde duruyor, ortaklaştırılabilir).
+  (b) Başvuru onaylanınca/reddedilince sahibe **otomatik mesaj gitmiyor** (şimdilik wa.me ile elle); onay/ret mesaj şablonu (`platform_settings`) + wa.me bağlantısı eklenmeli.
+  (c) **İşletme panelinde kurulum rehberi yok:** kayıt olan işletme boş panelle karşılaşıyor; panelde "Kurulumu tamamla" kartı (hizmet → personel → çalışma saati → hizmet ataması → adres) gerekli. Platform tarafındaki `SETUP_CHECKS` mantığı yeniden kullanılabilir.
 - [ ] **P2 İşletmeyi arşivleme/silme:** soft delete + 30 gün geri alma; müşteri verisini dışa aktarma (CSV/JSON) — KVKK silme/taşıma talebi için.
 - [ ] **P2 Yalnızca-okuma platform yöneticisi rolü** (takip elemanı için).
 - [ ] **P2 Platform girişi için 2FA** (TOTP) — platform hesabı tüm dükkânlara hükmediyor.
@@ -68,11 +71,12 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 - [ ] **P3 Dönemler arası boşluk** uyarısı (şu an boşluk "kapsanıyor" sayılıyor).
 
 ### Aşama D — Sonrası
-- [ ] **P2 Paket limitleri / özellik bayrakları** (ör. ucuz pakette en fazla 3 personel, WhatsApp kotası).
-- [ ] **P2 WhatsApp durum paneli:** bağlı mı, giden/başarısız mesaj sayısı, işletme başına kota/maliyet; **işletme başına OTP/mesaj hız sınırı** (bir işletme spam yaparsa hat yanar).
-- [ ] **P2 Duyuru:** tüm/seçili işletmelere (bakım, yeni özellik) — panelde banner + isteğe bağlı WhatsApp.
+- [x] ~~Paket limitleri / özellik bayrakları~~ **KARAR: yapılmayacak** (tek paket, her özellik açık).
+- [x] (2026-10-16) **WhatsApp durum paneli + işletme başına saatlik hız sınırı YAPILDI** (`message_logs`, `WHATSAPP_TENANT_HOURLY_LIMIT`=60, Sistem sayfasında bağlantı durumu/24 sa sayıları/en çok gönderen 5 işletme). **Kalan:** Evolution `connectionState` yanıt biçimi canlıda doğrulanmadı (tahmin); `message_logs` temizliği (eski kayıtlar silinmiyor); yalnızca OTP/şifre sıfırlama kayıtlı (ileride hatırlatma mesajları da).
+- [x] (2026-10-16) **Duyuru YAPILDI** (`/platform/duyurular`; tümü/seçili işletme, başlangıç-bitiş tarihi, bilgi/uyarı; işletme panelinde kapatılabilir banner, kapatma tarayıcıda hatırlanır). WhatsApp ile gönderim bilerek YOK.
 - [ ] **P2 Makbuz/fatura:** şimdilik PDF makbuz; resmileşince e-fatura entegrasyonu (GİB özel entegratör / Paraşüt vb.) ve online ödeme (iyzico/PayTR).
-- [ ] **P3 İndirim kodu / kampanya**, **özel alan adı** (musteri.com → dükkân sitesi), çoklu şube.
+- [x] (2026-10-16) **İndirim YAPILDI** (kod sistemi yok; dönem eklerken/yenilerken/düzenlerken elle yüzde; `subscriptions.list_price/discount_percent`, ödenecek tutar = liste − indirim). Kalan: ödemeler sayfasında indirim gösterimi yok.
+- **KARAR: özel alan adı ve çoklu şube yapılmayacak.**
 
 ---
 

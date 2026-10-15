@@ -11,11 +11,13 @@ from app.core.config import settings
 from app.models.audit_log import AuditLog
 from app.models.job_run import JobRun
 from app.models.login_attempt import LoginAttempt
+from app.models.message_log import MessageLog
 from app.models.platform_admin import PlatformAdmin
 from app.models.push_subscription import PushSubscription
 from app.models.tenant import Tenant
 from app.schemas.platform import (
-    BackupStatus, BillingJobStatus, ChannelsStatus, CountsStatus, DbStatus, SystemStatus,
+    BackupStatus, BillingJobStatus, ChannelsStatus, CountsStatus, DbStatus, SystemStatus, WhatsappStats,
+    WhatsappTenantUsage,
 )
 from app.services import notify_services
 from app.services.job_services import BILLING_JOB, job_run_out
@@ -51,6 +53,38 @@ async def _whatsapp_reachable() -> bool | None:
         return True  # herhangi bir HTTP yanıtı: sunucu ayakta
     except Exception:
         return False
+
+
+async def _whatsapp_state() -> str | None:
+    """Evolution instance bağlantı durumu (open = QR okutulmuş ve bağlı). Alınamazsa None."""
+    if not whatsapp_configured():
+        return None
+    try:
+        url = f"{settings.evolution_api_base_url.rstrip('/')}/instance/connectionState/{settings.evolution_instance_name}"
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            r = await client.get(url, headers={"apikey": settings.evolution_api_key})
+        j = r.json()
+        return (j.get("instance") or {}).get("state") or j.get("state")
+    except Exception:
+        return None
+
+
+async def _whatsapp_stats(db: AsyncSession, since: datetime) -> WhatsappStats:
+    sent = (await db.execute(select(func.count(MessageLog.id)).where(MessageLog.created_at > since, MessageLog.ok == True))).scalar_one()  # noqa: E712
+    failed = (await db.execute(select(func.count(MessageLog.id)).where(MessageLog.created_at > since, MessageLog.ok == False))).scalar_one()  # noqa: E712
+    ok_count = func.count(MessageLog.id).filter(MessageLog.ok == True)  # noqa: E712
+    bad_count = func.count(MessageLog.id).filter(MessageLog.ok == False)  # noqa: E712
+    rows = (await db.execute(
+        select(MessageLog.tenant_id, Tenant.name, ok_count, bad_count)
+        .outerjoin(Tenant, Tenant.id == MessageLog.tenant_id)
+        .where(MessageLog.created_at > since)
+        .group_by(MessageLog.tenant_id, Tenant.name)
+        .order_by(func.count(MessageLog.id).desc()).limit(5)
+    )).all()
+    return WhatsappStats(
+        sent_24h=sent, failed_24h=failed, hourly_limit=settings.whatsapp_tenant_hourly_limit,
+        top_tenants=[WhatsappTenantUsage(tenant_id=t, name=n or "(silinmiş işletme)", sent=o, failed=b) for t, n, o, b in rows],
+    )
 
 
 async def get_status(db: AsyncSession) -> SystemStatus:
@@ -90,7 +124,7 @@ async def get_status(db: AsyncSession) -> SystemStatus:
     channels = ChannelsStatus(
         email_configured=notify_services.email_configured(), push_configured=notify_services.push_configured(),
         push_subscribers=subscribers, whatsapp_configured=whatsapp_configured(),
-        whatsapp_reachable=await _whatsapp_reachable(),
+        whatsapp_reachable=await _whatsapp_reachable(), whatsapp_state=await _whatsapp_state(),
     )
 
     async def count(q) -> int:
@@ -106,4 +140,4 @@ async def get_status(db: AsyncSession) -> SystemStatus:
         ),
     )
     return SystemStatus(server_time=now, db=db_status, billing_job=billing_job, backup=backup,
-                        channels=channels, counts=counts)
+                        channels=channels, whatsapp=await _whatsapp_stats(db, day_ago), counts=counts)

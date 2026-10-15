@@ -30,6 +30,8 @@ interface PanelShellProps {
   extra?: ReactNode
   /** Sayfanın en üstünde yapışık duran bant (ör. destek modu). Yüksekliği kenar çubuğu/üst çubuğa yansıtılır. */
   banner?: ReactNode
+  /** İçeriğin en üstünde (yapışık olmayan) duyuru alanı. */
+  notice?: ReactNode
 }
 
 function NavList({ nav, onNavigate, variant }: { nav: NavItem[]; onNavigate?: () => void; variant: 'sidebar' | 'drawer' }) {
@@ -90,7 +92,7 @@ function UserBlock({ user, onLogout }: { user: PanelShellProps['user']; onLogout
 }
 
 /** Admin ve Platform layout'larının ortak iskeleti: masaüstü kenar çubuğu, mobil üst çubuk + alt sekme çubuğu + çekmece. */
-export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner }: PanelShellProps) {
+export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner, notice }: PanelShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const bannerRef = useRef<HTMLDivElement>(null)
   const [bannerH, setBannerH] = useState(0)
@@ -152,6 +154,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner 
         </header>
 
         <main className="mx-auto w-full min-w-0 max-w-6xl px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pt-8 lg:pb-14">
+          {notice}
           <Outlet />
         </main>
 

@@ -157,6 +157,21 @@ class ChannelsStatus(BaseModel):
     push_subscribers: int
     whatsapp_configured: bool
     whatsapp_reachable: bool | None
+    whatsapp_state: str | None = None  # Evolution bağlantı durumu: open | connecting | close ...
+
+
+class WhatsappTenantUsage(BaseModel):
+    tenant_id: int | None
+    name: str
+    sent: int
+    failed: int
+
+
+class WhatsappStats(BaseModel):
+    sent_24h: int
+    failed_24h: int
+    hourly_limit: int  # işletme başına saatlik üst sınır
+    top_tenants: list[WhatsappTenantUsage]  # son 24 saatte en çok mesaj gönderen işletmeler
 
 
 class CountsStatus(BaseModel):
@@ -173,6 +188,7 @@ class SystemStatus(BaseModel):
     billing_job: BillingJobStatus
     backup: BackupStatus
     channels: ChannelsStatus
+    whatsapp: WhatsappStats
     counts: CountsStatus
 
 

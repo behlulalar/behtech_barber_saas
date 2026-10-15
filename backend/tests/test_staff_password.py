@@ -154,7 +154,8 @@ async def test_forgot_is_tenant_scoped(api, shop, shop2):
 async def test_deliver_noop_in_development(monkeypatch):
     calls = []
     monkeypatch.setattr(whatsapp_services, "send_whatsapp_message", lambda *a: calls.append(a))
-    await otp_delivery.deliver_code("5551234567", "x")
+    async with SessionFactory() as db:
+        await otp_delivery.deliver_code(db, None, "otp", "5551234567", "x")
     assert calls == []
 
 
@@ -172,7 +173,8 @@ async def test_deliver_posts_to_evolution_in_production(monkeypatch):
 
     _mock_client(monkeypatch, handler)
     monkeypatch.setattr(settings, "environment", "production")
-    await otp_delivery.deliver_code("5551234567", "kod 123456")
+    async with SessionFactory() as db:
+        await otp_delivery.deliver_code(db, None, "otp", "5551234567", "kod 123456")
     assert seen["url"].endswith(f"/message/sendText/{settings.evolution_instance_name}")
     assert seen["key"] == settings.evolution_api_key
     assert '"number":"905551234567"' in seen["body"].replace(" ", "") and "kod 123456" in seen["body"]
@@ -189,14 +191,15 @@ async def test_deliver_failure_is_503(monkeypatch, failure):
     monkeypatch.setattr(settings, "environment", "production")
     from fastapi import HTTPException
     with pytest.raises(HTTPException) as e:
-        await otp_delivery.deliver_code("5551234567", "x")
+        async with SessionFactory() as db:
+            await otp_delivery.deliver_code(db, None, "otp", "5551234567", "x")
     assert e.value.status_code == 503 and e.value.detail == otp_delivery.DELIVERY_FAILED
 
 
 async def test_customer_send_code_uses_delivery_and_503s(api, shop, monkeypatch):
     sent = []
 
-    async def ok(phone, text):
+    async def ok(db, tenant_id, kind, phone, text):
         sent.append((phone, text))
 
     monkeypatch.setattr("app.api.public.deliver_code", ok)
@@ -205,7 +208,7 @@ async def test_customer_send_code_uses_delivery_and_503s(api, shop, monkeypatch)
     assert r.status_code == 200 and r.json()["dev_code"] is None  # üretimde kod yanıtta dönmez
     assert len(sent) == 1 and "5551234567" == sent[0][0]
 
-    async def boom(phone, text):
+    async def boom(db, tenant_id, kind, phone, text):
         from fastapi import HTTPException
         raise HTTPException(status_code=503, detail=otp_delivery.DELIVERY_FAILED)
 
@@ -217,7 +220,7 @@ async def test_customer_send_code_uses_delivery_and_503s(api, shop, monkeypatch)
 async def test_forgot_delivers_only_for_existing_staff(api, shop, monkeypatch):
     sent = []
 
-    async def ok(phone, text):
+    async def ok(db, tenant_id, kind, phone, text):
         sent.append(phone)
 
     monkeypatch.setattr("app.api.admin.deliver_code", ok)

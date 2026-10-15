@@ -154,3 +154,17 @@ export function parseAmount(input: string): number | null {
   if (!digits) return null
   return Number(digits)
 }
+
+/** İndirim yüzdesi girdisi: boş = 0; 0-100 dışı/geçersiz = null. */
+export function parsePercent(input: string): number | null {
+  const t = input.trim()
+  if (!t) return 0
+  if (!/^\d{1,3}$/.test(t)) return null
+  const n = Number(t)
+  return n >= 0 && n <= 100 ? n : null
+}
+
+/** Backend ile aynı yuvarlama: (liste*(100-yüzde)+50)//100. */
+export function discountedPrice(list: number, percent: number): number {
+  return Math.floor((list * (100 - percent) + 50) / 100)
+}

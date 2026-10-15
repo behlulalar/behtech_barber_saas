@@ -38,8 +38,10 @@ from app.schemas.platform import (
     TenantCreate,
     TenantUpdate,
 )
+from app.schemas.announcement import AnnouncementIn, AnnouncementOut, AnnouncementUpdate
 from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantPage
 from app.services import (
+    announcement_services,
     audit_services,
     job_services,
     metrics_services,
@@ -254,6 +256,36 @@ async def platform_list_tenants(
     db: Session = Depends(get_db),
 ):
     return await platform_services.list_tenants(db, search=search, status=status, sort=sort, limit=limit, offset=offset)
+
+
+@router.get("/announcements", response_model=list[AnnouncementOut])
+async def platform_list_announcements(admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)):
+    return await announcement_services.list_all(db)
+
+
+@router.post("/announcements", response_model=AnnouncementOut, status_code=201)
+async def platform_create_announcement(
+    data: AnnouncementIn, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    return await announcement_services.create(db, data, admin, request)
+
+
+@router.patch("/announcements/{announcement_id}", response_model=AnnouncementOut)
+async def platform_update_announcement(
+    announcement_id: int, data: AnnouncementUpdate, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    return await announcement_services.update(db, announcement_id, data, admin, request)
+
+
+@router.delete("/announcements/{announcement_id}", status_code=204)
+async def platform_delete_announcement(
+    announcement_id: int, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    await announcement_services.delete_one(db, announcement_id, admin, request)
+    return Response(status_code=204)
 
 
 @router.get("/tenants/options", response_model=list[TenantOption])

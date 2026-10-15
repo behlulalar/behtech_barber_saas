@@ -12,7 +12,7 @@ import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
 import { formatPrice, todayLocalISO } from '../../lib/format'
 import type { Subscription } from '../../types/api'
-import { parseAmount, periodLabel } from './billing'
+import { discountedPrice, parseAmount, parsePercent, periodLabel } from './billing'
 
 export interface TenantRef {
   id: number
@@ -45,6 +45,20 @@ function defaultPeriod(subs: Subscription[], preferId?: number | null): Subscrip
   const today = todayLocalISO()
   const owing = subs.filter((s) => s.balance > 0)
   return owing.find((s) => s.start_date <= today) ?? owing[0]
+}
+
+/** "İndirim (%)" alanı + canlı ödenecek tutar özeti. */
+function DiscountField({ value, onChange, list, error }: { value: string; onChange: (v: string) => void; list: number | null; error?: string | null }) {
+  const pct = parsePercent(value)
+  const hint =
+    list !== null && pct !== null && pct > 0
+      ? `Liste ${formatPrice(list)} → %${pct} indirimle ${formatPrice(discountedPrice(list, pct))}`
+      : 'Boşsa indirim yok. 0-100 arası.'
+  return (
+    <Field label="İndirim (%)" hint={hint} error={error}>
+      <Input inputMode="numeric" autoComplete="off" maxLength={3} value={value} onChange={(e) => onChange(e.target.value)} />
+    </Field>
+  )
 }
 
 /* ------------------------------ Ödeme al ------------------------------ */
@@ -182,6 +196,7 @@ function RenewModalBody({ tenant, onClose }: { tenant: TenantRef; onClose: () =>
   const [start, setStart] = useState(todayLocalISO())
   const [end, setEnd] = useState('')
   const [price, setPrice] = useState('')
+  const [discount, setDiscount] = useState('')
   const [note, setNote] = useState('')
   const [withPayment, setWithPayment] = useState(false)
   const [payAmount, setPayAmount] = useState<string | null>(null)
@@ -221,7 +236,9 @@ function RenewModalBody({ tenant, onClose }: { tenant: TenantRef; onClose: () =>
 
   const isCustom = planKey === CUSTOM
   const priceNum = parseAmount(price)
-  const payText = payAmount ?? price
+  const discountNum = parsePercent(discount)
+  const payable = priceNum !== null && discountNum !== null ? discountedPrice(priceNum, discountNum) : priceNum
+  const payText = payAmount ?? (payable !== null ? String(payable) : price)
   const payNum = parseAmount(payText)
 
   const errors = {
@@ -229,6 +246,7 @@ function RenewModalBody({ tenant, onClose }: { tenant: TenantRef; onClose: () =>
     start: !start ? 'Başlangıç gerekli.' : null,
     end: !end ? 'Bitiş gerekli.' : end < start ? 'Bitiş, başlangıçtan önce olamaz.' : null,
     price: price === '' || priceNum === null ? 'Tutar girin (0 olabilir).' : null,
+    discount: discountNum === null ? 'İndirim 0 ile 100 arasında olmalı.' : null,
     pay: withPayment && (!payNum || payNum <= 0) ? 'Geçerli bir tutar girin.' : null,
   }
   const hasError = Object.values(errors).some(Boolean)
@@ -242,6 +260,7 @@ function RenewModalBody({ tenant, onClose }: { tenant: TenantRef; onClose: () =>
         start_date: start,
         end_date: end,
         price: priceNum ?? 0,
+        discount_percent: discountNum ?? 0,
         note: note.trim() || null,
         initial_payment: withPayment && payNum ? { amount: payNum, paid_on: payDate, method: payMethod.trim() || 'IBAN' } : undefined,
       }),
@@ -306,9 +325,10 @@ function RenewModalBody({ tenant, onClose }: { tenant: TenantRef; onClose: () =>
             <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
           </Field>
         </div>
-        <Field label="Anlaşılan tutar (₺)" required error={show('price')}>
+        <Field label="Liste fiyatı (₺)" required error={show('price')}>
           <Input inputMode="numeric" autoComplete="off" value={price} onChange={(e) => setPrice(e.target.value)} />
         </Field>
+        <DiscountField value={discount} onChange={setDiscount} list={priceNum} error={show('discount')} />
         <Field label="Not">
           <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
@@ -347,7 +367,8 @@ function EditPeriodBody({ sub, onClose }: { sub: Subscription; onClose: () => vo
   const [name, setName] = useState(sub.plan_name)
   const [start, setStart] = useState(sub.start_date)
   const [end, setEnd] = useState(sub.end_date)
-  const [price, setPrice] = useState(String(sub.price))
+  const [price, setPrice] = useState(String(sub.list_price ?? sub.price))
+  const [discount, setDiscount] = useState(sub.discount_percent ? String(sub.discount_percent) : '')
   const [note, setNote] = useState(sub.note ?? '')
   const [serverError, setServerError] = useState<string | null>(null)
   const [touched, setTouched] = useState(false)
@@ -356,6 +377,8 @@ function EditPeriodBody({ sub, onClose }: { sub: Subscription; onClose: () => vo
   const endError = !end ? 'Bitiş gerekli.' : end < start ? 'Bitiş, başlangıçtan önce olamaz.' : null
   const priceError = priceNum === null ? 'Tutar girin.' : null
   const nameError = !name.trim() ? 'Ad gerekli.' : null
+  const discountNum = parsePercent(discount)
+  const discountError = discountNum === null ? 'İndirim 0 ile 100 arasında olmalı.' : null
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -364,6 +387,7 @@ function EditPeriodBody({ sub, onClose }: { sub: Subscription; onClose: () => vo
         start_date: start,
         end_date: end,
         price: priceNum ?? 0,
+        discount_percent: discountNum ?? 0,
         note: note.trim() || null,
       }),
     onSuccess: () => {
@@ -378,7 +402,7 @@ function EditPeriodBody({ sub, onClose }: { sub: Subscription; onClose: () => vo
     e.preventDefault()
     setTouched(true)
     setServerError(null)
-    if (endError || priceError || nameError || !start) return
+    if (endError || priceError || nameError || discountError || !start) return
     mutation.mutate()
   }
 
@@ -412,9 +436,10 @@ function EditPeriodBody({ sub, onClose }: { sub: Subscription; onClose: () => vo
             <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
           </Field>
         </div>
-        <Field label="Tutar (₺)" required error={touched ? priceError : null}>
+        <Field label="Liste fiyatı (₺)" required error={touched ? priceError : null}>
           <Input inputMode="numeric" autoComplete="off" value={price} onChange={(e) => setPrice(e.target.value)} />
         </Field>
+        <DiscountField value={discount} onChange={setDiscount} list={priceNum} error={touched ? discountError : null} />
         <Field label="Not">
           <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>

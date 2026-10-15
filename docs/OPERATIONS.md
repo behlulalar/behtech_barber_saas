@@ -36,6 +36,7 @@ Hazır örnek: [`deploy/crontab.example`](../deploy/crontab.example). Özet:
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_STARTTLS` | yok | Ödeme takibi e-postaları; yoksa e-posta kanalı kapalı |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | yok | Web push bildirimleri; yoksa push kapalı |
 | `BACKUP_RETENTION_DAYS` | - | Yedeklerin saklanma süresi (gün) |
+| `WHATSAPP_TENANT_HOURLY_LIMIT` | 60 | Bir işletmenin saatte gönderebileceği en çok doğrulama/şifre sıfırlama mesajı (aşılırsa 429); ortak WhatsApp hattını spam'den korur |
 
 **Giriş kilidi:** aynı telefon (personelde telefon + işletme) için pencere içinde `LOGIN_MAX_FAILURES` hatalı
 deneme, ya da aynı IP'den 30'dan fazla hatalı deneme hesabı kilitler; kilitliyken doğru şifre de reddedilir

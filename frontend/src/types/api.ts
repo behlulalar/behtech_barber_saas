@@ -534,7 +534,11 @@ export interface Subscription {
   plan_name: string
   start_date: string
   end_date: string
+  /** Ödenecek (indirimli) tutar. */
   price: number
+  /** İndirimsizse null. */
+  list_price: number | null
+  discount_percent: number
   note: string | null
   paid_amount: number
   balance: number
@@ -557,7 +561,9 @@ export interface SubscriptionCreate {
   plan_name?: string
   start_date: string
   end_date?: string
+  /** Liste fiyatı (boşsa paketin fiyatı). */
   price?: number
+  discount_percent?: number
   note?: string | null
   initial_payment?: InitialPayment
 }
@@ -567,6 +573,7 @@ export interface SubscriptionUpdate {
   start_date?: string
   end_date?: string
   price?: number
+  discount_percent?: number
   note?: string | null
 }
 
@@ -789,6 +796,14 @@ export interface SystemStatus {
     push_subscribers: number
     whatsapp_configured: boolean
     whatsapp_reachable: boolean | null
+    /** 'open' = bağlı, 'connecting', 'close' ... */
+    whatsapp_state: string | null
+  }
+  whatsapp: {
+    sent_24h: number
+    failed_24h: number
+    hourly_limit: number
+    top_tenants: { tenant_id: number | null; name: string; sent: number; failed: number }[]
   }
   counts: {
     tenants: number
@@ -808,4 +823,43 @@ export interface ImpersonateStartOut {
   code: string
   slug: string
   expires_in: number
+}
+
+/* ---------- Duyurular ---------- */
+
+export type AnnouncementLevel = 'info' | 'warning'
+export type AnnouncementStatus = 'scheduled' | 'active' | 'ended'
+
+export interface AnnouncementIn {
+  title: string
+  body: string
+  level: AnnouncementLevel
+  target_all: boolean
+  tenant_ids: number[]
+  starts_on?: string
+  ends_on?: string | null
+}
+
+export interface AnnouncementUpdate extends Partial<AnnouncementIn> {
+  clear_ends_on?: boolean
+}
+
+export interface AnnouncementOut {
+  id: number
+  title: string
+  body: string
+  level: AnnouncementLevel
+  target_all: boolean
+  tenant_ids: number[]
+  starts_on: string
+  ends_on: string | null
+  status: AnnouncementStatus
+  created_at: string
+}
+
+export interface PanelAnnouncement {
+  id: number
+  title: string
+  body: string
+  level: AnnouncementLevel
 }

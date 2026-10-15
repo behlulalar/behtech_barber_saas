@@ -507,6 +507,8 @@ iyi bir çalışma malzemesi.
       platform onaylar (14 gün deneme) / reddeder; e-posta + push bildirimi. `consent_records` (sürümlü onay), müşteri OTP adımında
       aydınlatma onayı, `/yasal/<slug>` taslak metinler (`frontend/src/lib/legal.ts`; COMPANY bilgileri BOŞ, avukat incelemesi bekliyor).
       Aşama D kararı: paket limiti/özel alan adı/çoklu şube yok; sırada WhatsApp durum paneli+hız sınırı, duyuru (panel banner), elle indirim.
+      2026-10-16: Aşama D — WhatsApp mesaj kaydı + işletme başına saatlik sınır + Sistem sayfası kartı; duyurular (platform -> işletme paneli banner);
+      abonelikte elle indirim yüzdesi. Detaylar docs/EKSIKLER.md.
       **Açık kalanlar:** (giriş sınırı artık var;)
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

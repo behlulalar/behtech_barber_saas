@@ -40,7 +40,8 @@ class SubscriptionCreate(BaseModel):
     plan_name: str | None = Field(default=None, max_length=100)
     start_date: date
     end_date: date | None = None
-    price: int | None = Field(default=None, ge=0)
+    price: int | None = Field(default=None, ge=0)  # liste fiyatı (boşsa paketin fiyatı); indirim buna uygulanır
+    discount_percent: int = Field(default=0, ge=0, le=100)
     note: str | None = None
     initial_payment: InitialPayment | None = None
 
@@ -49,7 +50,8 @@ class SubscriptionUpdate(BaseModel):
     plan_name: str | None = Field(default=None, min_length=1, max_length=100)
     start_date: date | None = None
     end_date: date | None = None
-    price: int | None = Field(default=None, ge=0)
+    price: int | None = Field(default=None, ge=0)  # liste fiyatı; indirim buna uygulanır
+    discount_percent: int | None = Field(default=None, ge=0, le=100)
     note: str | None = None
 
 
@@ -60,7 +62,9 @@ class SubscriptionOut(BaseModel):
     plan_name: str
     start_date: date
     end_date: date
-    price: int
+    price: int  # ödenecek tutar (indirim uygulanmış)
+    list_price: int | None = None  # indirim öncesi tutar (yalnızca indirimli dönemlerde)
+    discount_percent: int = 0
     note: str | None
     paid_amount: int
     balance: int

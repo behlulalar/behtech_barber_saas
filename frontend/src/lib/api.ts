@@ -1,6 +1,10 @@
 // Tek tip güvenli API istemcisi. Sayfa ajanları bu dosyayı DEĞİŞTİRMEZ.
 // Gruplar: publicApi, customerApi, authApi, adminApi, platformApi.
 import type {
+  AnnouncementIn,
+  AnnouncementOut,
+  AnnouncementUpdate,
+  PanelAnnouncement,
   SignupRequest,
   SignupResponse,
   AdminAppointmentCreate,
@@ -297,6 +301,8 @@ export const authApi = {
 const s = 'staff' as const
 
 export const adminApi = {
+  listAnnouncements: () => request<PanelAnnouncement[]>('/admin/announcements', { auth: s }),
+
   getRevenueReport: (period: ReportPeriod, date: string, staffId?: number) =>
     request<RevenueReport>('/admin/reports/revenue', { auth: s, query: { period, date, staff_id: staffId } }),
 
@@ -444,6 +450,14 @@ export const platformApi = {
   /* Denetim kaydı */
   listAudit: (params?: AuditParams) => request<AuditPage>('/platform/audit', { auth: p, query: { ...params } }),
   listAuditActions: () => request<AuditActionInfo[]>('/platform/audit/actions', { auth: p }),
+
+  /* Duyurular */
+  listAnnouncements: () => request<AnnouncementOut[]>('/platform/announcements', { auth: p }),
+  createAnnouncement: (data: AnnouncementIn) =>
+    request<AnnouncementOut>('/platform/announcements', { method: 'POST', body: data, auth: p }),
+  updateAnnouncement: (id: number, data: AnnouncementUpdate) =>
+    request<AnnouncementOut>(`/platform/announcements/${id}`, { method: 'PATCH', body: data, auth: p }),
+  deleteAnnouncement: (id: number) => request<void>(`/platform/announcements/${id}`, { method: 'DELETE', auth: p }),
 
   /* Sistem */
   getSystemStatus: () => request<SystemStatus>('/platform/system/status', { auth: p }),

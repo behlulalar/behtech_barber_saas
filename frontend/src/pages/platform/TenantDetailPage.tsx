@@ -15,6 +15,7 @@ import { formatPhone, formatPrice } from '../../lib/format'
 import type { Payment, Subscription } from '../../types/api'
 import { formatDateDMY } from './billing'
 import { EditPeriodModal, PaymentModal, RenewModal, useSubscriptions } from './BillingModals'
+import { SignupReviewCard } from './SignupReviewCard'
 import { NoteCard, OwnerCard, RecentEventsCard, SetupCard, SupportCard } from './TenantDetailParts'
 import { BillingStatusBadge, Money, PaymentStatusBadge, RemindButton, RemindedNote, useBillingSettings, useRemind } from './BillingParts'
 
@@ -115,7 +116,21 @@ export default function TenantDetailPage() {
         </div>
       ),
     },
-    { key: 'price', header: 'Tutar', align: 'right', cell: (s) => <Money value={s.price} /> },
+    {
+      key: 'price',
+      header: 'Tutar',
+      align: 'right',
+      cell: (s) =>
+        s.discount_percent > 0 ? (
+          <div className="flex flex-col items-end gap-1">
+            {s.list_price !== null && <Money value={s.list_price} className="text-xs text-muted line-through" />}
+            <Money value={s.price} />
+            <Badge tone="success">%{s.discount_percent} indirim</Badge>
+          </div>
+        ) : (
+          <Money value={s.price} />
+        ),
+    },
     { key: 'paid', header: 'Ödenen', align: 'right', cell: (s) => <Money value={s.paid_amount} className="text-success" /> },
     {
       key: 'balance',
@@ -185,6 +200,8 @@ export default function TenantDetailPage() {
         <ArrowLeft className="size-4" aria-hidden="true" />
         Ödemeler
       </Link>
+
+      {tenant.signup_status === 'pending' && <SignupReviewCard tenant={tenant} />}
 
       <header className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
