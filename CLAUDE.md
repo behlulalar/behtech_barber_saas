@@ -5,6 +5,13 @@ Bu dosya, mevcut tek-dükkân randevu sisteminin (`../randevu/`) çok-kiracılı
 kurallarını içerir. Bu dosya her oturumda otomatik yüklenir — burada yazan
 kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
 
+## Yeni sohbette ÖNCE bunları oku
+
+- `docs/CANLIYA_ALMA.md` — canlıya alma kontrol listesi (sunucu, DNS/HTTPS, sırlar, veri temizliği, WhatsApp, yasal). Durdurucu engeller §0'da.
+- `docs/EKSIKLER.md` — yapılmamış özellikler, bilinen eksikler, verilmiş kararlar (öncelik P0–P3). Platform yol haritası (Aşama B/C/D) burada.
+- `docs/OPERATIONS.md` — cron, yedek, ortam değişkenleri. Testler: `cd backend && bash scripts/run_tests.sh` (223 test).
+- Kullanıcı tercihi: **token'ı tasarruflu kullan** (az ajan, az ekran görüntüsü). Bir iş bitince ilgili maddeyi bu dosyalarda güncelle.
+
 ## Çalışma Modu: ÖĞRENME PROJESİ
 
 1. **Sıfırdan öğrenme.** Kullanıcı daha önce SaaS/multi-tenant mimari
