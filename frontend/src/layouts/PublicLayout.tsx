@@ -134,6 +134,9 @@ export default function PublicLayout() {
             <ContactLinks info={tenant.data} className="mt-4" />
           </div>
           <div className="flex flex-col gap-2 text-sm text-muted md:items-end">
+            <Link to="/yasal/aydinlatma" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">
+              Aydınlatma Metni
+            </Link>
             <Link to="/panel/giris" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">
               Personel girişi
             </Link>

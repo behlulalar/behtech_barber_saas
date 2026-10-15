@@ -78,6 +78,8 @@ export interface SlotsResponse {
 
 export interface SendCodeRequest {
   phone: string
+  /** Aydınlatma metni onayı (KVKK). */
+  kvkk_accepted: boolean
 }
 
 export interface SendCodeResponse {
@@ -408,6 +410,26 @@ export interface PlatformTenant {
   auto_suspended: boolean
   note: string | null
   setup: TenantSetup | null
+  /** Self-servis kayıt başvurusu durumu; elle açılan işletmelerde null. */
+  signup_status: SignupStatus | null
+}
+
+export type SignupStatus = 'pending' | 'approved' | 'rejected'
+
+export interface SignupRequest {
+  name: string
+  slug: string
+  owner_name: string
+  owner_surname: string
+  owner_phone: string
+  password: string
+  email?: string
+  accept_terms: boolean
+}
+
+export interface SignupResponse {
+  message: string
+  slug: string
 }
 
 export interface SetupCheck {
@@ -447,7 +469,7 @@ export interface PlatformTenantOption {
   slug: string
 }
 
-export type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'suspended'
+export type TenantStatusFilter = 'all' | 'active' | 'inactive' | 'suspended' | 'pending'
 export type TenantSort = 'name' | '-name' | 'created' | '-created' | 'staff' | '-staff' | 'appointments' | '-appointments'
 
 export interface TenantListParams {

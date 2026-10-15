@@ -15,6 +15,8 @@ class Tenant(Base):
     auto_suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Kendi kayıt olan işletmeler: 'pending' (onay bekliyor) | 'approved' | 'rejected'. Platformdan açılanlarda null.
+    signup_status: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     __table_args__ = (
         CheckConstraint("slug ~ '^[a-z0-9-]+$'"),

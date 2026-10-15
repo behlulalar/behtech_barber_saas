@@ -105,7 +105,7 @@ async def test_forgot_throttles_same_as_otp(api, shop):
     assert (await forgot(api, shop.staff.phone)).status_code == 200
     assert (await forgot(api, shop.staff.phone)).status_code == 429  # 60 sn aralık
     # login amaçlı kod bu sayacı etkilemez
-    assert (await api.post("/api/auth/send-code", slug="alfa", json={"phone": shop.staff.phone})).status_code == 200
+    assert (await api.post("/api/auth/send-code", slug="alfa", json={"phone": shop.staff.phone, "kvkk_accepted": True})).status_code == 200
     # ghost numara da aynı sınırlara tabi (sızıntı yok)
     assert (await forgot(api, "5559998877")).status_code == 200
     assert (await forgot(api, "5559998877")).status_code == 429
@@ -113,7 +113,7 @@ async def test_forgot_throttles_same_as_otp(api, shop):
 
 async def test_purposes_are_not_interchangeable(api, shop):
     phone = shop.staff.phone
-    login_code = (await api.post("/api/auth/send-code", slug="alfa", json={"phone": phone})).json()["dev_code"]
+    login_code = (await api.post("/api/auth/send-code", slug="alfa", json={"phone": phone, "kvkk_accepted": True})).json()["dev_code"]
     reset_code = (await forgot(api, phone)).json()["dev_code"]
     # giriş kodu ile sıfırlama olmaz
     if login_code != reset_code:
@@ -201,7 +201,7 @@ async def test_customer_send_code_uses_delivery_and_503s(api, shop, monkeypatch)
 
     monkeypatch.setattr("app.api.public.deliver_code", ok)
     monkeypatch.setattr(settings, "environment", "production")
-    r = await api.post("/api/auth/send-code", slug="alfa", json={"phone": "5551234567"})
+    r = await api.post("/api/auth/send-code", slug="alfa", json={"phone": "5551234567", "kvkk_accepted": True})
     assert r.status_code == 200 and r.json()["dev_code"] is None  # üretimde kod yanıtta dönmez
     assert len(sent) == 1 and "5551234567" == sent[0][0]
 
@@ -210,7 +210,7 @@ async def test_customer_send_code_uses_delivery_and_503s(api, shop, monkeypatch)
         raise HTTPException(status_code=503, detail=otp_delivery.DELIVERY_FAILED)
 
     monkeypatch.setattr("app.api.public.deliver_code", boom)
-    r = await api.post("/api/auth/send-code", slug="alfa", json={"phone": "5551234568"})
+    r = await api.post("/api/auth/send-code", slug="alfa", json={"phone": "5551234568", "kvkk_accepted": True})
     assert r.status_code == 503
 
 

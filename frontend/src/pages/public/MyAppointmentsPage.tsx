@@ -1,3 +1,4 @@
+import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarPlus, LogOut, Phone, TriangleAlert } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
@@ -46,9 +47,11 @@ function LoginPanel() {
   const [phone, setPhone] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState<{ phone: string; devCode: string | null } | null>(null)
+  const [kvkk, setKvkk] = useKvkkConsent()
+  const [kvkkError, setKvkkError] = useState<string | null>(null)
 
   const send = useMutation({
-    mutationFn: (p: string) => publicApi.sendCode({ phone: p }),
+    mutationFn: (p: string) => publicApi.sendCode({ phone: p, kvkk_accepted: kvkk }),
     onSuccess: (res, p) => {
       auth.clearExpired()
       setPending({ phone: p, devCode: res.dev_code })
@@ -62,7 +65,12 @@ function LoginPanel() {
       setError('Geçerli bir cep telefonu girin (örn. 0555 123 45 67).')
       return
     }
+    if (!kvkk) {
+      setKvkkError(KVKK_REQUIRED_MESSAGE)
+      return
+    }
     setError(null)
+    setKvkkError(null)
     send.mutate(normalizePhone(phone))
   }
 
@@ -103,6 +111,14 @@ function LoginPanel() {
                 onValueChange={setPhone}
               />
             </Field>
+            <KvkkCheckbox
+              checked={kvkk}
+              error={kvkkError}
+              onChange={(v) => {
+                setKvkk(v)
+                if (v) setKvkkError(null)
+              }}
+            />
             <Button type="submit" size="lg" fullWidth loading={send.isPending}>
               Kod gönder
             </Button>

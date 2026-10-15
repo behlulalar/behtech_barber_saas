@@ -1,6 +1,8 @@
 // Tek tip güvenli API istemcisi. Sayfa ajanları bu dosyayı DEĞİŞTİRMEZ.
 // Gruplar: publicApi, customerApi, authApi, adminApi, platformApi.
 import type {
+  SignupRequest,
+  SignupResponse,
   AdminAppointmentCreate,
   AdminAppointmentOut,
   AdminAppointmentsParams,
@@ -250,6 +252,7 @@ export const publicApi = {
   /** Müsait başlangıç saatleri: ["09:00:00", ...] */
   getAvailability: (p: AvailabilityParams) => request<string[]>('/availability', { query: { ...p } }),
   getSlots: (p: AvailabilityParams) => request<SlotsResponse>('/availability/slots', { query: { ...p } }),
+  signup: (data: SignupRequest) => request<SignupResponse>('/public/signup', { method: 'POST', body: data }),
   sendCode: (data: SendCodeRequest) => request<SendCodeResponse>('/auth/send-code', { method: 'POST', body: data }),
   /** Başarılı olunca yanıtı useCustomerAuth().login(response) ile kaydedin. */
   verifyCode: (data: VerifyCodeRequest) =>
@@ -372,6 +375,8 @@ export const platformApi = {
     request<ImpersonateStartOut>(`/platform/tenants/${id}/impersonate`, { method: 'POST', body: data, auth: p }),
   startTrial: (tenantId: number, data?: { days?: number; start_date?: string }) =>
     request<Subscription>(`/platform/tenants/${tenantId}/trial`, { method: 'POST', body: data ?? {}, auth: p }),
+  approveSignup: (id: number) => request<PlatformTenant>(`/platform/tenants/${id}/signup/approve`, { method: 'POST', auth: p }),
+  rejectSignup: (id: number) => request<PlatformTenant>(`/platform/tenants/${id}/signup/reject`, { method: 'POST', auth: p }),
   updateTenant: (id: number, data: PlatformTenantUpdate) =>
     request<PlatformTenant>(`/platform/tenants/${id}`, { method: 'PATCH', body: data, auth: p }),
   /* Paketler */

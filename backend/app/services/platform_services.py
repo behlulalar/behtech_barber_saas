@@ -79,6 +79,7 @@ def _row_to_out(row, setup: SetupOut | None = None) -> TenantOut:
         owner_phone=owner_phone,
         auto_suspended=tenant.auto_suspended_at is not None,
         note=tenant.note,
+        signup_status=tenant.signup_status,
         setup=setup,
     )
 
@@ -174,10 +175,12 @@ async def list_tenants(
             func.concat(Staff.name, " ", Staff.surname).ilike(pat, escape="\\"),
             Staff.phone.ilike(pat, escape="\\"),
         ))
-    if status == "active":
+    if status == "pending":
+        q = q.where(Tenant.signup_status == "pending")
+    elif status == "active":
         q = q.where(Tenant.is_active == True)  # noqa: E712
     elif status == "inactive":
-        q = q.where(Tenant.is_active == False)  # noqa: E712
+        q = q.where(Tenant.is_active == False, Tenant.signup_status.is_distinct_from("pending"))
     elif status == "suspended":
         q = q.where(Tenant.auto_suspended_at.is_not(None))
 
@@ -272,6 +275,8 @@ async def update_tenant(
         await audit(db, actor=actor, request=request, action="tenant.rename", entity_type="tenant",
                     entity_id=tenant.id, tenant_id=tenant.id,
                     summary=f"İşletme adı '{old}' iken '{tenant.name}' yapıldı", details={"from": old, "to": tenant.name})
+    if is_active and tenant.signup_status == "pending":
+        raise HTTPException(status_code=409, detail="Bu işletme kayıt başvurusu aşamasında; önce başvuruyu onaylayın")
     if is_active is not None:
         if is_active != tenant.is_active:
             verb, action = ("aktifleştirildi", "tenant.activate") if is_active else ("devre dışı bırakıldı", "tenant.deactivate")

@@ -47,6 +47,7 @@ from app.services import (
     login_throttle,
     platform_admin_services as admin_svc,
     platform_services,
+    signup_services,
     system_services,
 )
 from app.services.audit_services import audit
@@ -245,7 +246,7 @@ async def platform_stats(
 @router.get("/tenants", response_model=TenantPage)
 async def platform_list_tenants(
     search: str | None = Query(default=None, max_length=100),
-    status: Literal["all", "active", "inactive", "suspended"] = "all",
+    status: Literal["all", "active", "inactive", "suspended", "pending"] = "all",
     sort: Literal["name", "-name", "created", "-created", "staff", "-staff", "appointments", "-appointments"] = "-created",
     limit: int = Query(default=25, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
@@ -275,6 +276,22 @@ async def platform_create_tenant(
     db: Session = Depends(get_db),
 ):
     return await platform_services.create_tenant(db, data, admin, request)
+
+
+@router.post("/tenants/{tenant_id}/signup/approve", response_model=TenantOut)
+async def platform_approve_signup(
+    tenant_id: int, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    return await signup_services.approve(db, tenant_id, admin, request)
+
+
+@router.post("/tenants/{tenant_id}/signup/reject", response_model=TenantOut)
+async def platform_reject_signup(
+    tenant_id: int, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    return await signup_services.reject(db, tenant_id, admin, request)
 
 
 @router.patch("/tenants/{tenant_id}", response_model=TenantOut)

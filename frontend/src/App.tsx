@@ -37,6 +37,8 @@ const PlatformSystemPage = lazy(() => import('./pages/platform/SystemPage'))
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const TenantGate = lazy(() => import('./pages/TenantGate'))
+const LegalPage = lazy(() => import('./pages/legal/LegalPage'))
+const SignupPage = lazy(() => import('./pages/product/SignupPage'))
 const ProductPage = lazy(() => import('./pages/product/ProductPage'))
 
 function PageFallback() {
@@ -73,6 +75,8 @@ function App() {
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route index element={<ProductPage />} />
+          <Route path="kayit" element={<SignupPage />} />
+          <Route path="yasal/:slug" element={<LegalPage />} />
           {platformRoutes}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
@@ -84,6 +88,9 @@ function App() {
     <Suspense fallback={<PageFallback />}>
       <Routes>
         <Route path="tanitim" element={<ProductPage />} />
+        <Route path="kayit" element={<SignupPage />} />
+        {/* Yasal metinler pasif işletmede de açılabilsin diye TenantGate dışında */}
+        <Route path="yasal/:slug" element={<LegalPage />} />
 
         {/* Dükkân tarafı: işletme pasif/yoksa TenantGate bilgi ekranı gösterir */}
         <Route element={<TenantGate />}>

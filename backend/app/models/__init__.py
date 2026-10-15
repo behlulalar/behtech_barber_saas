@@ -20,3 +20,4 @@ from app.models.login_attempt import LoginAttempt
 from app.models.audit_log import AuditLog
 from app.models.job_run import JobRun
 from app.models.impersonation_code import ImpersonationCode
+from app.models.consent_record import ConsentRecord

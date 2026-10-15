@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Building2, HeartPulse, LayoutDashboard, Package, Receipt, ScrollText, Settings, ShieldCheck } from 'lucide-react'
+import { useMemo } from 'react'
 import { useMatch } from 'react-router-dom'
 import { platformApi } from '../lib/api'
 import { usePlatformAuth } from '../lib/auth'
@@ -8,7 +9,7 @@ import { PRODUCT_NAME, useDocumentTitle, useRouteLabel } from '../lib/head'
 import { usePlatformManifest } from '../lib/push'
 import { PanelShell, type NavItem } from './PanelShell'
 
-const NAV: NavItem[] = [
+const BASE_NAV: NavItem[] = [
   { to: '/platform', label: 'Genel Bakış', icon: LayoutDashboard, end: true, tab: true },
   { to: '/platform/odemeler', label: 'Ödemeler', icon: Receipt, tab: true },
   { to: '/platform/isletmeler', label: 'İşletmeler', icon: Building2, tab: true },
@@ -22,6 +23,14 @@ const NAV: NavItem[] = [
 /** Platform (SaaS sahibi) paneli iskeleti. <RequirePlatform> altında kullanılır. */
 export default function PlatformLayout() {
   const { me, logout } = usePlatformAuth()
+  // Onay bekleyen kayıt başvurusu sayısı (limit=1 ile yalnızca total okunur).
+  const pendingQ = useQuery({
+    queryKey: ['platform', 'tenants', 'pending-count'],
+    queryFn: () => platformApi.listTenants({ status: 'pending', limit: 1 }),
+    refetchInterval: 60_000,
+  })
+  const pending = pendingQ.data?.total ?? 0
+  const NAV = useMemo(() => BASE_NAV.map((n) => (n.to === '/platform/isletmeler' ? { ...n, badge: pending } : n)), [pending])
   usePlatformManifest()
   const detail = useMatch('/platform/isletmeler/:id')
   const tenants = useQuery({ queryKey: ['platform', 'tenant', detail?.params.id], queryFn: () => platformApi.getTenant(Number(detail!.params.id)), enabled: !!detail })

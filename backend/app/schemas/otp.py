@@ -19,6 +19,8 @@ Phone = Annotated[str, AfterValidator(_validate_phone)]
 
 class SendCodeRequest(BaseModel):
     phone: Phone
+    # Müşteri aydınlatma metni onayı (bu sürüm daha önce onaylandıysa gerekmez).
+    kvkk_accepted: bool = False
 
 
 class VerifyCodeRequest(BaseModel):

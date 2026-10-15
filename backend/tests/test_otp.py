@@ -14,7 +14,7 @@ PHONE = "5551234567"
 
 
 async def send(api, phone=PHONE, slug="alfa"):
-    return await api.post("/api/auth/send-code", slug=slug, json={"phone": phone})
+    return await api.post("/api/auth/send-code", slug=slug, json={"phone": phone, "kvkk_accepted": True})
 
 
 async def verify(api, code, phone=PHONE, slug="alfa"):

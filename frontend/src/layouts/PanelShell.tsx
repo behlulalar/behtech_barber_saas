@@ -15,6 +15,8 @@ export interface NavItem {
   tab?: boolean
   /** Yalnızca yönetici (işletme sahibi) görür; personelin menüsünde yer almaz. */
   managerOnly?: boolean
+  /** Menü öğesinin yanında küçük sayı rozeti (0/boş ise gösterilmez). */
+  badge?: number
 }
 
 interface PanelShellProps {
@@ -51,6 +53,12 @@ function NavList({ nav, onNavigate, variant }: { nav: NavItem[]; onNavigate?: ()
             <>
               <item.icon className={cn('size-[18px] shrink-0', isActive ? 'text-copper-bright' : 'text-muted group-hover:text-muted-strong')} aria-hidden="true" />
               <span className="min-w-0 truncate">{item.label}</span>
+              {!!item.badge && (
+                <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-copper px-1.5 text-xs font-semibold leading-5 text-ink tabular-nums">
+                  <span className="sr-only">Bekleyen: </span>
+                  {item.badge}
+                </span>
+              )}
             </>
           )}
         </NavLink>
@@ -165,7 +173,14 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner 
                   )
                 }
               >
-                <item.icon className="size-5" aria-hidden="true" />
+                <span className="relative">
+                  <item.icon className="size-5" aria-hidden="true" />
+                  {!!item.badge && (
+                    <span className="absolute -right-2.5 -top-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-copper px-1 text-[0.65rem] font-semibold leading-4 text-ink tabular-nums">
+                      {item.badge}
+                    </span>
+                  )}
+                </span>
                 <span className="max-w-full truncate px-1">{item.label}</span>
               </NavLink>
             ))}

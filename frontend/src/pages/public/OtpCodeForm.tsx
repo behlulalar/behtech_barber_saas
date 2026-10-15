@@ -69,7 +69,7 @@ export function OtpCodeForm({
   })
 
   const resend = useMutation({
-    mutationFn: () => (resendCode ? resendCode() : publicApi.sendCode({ phone })),
+    mutationFn: () => (resendCode ? resendCode() : publicApi.sendCode({ phone, kvkk_accepted: true })),
     onSuccess: (res) => {
       setDevCode(res.dev_code)
       setCooldown(RESEND_SECONDS)

@@ -1,4 +1,4 @@
-import { PauseCircle, SearchX } from 'lucide-react'
+import { Hourglass, PauseCircle, SearchX } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import { Spinner } from '../components/ui/Spinner'
 import { ApiError } from '../lib/api'
@@ -21,24 +21,30 @@ export default function TenantGate() {
       </div>
     )
   }
-  if (status === 403) return <Unavailable inactive />
+  if (status === 403) {
+    const detail = tenant.error instanceof ApiError ? tenant.error.detail : ''
+    // Kayıt başvurusu inceleniyorsa sunucunun mesajı olduğu gibi gösterilir.
+    return <Unavailable inactive reviewMessage={/başvuru/i.test(detail) ? detail : undefined} />
+  }
   if (status === 404) return <Unavailable />
   return <Outlet />
 }
 
-function Unavailable({ inactive = false }: { inactive?: boolean }) {
-  useDocumentTitle(inactive ? 'Hizmet verilmiyor' : 'İşletme bulunamadı', PRODUCT_NAME)
-  const Icon = inactive ? PauseCircle : SearchX
+function Unavailable({ inactive = false, reviewMessage }: { inactive?: boolean; reviewMessage?: string }) {
+  useDocumentTitle(reviewMessage ? 'Başvuru inceleniyor' : inactive ? 'Hizmet verilmiyor' : 'İşletme bulunamadı', PRODUCT_NAME)
+  const Icon = reviewMessage ? Hourglass : inactive ? PauseCircle : SearchX
   return (
     <main className="pt-safe pb-safe flex min-h-dvh flex-col items-center justify-center bg-ink px-5 text-center">
       <span className="flex size-16 items-center justify-center rounded-full border border-line-strong text-copper-bright">
         <Icon className="size-8" aria-hidden="true" />
       </span>
       <h1 className="mt-6 max-w-md font-display text-3xl font-medium text-cream md:text-4xl">
-        {inactive ? 'Bu işletme şu an hizmet vermiyor.' : 'Bu adreste bir işletme bulunamadı.'}
+        {reviewMessage ? 'Kayıt başvurunuz inceleniyor.' : inactive ? 'Bu işletme şu an hizmet vermiyor.' : 'Bu adreste bir işletme bulunamadı.'}
       </h1>
       <p className="mt-3 max-w-sm text-muted">
-        {inactive
+        {reviewMessage
+          ? reviewMessage
+          : inactive
           ? 'Randevu almak için lütfen işletmeyle doğrudan iletişime geçin. İşletme sahibiyseniz abonelik durumunuz için bizimle görüşebilirsiniz.'
           : 'Adresi kontrol edip tekrar deneyin.'}
       </p>

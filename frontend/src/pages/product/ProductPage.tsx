@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { ArrowUpRight, Menu, X, Plus, Minus } from 'lucide-react'
 import { CONTACT, DEMO_SITE_URL, PRODUCT_NAME } from './content'
 import { PanelMockup, PhoneBookingMockup, PhonePanelMockup, TenantSiteMockup } from './mockups'
@@ -87,9 +88,12 @@ function Header() {
               {n.label}
             </a>
           ))}
-          <a href="#iletisim" className="inline-flex min-h-11 items-center rounded-sm bg-copper px-5 text-sm font-semibold text-ink hover:bg-copper-bright">
+          <a href="#iletisim" className="inline-flex min-h-11 items-center text-sm text-muted-strong transition-colors hover:text-cream">
             Demo talep et
           </a>
+          <Link to="/kayit" className="inline-flex min-h-11 items-center rounded-sm bg-copper px-5 text-sm font-semibold text-ink hover:bg-copper-bright">
+            Ücretsiz dene
+          </Link>
         </nav>
         <button
           type="button"
@@ -114,7 +118,10 @@ function Header() {
               {n.label}
             </a>
           ))}
-          <a href="#iletisim" onClick={() => setOpen(false)} className={`${btnPrimary} mt-5 w-full`}>
+          <Link to="/kayit" onClick={() => setOpen(false)} className={`${btnPrimary} mt-5 w-full`}>
+            Ücretsiz dene
+          </Link>
+          <a href="#iletisim" onClick={() => setOpen(false)} className={`${btnGhost} mt-3 w-full`}>
             Demo talep et
           </a>
         </nav>
@@ -151,7 +158,10 @@ function Hero() {
             </p>
           </Rv>
           <Rv delay={240} className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <a href="#iletisim" className={btnPrimary}>
+            <Link to="/kayit" className={btnPrimary}>
+              Ücretsiz dene
+            </Link>
+            <a href="#iletisim" className={btnGhost}>
               Demo talep et
             </a>
             <a href={DEMO_SITE_URL} target="_blank" rel="noopener noreferrer" className={btnGhost}>
@@ -482,6 +492,18 @@ function Footer() {
         <p>
           © {new Date().getFullYear()} BehTech Labs · {PRODUCT_NAME}
         </p>
+        <nav aria-label="Yasal" className="flex flex-wrap gap-x-5">
+          {[
+            ['gizlilik', 'Gizlilik'],
+            ['sartlar', 'Kullanım Şartları'],
+            ['veri-isleme', 'Veri İşleme Sözleşmesi'],
+            ['aydinlatma', 'Aydınlatma'],
+          ].map(([slug, label]) => (
+            <Link key={slug} to={`/yasal/${slug}`} className="inline-flex min-h-11 items-center hover:text-cream">
+              {label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </footer>
   )

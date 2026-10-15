@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { SlotGrid, SlotGridSkeleton } from '../../components/booking/SlotGrid'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button, buttonStyles } from '../../components/ui/Button'
@@ -78,7 +79,7 @@ export default function BookingPage() {
   const [name, setName] = useState('')
   const [surname, setSurname] = useState('')
   const [phone, setPhone] = useState('')
-  const [errors, setErrors] = useState<{ name?: string; surname?: string; phone?: string }>({})
+  const [errors, setErrors] = useState<{ name?: string; surname?: string; phone?: string; kvkk?: string }>({})
   const [devCode, setDevCode] = useState<string | null>(null)
   const [result, setResult] = useState<AppointmentPublicOut | null>(null)
   const topRef = useRef<HTMLDivElement>(null)
@@ -187,8 +188,9 @@ export default function BookingPage() {
     },
   })
 
+  const [kvkk, setKvkk] = useKvkkConsent()
   const sendCode = useMutation({
-    mutationFn: () => publicApi.sendCode({ phone: normalizePhone(phone) }),
+    mutationFn: () => publicApi.sendCode({ phone: normalizePhone(phone), kvkk_accepted: kvkk }),
     onSuccess: (res) => {
       setDevCode(res.dev_code)
       setStep('verify')
@@ -205,6 +207,7 @@ export default function BookingPage() {
     if (name.trim().length < 2) next.name = 'Adınızı girin.'
     if (surname.trim().length < 2) next.surname = 'Soyadınızı girin.'
     if (!isValidPhone(phone)) next.phone = 'Geçerli bir cep telefonu girin (örn. 0555 123 45 67).'
+    if (!sessionPhoneMatches && !kvkk) next.kvkk = KVKK_REQUIRED_MESSAGE
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -356,6 +359,16 @@ export default function BookingPage() {
                 onValueChange={setPhone}
               />
             </Field>
+            {!sessionPhoneMatches && (
+              <KvkkCheckbox
+                checked={kvkk}
+                error={errors.kvkk}
+                onChange={(v) => {
+                  setKvkk(v)
+                  if (v) setErrors((e) => ({ ...e, kvkk: undefined }))
+                }}
+              />
+            )}
           </form>
         )}
 

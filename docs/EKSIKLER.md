@@ -34,6 +34,10 @@
 
 ---
 
+- **Aşama D kararları (2026-10-16):** paket limitleri/özellik bayrağı YOK (tek paket, her özellik açık); özel alan adı ve çoklu şube YOK (gerek yok).
+  Yapılacak: WhatsApp durum paneli + işletme başına hız sınırı; duyuru (yalnızca panel banner'ı, WhatsApp'a gönderim yok); indirim (kod yok — abonelik oluştururken/yenilerken elle yüzde girilir, dönem fiyatı = liste − indirim).
+- **Kayıt ol (2026-10-16):** `POST /api/public/signup` -> işletme `signup_status='pending'`, `is_active=false`; platform onaylarsa (`/platform/tenants/{id}/signup/approve`) 14 günlük deneme başlar, reddederse kapalı kalır. Doğrulama yok (OTP'siz), spam için IP başına 5 kayıt/gün + telefon başına tek aktif başvuru. Bildirim: e-posta (platform ayarlarındaki bildirim e-postası) + web push. Boş işletme gelir; kurulum rehberi panelde.
+
 ## 2. Platform paneli (Aşama B / C / D)
 
 Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler) **tamamlandı** (commit `8e5f8f5`, `c1467e0`).
@@ -127,7 +131,9 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 
 ## 7. Yasal / ticari
 
-- [ ] **P0** KVKK aydınlatma metni, gizlilik politikası, kullanım şartları, işletmeyle veri işleme sözleşmesi (yok).
+- [x] (2026-10-16) KVKK metinleri TASLAK olarak YAZILDI (`frontend/src/lib/legal.ts`: aydınlatma, gizlilik, kullanım şartları, veri işleme sözleşmesi; `/yasal/<slug>`). Müşteri OTP adımında aydınlatma onay kutusu, kayıt formunda şart onayı; onaylar `consent_records` tablosunda (sürümlü).
+- [ ] **P0 Şirket bilgileri boş:** `legal.ts` içindeki `COMPANY` (ünvan, vergi no, adres, e-posta, KVKK e-postası, telefon) doldurulmalı — kullanıcının şirketi henüz yok. Metin değişirse `LEGAL_VERSIONS` (frontend) ve `backend/app/core/legal.py` sürümleri birlikte artırılmalı.
+- [ ] **P0 Hukuki inceleme:** metinler avukat onayından geçmedi; canlıdan önce incelettirin (özellikle yurt dışı aktarım/WhatsApp ve saklama süreleri).
 - [ ] **P1** Fiyatlandırma/paket sayfası tanıtım sitesinde yok (SSS "Fiyat nedir?" → "iletişime geçin"). Karar: açık fiyat mı, "teklif al" mı?
 - [ ] **P1** Tanıtım sitesi iletişim bilgileri (WhatsApp numarası, e-posta) **boş** (`content.ts`).
 - [ ] **P2** Şirket bilgileri (unvan, vergi no, adres) footer ve fatura için.

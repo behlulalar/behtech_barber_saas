@@ -500,6 +500,13 @@ iyi bir çalışma malzemesi.
       2026-10-15: işletme iletişim bilgileri — `tenant_settings.contact_phone/whatsapp_phone/instagram`
       (panel Ayarlar → İletişim, yalnızca sahip düzenler; müşteri sitesinde ziyaret bölümü + footer ikonları).
       Girdi normalize edilir (0/+90 temizlenir, Instagram bağlantısı → kullanıcı adı).
+      2026-10-15: "Beni hatırla" — `LoginRequest.remember`, `remember_token_expire_minutes` (30 gün; işaretsizse 2 saat);
+      personel + platform girişinde kutu (varsayılan işaretli) ve oturum açıksa `RememberedAccount` kartı ("X olarak giriş yap" /
+      "Başka hesapla giriş yap"). Testler: `tests/test_remember_me.py`.
+      2026-10-16: Kayıt ol + KVKK — `POST /api/public/signup` (tanıtım sitesi `/kayit`): işletme `signup_status=pending`, kapalı;
+      platform onaylar (14 gün deneme) / reddeder; e-posta + push bildirimi. `consent_records` (sürümlü onay), müşteri OTP adımında
+      aydınlatma onayı, `/yasal/<slug>` taslak metinler (`frontend/src/lib/legal.ts`; COMPANY bilgileri BOŞ, avukat incelemesi bekliyor).
+      Aşama D kararı: paket limiti/özel alan adı/çoklu şube yok; sırada WhatsApp durum paneli+hız sınırı, duyuru (panel banner), elle indirim.
       **Açık kalanlar:** (giriş sınırı artık var;)
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

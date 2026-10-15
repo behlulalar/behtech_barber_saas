@@ -199,7 +199,7 @@ async def test_inactive_tenant_blocks_public_and_staff_routes(api, shop):
     for p in public:
         r = await api.get(p, slug="alfa")
         assert r.status_code == 403, p
-    assert (await api.post("/api/auth/send-code", slug="alfa", json={"phone": "5550001111"})).status_code == 403
+    assert (await api.post("/api/auth/send-code", slug="alfa", json={"phone": "5550001111", "kvkk_accepted": True})).status_code == 403
     assert (await api.get("/api/customer/appointments", slug="alfa", token=cust)).status_code == 403
     # personel: giriş de mevcut token da 403
     r = await api.post("/api/auth/login", slug="alfa", json={"phone": shop.owner.phone, "password": PASSWORD})

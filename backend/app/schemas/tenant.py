@@ -38,6 +38,7 @@ class TenantOut(BaseModel):
     owner_phone: str | None = None
     auto_suspended: bool = False
     note: str | None = None
+    signup_status: str | None = None
     setup: SetupOut | None = None
 
 

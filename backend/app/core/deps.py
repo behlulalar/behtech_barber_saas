@@ -47,6 +47,8 @@ async def get_current_tenant(request: Request, db: Session = Depends(get_db)) ->
     if tenant is None:
         raise HTTPException(status_code=404, detail="İşletme bulunamadı")
     if not tenant.is_active:
+        if tenant.signup_status == "pending":
+            raise HTTPException(status_code=403, detail="Kayıt başvurunuz inceleniyor. Onaylanınca size haber vereceğiz")
         raise HTTPException(status_code=403, detail="Bu işletme şu an hizmet vermiyor")
 
     return tenant
