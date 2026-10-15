@@ -744,7 +744,7 @@ function SuccessView({ appointment, name }: { appointment: AppointmentPublicOut;
         ))}
       </dl>
       <p className="mt-4 text-center text-xs text-muted">
-        Randevunuz onaylandı. Durumunu Randevularım sayfasından takip edebilir, gerekirse oradan iptal edebilirsiniz.
+        Randevunuz onaylandı. Başka bir cihazdan görmek ya da iptal etmek için sitedeki “Giriş yap” bağlantısından telefon numaranızla giriş yapın; numaranıza doğrulama kodu göndereceğiz.
       </p>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">

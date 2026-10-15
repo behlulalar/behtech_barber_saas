@@ -68,12 +68,13 @@ function LoginPanel() {
 
   return (
     <div className="mx-auto max-w-md">
-      <p className="eyebrow">Randevularım</p>
+      <p className="eyebrow">Müşteri girişi</p>
       <h1 className="mt-3 font-display text-[1.9rem] font-medium leading-tight text-cream md:text-4xl">
         Randevularınızı görmek için giriş yapın
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-muted">
-        Şifre gerekmez. Telefon numaranıza gelen tek kullanımlık kodla giriş yaparsınız.
+        Daha önce randevu aldıysanız aynı telefon numarasını yazın; numaranıza tek kullanımlık bir doğrulama kodu gönderelim.
+        Şifre ya da üyelik gerekmez. Giriş yaptıktan sonra randevularınızı görebilir ve iptal edebilirsiniz.
       </p>
 
       {auth.expired && !pending && (

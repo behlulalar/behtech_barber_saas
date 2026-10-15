@@ -472,6 +472,11 @@ iyi bir çalışma malzemesi.
       GET /admin/staff tüm ekibi döner (Ekip sayfası personelde salt okunur) ama meslektaşların telefonu (giriş adı) boş, ödeme yöntemlerinde `details` (IBAN vb.) null,
       GET working-hours/time-off yalnızca kendi (randevu tablosu gölgelemesi için gerekli).
       MANAGER_ROLES = super_admin, technical_support.
+      2026-10-15: Müşteri girişi görünür hale getirildi — dükkân sitesinin üst menüsünde
+      (masaüstü + mobil) "Giriş yap" (girişliyken "Randevularım" + çıkış); giriş telefon + OTP
+      (`/randevularim`, şifre/üyelik yok, oturum 30 dk). Randevu sonrası ekran başka cihazdan
+      giriş yapılabileceğini söyler. NOT: canlıda OTP'nin müşteriye ulaşması WhatsApp
+      (Evolution API) bağlantısına bağlı — bağlanmadan başka cihazdan giriş fiilen mümkün değil.
       **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

@@ -1,17 +1,17 @@
-import { Menu, X } from 'lucide-react'
+import { CalendarCheck, LogIn, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { buttonStyles } from '../components/ui/Button'
 import { useScrollLock } from '../components/ui/useDialog'
 import { useCustomerAuth } from '../lib/auth'
 import { cn } from '../lib/cn'
+import { formatPhone } from '../lib/format'
 import { PRODUCT_NAME, useDocumentTitle, useFavicon, useRouteLabel } from '../lib/head'
 import { useTenant } from '../lib/queries'
 
 const LINKS = [
   { to: '/#hizmetler', label: 'Hizmetler' },
   { to: '/#ekip', label: 'Ekibimiz' },
-  { to: '/randevularim', label: 'Randevularım' },
 ]
 
 const PAGE_TITLES = [
@@ -22,7 +22,7 @@ const PAGE_TITLES = [
 /** Müşteri tarafı iskeleti: işletme adıyla header, mobil menü, footer. */
 export default function PublicLayout() {
   const tenant = useTenant()
-  const { isAuthenticated } = useCustomerAuth()
+  const { isAuthenticated, phone, logout } = useCustomerAuth()
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const name = tenant.data?.business_name
@@ -63,6 +63,11 @@ export default function PublicLayout() {
                 {l.label}
               </NavLink>
             ))}
+            {/* Müşteri girişi: daha önce randevu almış biri başka cihazdan telefon + kodla girer */}
+            <Link to="/randevularim" className={buttonStyles({ size: 'sm', variant: 'secondary' })}>
+              {isAuthenticated ? <CalendarCheck className="size-4" aria-hidden="true" /> : <LogIn className="size-4" aria-hidden="true" />}
+              {isAuthenticated ? 'Randevularım' : 'Giriş yap'}
+            </Link>
             <Link to="/randevu" className={buttonStyles({ size: 'sm' })}>
               Randevu Al
             </Link>
@@ -90,10 +95,28 @@ export default function PublicLayout() {
                 {l.label}
               </Link>
             ))}
-            <Link to="/randevu" className={cn(buttonStyles({ size: 'lg', fullWidth: true }), 'mt-5')}>
+            <Link to="/randevularim" className={cn(buttonStyles({ size: 'lg', variant: 'secondary', fullWidth: true }), 'mt-5')}>
+              {isAuthenticated ? <CalendarCheck className="size-5" aria-hidden="true" /> : <LogIn className="size-5" aria-hidden="true" />}
+              {isAuthenticated ? 'Randevularım' : 'Giriş yap'}
+            </Link>
+            <Link to="/randevu" className={cn(buttonStyles({ size: 'lg', fullWidth: true }), 'mt-3')}>
               Randevu Al
             </Link>
-            {isAuthenticated && <p className="mt-4 text-center text-xs text-muted">Telefonunuzla giriş yapıldı</p>}
+            {isAuthenticated && (
+              <div className="mt-4 flex flex-col items-center gap-1 text-center text-xs text-muted">
+                {phone && <p>{formatPhone(phone)} ile giriş yapıldı</p>}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    logout()
+                  }}
+                  className="inline-flex min-h-11 items-center gap-1.5 text-muted-strong underline-offset-4 hover:underline">
+                  <LogOut className="size-3.5" aria-hidden="true" />
+                  Çıkış yap
+                </button>
+              </div>
+            )}
           </div>
         )}
       </header>
