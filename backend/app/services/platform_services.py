@@ -1,4 +1,5 @@
 import re
+from datetime import date
 
 from fastapi import HTTPException, Request
 import secrets
@@ -13,6 +14,7 @@ from app.models.platform_admin import PlatformAdmin
 from app.models.staff import RoleType, Staff
 from app.models.tenant import Tenant
 from app.models.service import Service
+from app.models.subscription import Subscription
 from app.models.staff_service import StaffService
 from app.models.tenant_settings import TenantSettings
 from app.models.working_hours import WorkingHours
@@ -177,6 +179,14 @@ async def list_tenants(
         ))
     if status == "pending":
         q = q.where(Tenant.signup_status == "pending")
+    elif status == "trial":
+        # Demo aşamasında: bugün kapsayan bir deneme dönemi var ve bugünü kapsayan ücretli dönem yok.
+        today = date.today()
+        covers = (Subscription.tenant_id == Tenant.id, Subscription.start_date <= today, Subscription.end_date >= today)
+        q = q.where(
+            select(Subscription.id).where(*covers, Subscription.is_trial == True).exists(),  # noqa: E712
+            ~select(Subscription.id).where(*covers, Subscription.is_trial == False).exists(),  # noqa: E712
+        )
     elif status == "rejected":
         q = q.where(Tenant.signup_status == "rejected")
     elif status == "active":

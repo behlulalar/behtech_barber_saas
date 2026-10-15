@@ -546,6 +546,7 @@ export default function TenantsPage() {
           }}
           items={[
             { value: 'all', label: 'Tümü' },
+            { value: 'trial', label: 'Deneme' },
             { value: 'active', label: 'Aktif' },
             { value: 'inactive', label: 'Pasif' },
             { value: 'suspended', label: 'Askıda' },

@@ -103,3 +103,18 @@ async def test_customer_consent_required_then_remembered(api):
     assert (await api.post("/api/auth/send-code", slug="alfa", json=body)).status_code == 200
     async with SessionFactory() as db:
         assert len((await db.execute(select(ConsentRecord).where(ConsentRecord.kind == "customer_privacy"))).scalars().all()) == 1
+
+
+async def test_trial_filter_lists_only_demo_tenants(api, shop, shop2, platform_admin):
+    from datetime import date, timedelta
+    from app.models.subscription import Subscription
+    tok = mint_platform_token(platform_admin)
+    today = date.today()
+    async with SessionFactory() as db:
+        db.add(Subscription(tenant_id=shop.tenant.id, plan_name="Deneme", start_date=today, end_date=today + timedelta(days=13), price=0, is_trial=True))
+        # shop2: deneme + bugünü kapsayan ücretli dönem -> artık demo değil
+        db.add(Subscription(tenant_id=shop2.tenant.id, plan_name="Deneme", start_date=today, end_date=today + timedelta(days=13), price=0, is_trial=True))
+        db.add(Subscription(tenant_id=shop2.tenant.id, plan_name="Aylık", start_date=today - timedelta(days=40), end_date=today + timedelta(days=60), price=800))
+        await db.commit()
+    r = (await api.get("/api/platform/tenants?status=trial", token=tok)).json()
+    assert [x["id"] for x in r["items"]] == [shop.tenant.id]
