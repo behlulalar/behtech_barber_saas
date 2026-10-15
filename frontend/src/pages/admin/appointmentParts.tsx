@@ -127,48 +127,60 @@ interface RowProps {
 export function AppointmentRow({ appt, showStaff, showDate, flow }: RowProps) {
   const dim = appt.status === 'cancelled' || appt.status === 'no_show'
   const hasActions = appt.status === 'confirmed'
+  const endTime = formatTimeRange(appt.appointment_time, appt.service.duration_min).split(' – ')[1]
 
+  // Kartın KENDİ genişliğine göre (@container) iki yerleşim:
+  //  dar: saat | müşteri+hizmet, altında durum, en altta eşit üç düğme;
+  //  geniş: tek satır, sabit sütunlar → tüm kartlarda saat, müşteri, durum ve düğmeler aynı hizada.
   return (
-    <div className={cn('rounded-md border border-panel-line bg-panel', dim && 'opacity-70')}>
-      <button
-        type="button"
-        onClick={() => flow.open(appt)}
-        className="flex w-full min-w-0 items-stretch gap-4 p-4 text-left active:bg-panel-hover"
-        aria-label={`${fullName(appt.customer)}, ${formatTime(appt.appointment_time)}, detaylar`}
-      >
-        <div className="w-[4.25rem] shrink-0">
-          <p className="whitespace-nowrap font-display text-2xl font-medium leading-none tabular-nums text-cream">{formatTime(appt.appointment_time)}</p>
-          <p className="mt-1.5 whitespace-nowrap text-xs tabular-nums text-muted">– {formatTimeRange(appt.appointment_time, appt.service.duration_min).split(' – ')[1]}</p>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className={cn('min-w-0 truncate font-medium text-cream', dim && 'line-through decoration-muted/60')}>{fullName(appt.customer)}</p>
-            <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" />
+    <div className={cn('@container rounded-md border border-panel-line bg-panel', dim && 'opacity-70')}>
+      <div className="@5xl:flex @5xl:items-stretch">
+        <button
+          type="button"
+          onClick={() => flow.open(appt)}
+          className="grid w-full min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-4 gap-y-2 p-4 text-left active:bg-panel-hover @5xl:flex-1 @5xl:grid-cols-[4.5rem_minmax(0,1fr)_13rem] @5xl:gap-y-0"
+          aria-label={`${fullName(appt.customer)}, ${formatTime(appt.appointment_time)}, detaylar`}
+        >
+          <div className="row-span-2 self-start @5xl:row-span-1 @5xl:self-center">
+            <p className="whitespace-nowrap font-display text-2xl font-medium leading-none tabular-nums text-cream">{formatTime(appt.appointment_time)}</p>
+            <p className="mt-1.5 whitespace-nowrap text-xs tabular-nums text-muted">– {endTime}</p>
           </div>
-          <p className="mt-0.5 truncate text-sm text-muted-strong">
-            {appt.service.name} · {formatPrice(appt.service.price)}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <StatusBadge status={appt.status} />
-            {showStaff && <span className="truncate text-xs text-muted">{fullName(appt.staff)}</span>}
-            {showDate && <span className="text-xs text-muted">{formatDateLong(appt.appointment_date)}</span>}
-            {appt.status === 'completed' && appt.payment_method && <span className="text-xs text-muted">{appt.payment_method}</span>}
+
+          <div className="min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <p className={cn('min-w-0 truncate font-medium text-cream', dim && 'line-through decoration-muted/60')}>{fullName(appt.customer)}</p>
+              <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted @5xl:hidden" aria-hidden="true" />
+            </div>
+            <p className="mt-0.5 truncate text-sm text-muted-strong">
+              {appt.service.name} · {formatPrice(appt.service.price)}
+            </p>
           </div>
-        </div>
-      </button>
-      {hasActions && (
-        <div className="flex gap-2 border-t border-panel-line p-2">
-          <Button size="sm" variant="primary" className="flex-1" onClick={() => flow.quick(appt, 'complete')} leftIcon={<Check className="size-4" />}>
-            Tamamla
-          </Button>
-          <Button size="sm" variant="secondary" className="flex-1" onClick={() => flow.quick(appt, 'no_show')} leftIcon={<UserX className="size-4" />}>
-            Gelmedi
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => flow.quick(appt, 'cancel')} aria-label="Randevuyu iptal et" leftIcon={<X className="size-4" />}>
-            İptal
-          </Button>
-        </div>
-      )}
+
+          <div className="col-start-2 flex min-w-0 items-center justify-between gap-2 @5xl:col-start-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+              <StatusBadge status={appt.status} />
+              {showStaff && <span className="truncate text-xs text-muted">{fullName(appt.staff)}</span>}
+              {showDate && <span className="text-xs text-muted">{formatDateLong(appt.appointment_date)}</span>}
+              {appt.status === 'completed' && appt.payment_method && <span className="text-xs text-muted">{appt.payment_method}</span>}
+            </div>
+            <ChevronRight className="hidden size-4 shrink-0 text-muted @5xl:block" aria-hidden="true" />
+          </div>
+        </button>
+
+        {hasActions && (
+          <div className="grid grid-cols-3 gap-2 border-t border-panel-line p-2 @5xl:w-[25rem] @5xl:shrink-0 @5xl:items-center @5xl:border-l @5xl:border-t-0 @5xl:p-3">
+            <Button size="sm" variant="primary" className="w-full px-2" onClick={() => flow.quick(appt, 'complete')} leftIcon={<Check className="size-4" />}>
+              Tamamla
+            </Button>
+            <Button size="sm" variant="secondary" className="w-full px-2" onClick={() => flow.quick(appt, 'no_show')} leftIcon={<UserX className="size-4" />}>
+              Gelmedi
+            </Button>
+            <Button size="sm" variant="danger" className="w-full px-2" onClick={() => flow.quick(appt, 'cancel')} aria-label="Randevuyu iptal et" leftIcon={<X className="size-4" />}>
+              İptal
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

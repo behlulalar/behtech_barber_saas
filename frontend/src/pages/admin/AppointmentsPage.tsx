@@ -74,7 +74,7 @@ function DateGroups({
           {showDates && (
             <h3 className="mb-2.5 flex items-baseline justify-between text-sm font-medium capitalize text-muted-strong">
               <span>{date === today ? `Bugün · ${formatDateLong(date)}` : formatDateLong(date)}</span>
-              <span className="text-xs text-muted">{list.length} randevu</span>
+              <span className="text-xs normal-case text-muted">{list.length} randevu</span>
             </h3>
           )}
           <ul className="flex flex-col gap-3">
@@ -396,7 +396,7 @@ export default function AppointmentsPage() {
             />
           </div>
         ) : groupByStaff ? (
-          <div className="flex max-w-3xl flex-col gap-10">
+          <div className="flex flex-col gap-10">
             {staffGroups.map((g) => (
               <section key={g.id} aria-label={fullName(g.staff)}>
                 <header className="mb-4 flex items-center gap-3 border-b border-panel-line pb-3">
@@ -409,7 +409,7 @@ export default function AppointmentsPage() {
             ))}
           </div>
         ) : (
-          <div className="max-w-3xl">
+          <div>
             <DateGroups groups={grouped} showDates={effectiveView === 'week'} today={today} showStaff={isManager} flow={flow} />
           </div>
         )}
