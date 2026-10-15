@@ -30,6 +30,7 @@ from app.services.appointment_services import (
     lock_staff_schedule,
 )
 from app.services.customer_services import get_or_create_customer
+from app.services.otp_delivery import deliver_code
 from app.services.otp_services import send_code, verify_code
 
 router = APIRouter()
@@ -65,7 +66,7 @@ async def staff_route(
     """Berber listesi; service_id verilirse sadece o hizmeti veren berberler."""
     result = await db.execute(
         select(Staff)
-        .where(Staff.tenant_id == tenant.id, Staff.role != RoleType.TECHNICAL_SUPPORT)
+        .where(Staff.tenant_id == tenant.id, Staff.role != RoleType.TECHNICAL_SUPPORT, Staff.is_active == True)  # noqa: E712
         .order_by(Staff.id)
     )
     links = await service_ids_by_staff(db, tenant.id)
@@ -130,7 +131,8 @@ async def send_code_route(
     data: SendCodeRequest, tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)
 ):
     code = await send_code(db, tenant.id, data.phone)
-    # TODO: WhatsApp (Evolution API) gönderimi bağlanınca production'da kod sadece oradan gider.
+    # Geliştirmede no-op (kod dev_code ile döner); üretimde WhatsApp, başarısızsa 503.
+    await deliver_code(data.phone, f"{tenant.name} randevu doğrulama kodunuz: {code}. Kodu kimseyle paylaşmayın.")
     is_dev = settings.environment == "development"
     return SendCodeResponse(message="Doğrulama kodu gönderildi", dev_code=code if is_dev else None)
 
@@ -198,6 +200,8 @@ async def appointment_create(
     ).scalar_one_or_none()
     if staff is None:
         raise HTTPException(status_code=404, detail="Berber bulunamadı")
+    if not staff.is_active:
+        raise HTTPException(status_code=400, detail="Berber bulunamadı")
 
     customer = await get_or_create_customer(db, tenant.id, identity.phone, data.name.strip(), data.surname.strip())
     await check_daily_limit(db, tenant.id, customer.id, data.appointment_date)

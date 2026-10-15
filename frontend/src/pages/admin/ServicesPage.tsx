@@ -19,7 +19,7 @@ import { useStaffAuth } from '../../lib/auth'
 import { cn } from '../../lib/cn'
 import { formatDuration, formatPrice, fullName } from '../../lib/format'
 import type { AdminService, AdminStaff } from '../../types/api'
-import { ErrorBlock, qk, useServiceList, useStaffList } from './shared'
+import { ErrorBlock, qk, useServiceList, useActiveStaffList } from './shared'
 
 const DURATION_PRESETS = [30, 60, 90, 120, 150, 180]
 
@@ -28,7 +28,7 @@ export default function ServicesPage() {
   const toast = useToast()
   const qc = useQueryClient()
   const query = useServiceList()
-  const staffQuery = useStaffList()
+  const staffQuery = useActiveStaffList()
   const staffById = new Map((staffQuery.data ?? []).map((m) => [m.id, m]))
   const [editing, setEditing] = useState<AdminService | 'new' | null>(null)
   const [deleting, setDeleting] = useState<AdminService | null>(null)
@@ -197,7 +197,7 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
   const [duration, setDuration] = useState(service ? String(service.duration_min) : '30')
   const [active, setActive] = useState(service?.is_active ?? true)
   const [touched, setTouched] = useState(false)
-  const staffQuery = useStaffList()
+  const staffQuery = useActiveStaffList()
   const providers = (staffQuery.data ?? []).filter((m) => m.role !== 'technical_support')
   // null: henüz dokunulmadı (yeni hizmette varsayılan = tüm personel).
   const [picked, setPicked] = useState<number[] | null>(service ? service.staff_ids : null)

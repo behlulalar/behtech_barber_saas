@@ -9,6 +9,7 @@ import { errorMessage } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 import { useTenant } from '../../lib/queries'
+import { ForgotPasswordFlow } from './ForgotPasswordFlow'
 import { useDocumentTitle, useFavicon } from '../../lib/head'
 
 export default function LoginPage() {
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [forgot, setForgot] = useState(false)
 
   const from = (location.state as { from?: string } | null)?.from ?? '/panel'
   if (status === 'authenticated') return <Navigate to={from} replace />
@@ -45,10 +47,13 @@ export default function LoginPage() {
   return (
     <AuthLayout
       brand={tenant.data?.business_name}
-      eyebrow="Personel girişi"
-      title="Tekrar hoş geldiniz."
-      subtitle="Randevuları yönetmek için telefon numaranız ve şifrenizle giriş yapın."
+      eyebrow={forgot ? 'Şifre sıfırlama' : 'Personel girişi'}
+      title={forgot ? 'Şifremi unuttum' : 'Tekrar hoş geldiniz.'}
+      subtitle={forgot ? 'Telefon numaranıza gelen kodla yeni bir şifre belirleyin.' : 'Randevuları yönetmek için telefon numaranız ve şifrenizle giriş yapın.'}
     >
+      {forgot ? (
+        <ForgotPasswordFlow onDone={() => setForgot(false)} onCancel={() => setForgot(false)} />
+      ) : (
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         <Field label="Telefon" required>
           <PhoneInput
@@ -73,7 +78,11 @@ export default function LoginPage() {
         <Button type="submit" size="lg" fullWidth loading={loading} disabled={!password || !phone}>
           Giriş yap
         </Button>
+        <button type="button" onClick={() => { setError(null); setForgot(true) }} className="-mt-2 min-h-11 text-sm text-muted-strong underline-offset-4 hover:text-cream hover:underline">
+          Şifremi unuttum
+        </button>
       </form>
+      )}
     </AuthLayout>
   )
 }

@@ -28,7 +28,7 @@ import {
 import type { AdminAppointmentOut, AppointmentStatus } from '../../types/api'
 import { AppointmentsTable } from './AppointmentsTable'
 import { AppointmentRow, NewAppointmentModal, useAppointmentFlow, type NewAppointmentPrefill } from './appointmentParts'
-import { ErrorBlock, qk, useStaffList } from './shared'
+import { ErrorBlock, qk, StaffOptions, useStaffList } from './shared'
 
 type View = 'day' | 'week'
 type Layout = 'list' | 'table'
@@ -162,7 +162,7 @@ export default function AppointmentsPage() {
   // Tablo günün tüm programını gösterir (aktif + tamamlanan + gelmeyen); iptaller saati boşalttığı için dahil değil.
   const tableRows = useMemo(() => visible.filter((a) => a.status !== 'cancelled'), [visible])
   const tableStaff = useMemo(() => {
-    const all = (staffQ.data ?? []).filter((s) => s.role !== 'technical_support')
+    const all = (staffQ.data ?? []).filter((s) => s.role !== 'technical_support' && s.is_active)
     if (!isManager) return all.filter((s) => s.id === me?.id)
     return staffFilter ? all.filter((s) => String(s.id) === staffFilter) : all
   }, [staffQ.data, isManager, staffFilter, me?.id])
@@ -252,11 +252,7 @@ export default function AppointmentsPage() {
             {isManager && (
               <Select aria-label="Berber filtresi" value={staffFilter} onChange={(e) => setStaffFilter(e.target.value)} className="min-w-44">
                 <option value="">Tüm ekip</option>
-                {(staffQ.data ?? []).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {fullName(s)}
-                  </option>
-                ))}
+                <StaffOptions staff={staffQ.data ?? []} />
               </Select>
             )}
             {layout === 'list' && (

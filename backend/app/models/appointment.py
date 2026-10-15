@@ -19,7 +19,8 @@ class Appointment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"))
-    staff_id: Mapped[int] = mapped_column(ForeignKey("staff.id", ondelete="CASCADE"))
+    # NO ACTION: personel satırı silinirse geçmiş randevu/gelir sessizce silinmesin (tenant silme yine zincirle çalışır).
+    staff_id: Mapped[int] = mapped_column(ForeignKey("staff.id", ondelete="NO ACTION"))
     service_id: Mapped[int] = mapped_column(ForeignKey("services.id", ondelete="CASCADE"))
     appointment_date: Mapped[date] = mapped_column(Date)
     appointment_time: Mapped[time] = mapped_column(Time)

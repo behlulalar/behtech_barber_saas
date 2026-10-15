@@ -34,6 +34,42 @@ export function useStaffList() {
   return useQuery({ queryKey: qk.staff, queryFn: adminApi.listStaff, staleTime: 60_000 })
 }
 
+/** Yalnızca aktif (işten ayrılmamış) ekip: yeni randevu, çalışma saati, hizmet atama vb. */
+export function useActiveStaffList() {
+  return useQuery({
+    queryKey: qk.staff,
+    queryFn: adminApi.listStaff,
+    staleTime: 60_000,
+    select: (all) => all.filter((s) => s.is_active),
+  })
+}
+
+/** Filtre <select>'i için: aktifler düz, işten ayrılanlar "Eski personel" grubunda. */
+export function StaffOptions({ staff }: { staff: { id: number; name: string; surname: string; is_active: boolean }[] }) {
+  const name = (s: { name: string; surname: string }) => `${s.name} ${s.surname}`.trim()
+  const former = staff.filter((s) => !s.is_active)
+  return (
+    <>
+      {staff
+        .filter((s) => s.is_active)
+        .map((s) => (
+          <option key={s.id} value={s.id}>
+            {name(s)}
+          </option>
+        ))}
+      {former.length > 0 && (
+        <optgroup label="Eski personel">
+          {former.map((s) => (
+            <option key={s.id} value={s.id}>
+              {name(s)}
+            </option>
+          ))}
+        </optgroup>
+      )}
+    </>
+  )
+}
+
 export function useServiceList() {
   return useQuery({ queryKey: qk.services, queryFn: adminApi.listServices, staleTime: 60_000 })
 }

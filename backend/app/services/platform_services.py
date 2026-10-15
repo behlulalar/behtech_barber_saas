@@ -38,7 +38,7 @@ def validate_slug(slug: str) -> None:
 
 def _tenant_out_query():
     staff_count = (
-        select(func.count(Staff.id)).where(Staff.tenant_id == Tenant.id).correlate(Tenant).scalar_subquery()
+        select(func.count(Staff.id)).where(Staff.tenant_id == Tenant.id, Staff.is_active == True).correlate(Tenant).scalar_subquery()  # noqa: E712
     )
     appointment_count = (
         select(func.count(Appointment.id)).where(Appointment.tenant_id == Tenant.id).correlate(Tenant).scalar_subquery()
@@ -46,7 +46,7 @@ def _tenant_out_query():
     # Sahip: işletmenin ilk eklenen super_admin'i (birden fazla olabilir).
     owner = (
         select(Staff.id)
-        .where(Staff.tenant_id == Tenant.id, Staff.role == RoleType.SUPER_ADMIN)
+        .where(Staff.tenant_id == Tenant.id, Staff.role == RoleType.SUPER_ADMIN, Staff.is_active == True)  # noqa: E712
         .order_by(Staff.id)
         .limit(1)
         .correlate(Tenant)
@@ -99,7 +99,7 @@ async def _setup_for(db: Session, tenant_ids: list[int]) -> dict[int, SetupOut]:
     if not tenant_ids:
         return {}
     in_t = lambda col: col.in_(tenant_ids)  # noqa: E731
-    barber = Staff.role != RoleType.TECHNICAL_SUPPORT
+    barber = (Staff.role != RoleType.TECHNICAL_SUPPORT) & (Staff.is_active == True)  # noqa: E712
 
     async def grouped(stmt) -> dict[int, int]:
         return {tid: n for tid, n in (await db.execute(stmt)).all()}
@@ -202,7 +202,7 @@ async def list_options(db: Session) -> list[TenantOption]:
 
 async def _owner(db: Session, tenant_id: int) -> Staff | None:
     return (await db.execute(
-        select(Staff).where(Staff.tenant_id == tenant_id, Staff.role == RoleType.SUPER_ADMIN).order_by(Staff.id).limit(1)
+        select(Staff).where(Staff.tenant_id == tenant_id, Staff.role == RoleType.SUPER_ADMIN, Staff.is_active == True).order_by(Staff.id).limit(1)  # noqa: E712
     )).scalar_one_or_none()
 
 

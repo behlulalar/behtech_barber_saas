@@ -15,6 +15,7 @@ class VerificationCode(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
     is_used: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    purpose: Mapped[str] = mapped_column(String(20), server_default="login", default="login")
     attempts: Mapped[int] = mapped_column(Integer, server_default=text("0"))
 
     __table_args__ = (

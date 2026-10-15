@@ -178,7 +178,8 @@ function TempPasswordModal({ tenant, password, onClose }: { tenant: PlatformTena
     `Merhaba ${o.name}, ${tenant.name} yönetim paneliniz için geçici şifreniz hazır.\n` +
     `Giriş adresi: https://${tenant.slug}.behtechlabs.com/panel/giris\n` +
     `Telefon: ${formatPhone(o.phone)}\n` +
-    `Geçici şifre: ${password}`
+    `Geçici şifre: ${password}\n` +
+    `Giriş yaptıktan sonra Hesabım sayfasından şifrenizi değiştirebilirsiniz.`
   const waUrl = `https://wa.me/90${o.phone}?text=${encodeURIComponent(message)}`
 
   return (

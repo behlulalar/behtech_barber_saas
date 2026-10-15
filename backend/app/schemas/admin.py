@@ -208,6 +208,8 @@ class StaffAdminOut(_Orm):
     created_at: datetime | None
     photo_image: str | None = None
     service_ids: list[int] = []
+    is_active: bool = True
+    left_at: date | None = None
 
 
 class StaffCreate(BaseModel):
@@ -230,6 +232,8 @@ class StaffUpdate(BaseModel):
     phone: str | None = None
     password: str | None = Field(default=None, min_length=6, max_length=128)
     role: RoleType | None = None
+    # false = "İşten ayrıldı" (giriş kapanır, geçmiş korunur); true = tekrar aktif.
+    is_active: bool | None = None
     # "" ya da null gönderilirse fotoğraf kaldırılır.
     photo_image: str | None = None
     service_ids: IdList | None = None

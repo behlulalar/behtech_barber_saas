@@ -42,6 +42,24 @@ async def get_staff_in_tenant(db: AsyncSession, tenant_id: int, staff_id: int) -
     return staff
 
 
+async def count_future_appointments(db: AsyncSession, tenant_id: int, staff_id: int) -> int:
+    """Personelin bugünden (şu andan) sonraki iptal edilmemiş randevu sayısı."""
+    now = datetime.now()
+    return (
+        await db.execute(
+            select(func.count(Appointment.id)).where(
+                Appointment.tenant_id == tenant_id,
+                Appointment.staff_id == staff_id,
+                Appointment.status != AppointmentStatus.CANCELLED,
+                or_(
+                    Appointment.appointment_date > now.date(),
+                    and_(Appointment.appointment_date == now.date(), Appointment.appointment_time >= now.time()),
+                ),
+            )
+        )
+    ).scalar_one()
+
+
 async def has_appointments(db: AsyncSession, tenant_id: int, **column_filters) -> bool:
     conds = [Appointment.tenant_id == tenant_id] + [getattr(Appointment, k) == v for k, v in column_filters.items()]
     row = (await db.execute(select(Appointment.id).where(*conds).limit(1))).first()
@@ -84,7 +102,9 @@ async def staff_ids_by_service(db: AsyncSession, tenant_id: int) -> dict[int, li
 
 async def bookable_staff_ids(db: AsyncSession, tenant_id: int) -> list[int]:
     rows = await db.execute(
-        select(Staff.id).where(Staff.tenant_id == tenant_id, Staff.role != RoleType.TECHNICAL_SUPPORT)
+        select(Staff.id).where(
+            Staff.tenant_id == tenant_id, Staff.role != RoleType.TECHNICAL_SUPPORT, Staff.is_active == True  # noqa: E712
+        )
     )
     return list(rows.scalars().all())
 

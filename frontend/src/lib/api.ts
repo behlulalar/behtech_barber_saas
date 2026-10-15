@@ -52,6 +52,7 @@ import type {
   PaymentMethodUpdate,
   PlatformMe,
   PlatformStats,
+  MetricsOverview,
   PlatformTenant,
   PlatformTenantDetail,
   PlatformTenantOption,
@@ -277,6 +278,13 @@ export const authApi = {
   /** Destek girişi: platform panelinden alınan tek kullanımlık kodu personel token'ına çevirir. */
   impersonate: (code: string) => request<TokenResponse>('/auth/impersonate', { method: 'POST', body: { code } }),
   endImpersonation: () => request<void>('/auth/impersonate/end', { method: 'POST', auth: 'staff' }),
+  /** Yeni token döner (diğer cihazların oturumları düşer). */
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    request<TokenResponse>('/auth/me/password', { method: 'POST', body: data, auth: 'staff' }),
+  logoutAll: () => request<void>('/auth/me/logout-all', { method: 'POST', auth: 'staff' }),
+  forgotSendCode: (phone: string) => request<SendCodeResponse>('/auth/forgot/send-code', { method: 'POST', body: { phone } }),
+  forgotReset: (data: { phone: string; code: string; new_password: string }) =>
+    request<void>('/auth/forgot/reset', { method: 'POST', body: data }),
 }
 
 /* ------------------------------------------------------------------ */
@@ -345,6 +353,7 @@ export const platformApi = {
   login: (data: LoginRequest) => request<TokenResponse>('/platform/login', { method: 'POST', body: data }),
   me: () => request<PlatformMe>('/platform/me', { auth: p }),
   getStats: () => request<PlatformStats>('/platform/stats', { auth: p }),
+  getMetrics: () => request<MetricsOverview>('/platform/metrics/overview', { auth: p }),
   listTenants: (params?: TenantListParams) =>
     request<PlatformTenantPage>('/platform/tenants', { auth: p, query: { ...params } }),
   listTenantOptions: () => request<PlatformTenantOption[]>('/platform/tenants/options', { auth: p }),

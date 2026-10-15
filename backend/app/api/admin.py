@@ -2,11 +2,13 @@
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_staff, get_current_tenant, is_manager, require_manager
+from app.core.deps import MANAGER_ROLES, get_current_staff, get_current_tenant, is_manager, require_manager
+from app.core.config import settings
+from app.core.password_policy import enforce_password_policy
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.payment_method import PaymentMethod
@@ -39,11 +41,13 @@ from app.schemas.admin import (
     WorkingHourIn,
     WorkingHourOut,
 )
-from app.schemas.auth import ImpersonateExchange, LoginRequest, TokenResponse
+from app.schemas.auth import ForgotReset, ForgotSendCode, ImpersonateExchange, LoginRequest, PasswordChange, TokenResponse
+from app.schemas.public import SendCodeResponse
 from app.schemas.reports import ReportPeriod, RevenueReport
 from app.services import admin_services as svc
 from app.services import impersonation_services
-from app.services import login_throttle
+from app.services import login_throttle, otp_services
+from app.services.otp_delivery import deliver_code
 from app.services import report_services
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
@@ -51,6 +55,10 @@ from app.services.customer_services import get_or_create_customer
 router = APIRouter()
 
 SLOT_MSG = svc.SLOT_TAKEN
+STAFF_DELETE_409 = (
+    "Bu personelin geçmiş randevuları var, silinemez. Çalışmayı bıraktıysa 'İşten ayrıldı' olarak pasife alın; "
+    "geçmiş ve gelir kayıtları korunur."
+)
 FORBIDDEN_OTHER = "Bu işlem için yalnızca kendi kayıtlarınızı yönetebilirsiniz"
 
 
@@ -78,10 +86,10 @@ async def login(
         raise HTTPException(status_code=401, detail="Telefon veya şifre hatalı")
     await login_throttle.clear_failures(db, "staff", key)
     await db.commit()
-    token = create_access_token(
-        {"sub": str(staff.id), "tenant_id": staff.tenant_id, "type": "staff", "tv": staff.token_version}
-    )
-    return TokenResponse(access_token=token, token_type="bearer")
+    # Parola doğrulandıktan SONRA bakılır: yanlış parolayla pasif hesap varlığı öğrenilemez.
+    if not staff.is_active:
+        raise HTTPException(status_code=403, detail="Bu hesap pasif. İşletme sahibiyle görüşün")
+    return TokenResponse(access_token=_staff_token(staff), token_type="bearer")
 
 
 @router.get("/auth/me", response_model=StaffMe)
@@ -92,6 +100,107 @@ async def read_current_staff(request: Request, current_staff: Staff = Depends(ge
         me.impersonated_by = ImpersonatedBy(id=admin.id, name=admin.name, phone=admin.phone)
         me.read_only = bool(getattr(request.state, "read_only", False))
     return me
+
+
+def _staff_token(staff: Staff) -> str:
+    return create_access_token(
+        {"sub": str(staff.id), "tenant_id": staff.tenant_id, "type": "staff", "tv": staff.token_version}
+    )
+
+
+def _forbid_in_support(request: Request, message: str) -> None:
+    if getattr(request.state, "impersonator", None) is not None:
+        raise HTTPException(status_code=403, detail=message)
+
+
+@router.post("/auth/me/password", response_model=TokenResponse)
+async def change_own_password(
+    data: PasswordChange,
+    request: Request,
+    current: Staff = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    """Kendi şifresini değiştirir; yeni token döner, diğer cihazlardaki oturumlar düşer."""
+    _forbid_in_support(request, "Destek modunda şifre değiştirilemez")
+    key = login_throttle.make_key(current.phone, current.tenant_id)
+    await login_throttle.ensure_not_locked(db, "staff_pw", key, request)
+    if not verify_password(data.current_password, current.password):
+        if await login_throttle.record_failure(db, "staff_pw", key, request):
+            raise login_throttle.locked_now_error()
+        raise HTTPException(status_code=400, detail="Mevcut şifre hatalı")
+    enforce_password_policy(data.new_password, current.phone)
+    current.password = hash_password(data.new_password)
+    current.token_version += 1
+    await login_throttle.clear_failures(db, "staff_pw", key)
+    await db.commit()
+    return TokenResponse(access_token=_staff_token(current), token_type="bearer")
+
+
+@router.post("/auth/me/logout-all", status_code=204)
+async def logout_all_devices(
+    request: Request, current: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)
+):
+    _forbid_in_support(request, "Destek modunda oturumlar kapatılamaz")
+    current.token_version += 1
+    await db.commit()
+    return Response(status_code=204)
+
+
+# ---------------------------------------------------------------- şifremi unuttum (telefon + WhatsApp kodu)
+FORGOT_MESSAGE = "Numara kayıtlıysa doğrulama kodu gönderildi"
+BAD_CODE = "Kod geçersiz veya süresi dolmuş"
+
+
+@router.post("/auth/forgot/send-code", response_model=SendCodeResponse)
+async def forgot_send_code(
+    data: ForgotSendCode,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Her zaman aynı yanıt: numaranın kayıtlı olup olmadığı sızmaz. Kod satırı numara kayıtsız olsa da yazılır,
+    böylece sınırlar (60 sn / 10 dk'da 3) iki durumda da aynı davranır; yalnızca kayıtlı numaraya gönderilir."""
+    staff = (
+        await db.execute(
+            select(Staff).where(Staff.phone == data.phone, Staff.tenant_id == tenant.id, Staff.is_active == True)  # noqa: E712
+        )
+    ).scalar_one_or_none()
+    code = await otp_services.send_code(db, tenant.id, data.phone, purpose=otp_services.RESET_PURPOSE)
+    if staff is not None:
+        await deliver_code(data.phone, f"{tenant.name} şifre sıfırlama kodunuz: {code}. Kodu kimseyle paylaşmayın.")
+    is_dev = settings.environment == "development"
+    return SendCodeResponse(message=FORGOT_MESSAGE, dev_code=code if (is_dev and staff is not None) else None)
+
+
+@router.post("/auth/forgot/reset", status_code=204)
+async def forgot_reset(
+    data: ForgotReset,
+    request: Request,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    key = login_throttle.make_key(data.phone, tenant.id)
+    await login_throttle.ensure_not_locked(db, "staff_reset", key, request)
+    # Zayıf şifre kodu yakmasın: önce kural, sonra kod.
+    enforce_password_policy(data.new_password, data.phone)
+    try:
+        await otp_services.verify_code(db, tenant.id, data.phone, data.code, purpose=otp_services.RESET_PURPOSE)
+        staff = (
+            await db.execute(
+                select(Staff).where(Staff.phone == data.phone, Staff.tenant_id == tenant.id, Staff.is_active == True)  # noqa: E712
+            )
+        ).scalar_one_or_none()
+        if staff is None:
+            raise HTTPException(status_code=400, detail=BAD_CODE)
+    except HTTPException as exc:
+        if exc.status_code == 400:
+            if await login_throttle.record_failure(db, "staff_reset", key, request):
+                raise login_throttle.locked_now_error()
+        raise
+    staff.password = hash_password(data.new_password)
+    staff.token_version += 1
+    await login_throttle.clear_failures(db, "staff_reset", key)
+    await db.commit()
+    return Response(status_code=204)
 
 
 @router.post("/auth/impersonate", response_model=TokenResponse)
@@ -322,6 +431,7 @@ async def list_staff(current: Staff = Depends(get_current_staff), db: AsyncSessi
     links = await svc.service_ids_by_staff(db, current.tenant_id)
     out = [svc.staff_out(s, links.get(s.id, [])) for s in result.scalars().all()]
     if not is_manager(current):
+        out = [o for o in out if o.is_active]  # personel yalnızca aktif ekibi görür
         # Personel ekibi görür ama düzenleyemez; telefon aynı zamanda giriş adı olduğu için yalnızca kendisininki görünür.
         out = [o if o.id == current.id else o.model_copy(update={"phone": ""}) for o in out]
     return out
@@ -376,6 +486,39 @@ async def update_staff(
         raise HTTPException(status_code=400, detail="Kendi rolünüzü değiştiremezsiniz")
     if "phone" in changes and await _phone_taken(db, current.tenant_id, changes["phone"], staff_id):
         raise HTTPException(status_code=409, detail="Bu telefon numarası zaten kayıtlı")
+    if "is_active" in changes:
+        new_active = changes.pop("is_active")
+        if new_active is None:
+            pass
+        elif new_active != target.is_active:
+            if not new_active:
+                if staff_id == current.id:
+                    raise HTTPException(status_code=400, detail="Kendi hesabınızı pasife alamazsınız")
+                if target.role in MANAGER_ROLES:
+                    others = (
+                        await db.execute(
+                            select(func.count(Staff.id)).where(
+                                Staff.tenant_id == current.tenant_id,
+                                Staff.id != staff_id,
+                                Staff.is_active == True,  # noqa: E712
+                                Staff.role.in_(list(MANAGER_ROLES)),
+                            )
+                        )
+                    ).scalar_one()
+                    if others == 0:
+                        raise HTTPException(status_code=400, detail="Son aktif yöneticiyi pasife alamazsınız")
+                future = await svc.count_future_appointments(db, current.tenant_id, staff_id)
+                if future:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"Bu personelin {future} gelecek randevusu var. Önce bu randevuları iptal edin.",
+                    )
+                target.is_active = False
+                target.left_at = date.today()
+                target.token_version += 1  # açık oturumlar düşsün
+            else:
+                target.is_active = True
+                target.left_at = None
     if "password" in changes:
         changes["password"] = hash_password(changes["password"])
         # Şifre değişince personelin açık oturumları düşsün.
@@ -397,9 +540,9 @@ async def delete_staff(staff_id: int, current: Staff = Depends(require_manager),
         raise HTTPException(status_code=400, detail="Kendi hesabınızı silemezsiniz")
     _forbid_super_admin_touch(current, target.role)
     if await svc.has_appointments(db, current.tenant_id, staff_id=staff_id):
-        raise HTTPException(status_code=409, detail="Bu personelin randevuları var, silinemez")
+        raise HTTPException(status_code=409, detail=STAFF_DELETE_409)
     await db.delete(target)
-    await svc.commit_or_409(db, "Bu personelin randevuları var, silinemez")
+    await svc.commit_or_409(db, STAFF_DELETE_409)
     return Response(status_code=204)
 
 

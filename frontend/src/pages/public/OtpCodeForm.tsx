@@ -1,14 +1,14 @@
 // Booking ve MyAppointments sayfalarının paylaştığı OTP kod doğrulama formu.
 import { useMutation } from '@tanstack/react-query'
 import { ShieldCheck } from 'lucide-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
 import { useToast } from '../../components/ui/Toast'
 import { errorMessage, publicApi } from '../../lib/api'
 import { formatPhone } from '../../lib/format'
-import type { VerifyCodeResponse } from '../../types/api'
+import type { SendCodeResponse, VerifyCodeResponse } from '../../types/api'
 
 const RESEND_SECONDS = 60
 
@@ -17,7 +17,14 @@ interface Props {
   phone: string
   /** İlk gönderimde dönen geliştirme kodu (yalnızca dev ortamında dolu). */
   initialDevCode?: string | null
-  onVerified: (resp: VerifyCodeResponse) => void
+  onVerified?: (resp: VerifyCodeResponse) => void
+  /** Verilirse sunucuda doğrulama yapılmaz; girilen kod üst bileşene verilir (şifre sıfırlama gibi tek adımlı akışlar). */
+  onCodeEntered?: (code: string) => void
+  /** Kodu yeniden göndermek için özel istek (varsayılan: müşteri girişi kodu). */
+  resendCode?: () => Promise<SendCodeResponse>
+  /** Açıklama metni (varsayılan: müşteri girişi). */
+  intro?: ReactNode
+  backLabel?: string
   /** Numarayı değiştir */
   onBack: () => void
   /** Gönder butonunu sticky bar'a taşımak için form id'si; verilmezse buton formun içinde. */
@@ -32,6 +39,10 @@ export function OtpCodeForm({
   phone,
   initialDevCode = null,
   onVerified,
+  onCodeEntered,
+  resendCode,
+  intro,
+  backLabel = 'Numarayı değiştir',
   onBack,
   formId,
   hideSubmit,
@@ -53,12 +64,12 @@ export function OtpCodeForm({
 
   const verify = useMutation({
     mutationFn: () => publicApi.verifyCode({ phone, code }),
-    onSuccess: onVerified,
+    onSuccess: (r) => onVerified?.(r),
     onError: (err) => setError(errorMessage(err)),
   })
 
   const resend = useMutation({
-    mutationFn: () => publicApi.sendCode({ phone }),
+    mutationFn: () => (resendCode ? resendCode() : publicApi.sendCode({ phone })),
     onSuccess: (res) => {
       setDevCode(res.dev_code)
       setCooldown(RESEND_SECONDS)
@@ -79,7 +90,8 @@ export function OtpCodeForm({
       return
     }
     setError(null)
-    verify.mutate()
+    if (onCodeEntered) onCodeEntered(code)
+    else verify.mutate()
   }
 
   return (
@@ -89,8 +101,12 @@ export function OtpCodeForm({
           <ShieldCheck className="size-5" aria-hidden="true" />
         </span>
         <p className="min-w-0 text-sm leading-relaxed text-muted-strong">
-          <span className="whitespace-nowrap font-medium text-cream">{formatPhone(phone)}</span> numarasına bir
-          doğrulama kodu gönderdik. Kodu aşağıya girin.
+          {intro ?? (
+            <>
+              <span className="whitespace-nowrap font-medium text-cream">{formatPhone(phone)}</span> numarasına bir
+              doğrulama kodu gönderdik. Kodu aşağıya girin.
+            </>
+          )}
         </p>
       </div>
 
@@ -132,7 +148,7 @@ export function OtpCodeForm({
           onClick={onBack}
           className="inline-flex min-h-11 items-center text-sm text-muted-strong underline-offset-4 hover:text-cream hover:underline"
         >
-          Numarayı değiştir
+          {backLabel}
         </button>
         <button
           type="button"

@@ -14,7 +14,11 @@ SEND_MIN_GAP_SECONDS = 60
 MAX_VERIFY_ATTEMPTS = 5
 
 
-async def send_code(db: Session, tenant_id: int, phone: str) -> str:
+LOGIN_PURPOSE = "login"
+RESET_PURPOSE = "password_reset"
+
+
+async def send_code(db: Session, tenant_id: int, phone: str, purpose: str = LOGIN_PURPOSE) -> str:
     # created_at DB'nin now()'ı ile yazılıyor; saat dilimi kayması olmasın diye pencereyi de DB saatiyle hesaplıyoruz.
     recent = await db.execute(
         select(func.count())
@@ -22,6 +26,7 @@ async def send_code(db: Session, tenant_id: int, phone: str) -> str:
         .where(
             VerificationCode.tenant_id == tenant_id,
             VerificationCode.phone == phone,
+            VerificationCode.purpose == purpose,
             VerificationCode.created_at > func.now() - text(f"interval '{SEND_WINDOW_MINUTES} minutes'"),
         )
     )
@@ -37,6 +42,7 @@ async def send_code(db: Session, tenant_id: int, phone: str) -> str:
         .where(
             VerificationCode.tenant_id == tenant_id,
             VerificationCode.phone == phone,
+            VerificationCode.purpose == purpose,
             VerificationCode.created_at > func.now() - text(f"interval '{SEND_MIN_GAP_SECONDS} seconds'"),
         )
     )
@@ -50,16 +56,17 @@ async def send_code(db: Session, tenant_id: int, phone: str) -> str:
     code = fixed or f"{secrets.randbelow(1000000):06d}"
     expires_at = datetime.now() + timedelta(seconds=settings.otp_expiration_seconds)
 
-    db.add(VerificationCode(tenant_id=tenant_id, phone=phone, code=code, expires_at=expires_at))
+    db.add(VerificationCode(tenant_id=tenant_id, phone=phone, code=code, expires_at=expires_at, purpose=purpose))
     await db.commit()
     return code
 
 
-async def verify_code(db: Session, tenant_id: int, phone: str, code: str) -> bool:
+async def verify_code(db: Session, tenant_id: int, phone: str, code: str, purpose: str = LOGIN_PURPOSE) -> bool:
     result = await db.execute(
         select(VerificationCode).where(
             VerificationCode.tenant_id == tenant_id,
             VerificationCode.phone == phone,
+            VerificationCode.purpose == purpose,
             VerificationCode.is_used == False,  # noqa: E712
             VerificationCode.expires_at > datetime.now(),
         )

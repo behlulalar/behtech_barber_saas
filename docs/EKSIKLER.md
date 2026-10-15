@@ -43,7 +43,7 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
   (payments en fazla 500). 25+ işletmede yavaşlar; N+1 sorgular var (billing özeti işletme başına). Arama (ad/slug/sahip/telefon), durum filtresi, sıralama.
 - [x] (2026-10-15) **Kurulum kontrol listesi YAPILDI** (liste rozeti + detay kartı): (işletme başına "hazır mı" rozeti): hizmet var mı · her berberin çalışma saati var mı · her berber en az bir hizmete bağlı mı · adres/logo dolu mu ·
   ilk randevu alındı mı. (Gerçek hayatta yaşandı: personelin saati/hizmeti olmayınca müşteri sitesinde görünmedi.)
-- [x] (2026-10-15) Platformdan **sahip şifresi sıfırlama YAPILDI** (geçici şifre bir kez gösterilir, WhatsApp mesajı hazır). **Hâlâ yok (P1):** sahip/personelin kendi başına "şifremi unuttum" (OTP ile) ve **panel içinde kendi şifresini değiştirme** — sıfırlama mesajı bu yüzden "şifrenizi değiştirin" demiyor.
+- [x] (2026-10-15) Platformdan **sahip şifresi sıfırlama YAPILDI** (geçici şifre bir kez gösterilir, WhatsApp mesajı hazır). **(2026-10-15) Şifre özellikleri de YAPILDI:** panelde Hesabım (şifre değiştirme, tüm cihazlardan çıkış) ve giriş ekranında "Şifremi unuttum" (telefon → kod → yeni şifre). Destek modunda şifre değiştirme kapalı. **Canlıda çalışması WhatsApp bağlantısına bağlı.**
 - [x] (2026-10-15) Sahip adı/telefonu düzeltme YAPILDI. **Kalan (P1): slug (adres) değiştirme** (eski adrese yönlendirme düşün).
 - [x] (2026-10-15) İşletme notu + "son olaylar" kartı (son 10 denetim kaydı) YAPILDI. Eski satır: (açıldı/ödeme/hatırlatma/askı/şifre sıfırlandı olayları tek listede; denetim kaydından türetilebilir).
 - [x] (2026-10-15) **"İşletme olarak gir" YAPILDI** (tam yetki varsayılan, "yalnızca görüntüle" seçeneği; 60 sn tek kullanımlık kod, 60 dk oturum, destek şeridi, denetim kaydı).
@@ -56,9 +56,9 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 ### Aşama C — Gelir, deneme ve metrikler
 - [x] (2026-10-15) **Deneme süresi akışı YAPILDI** (14 gün, ek süre yok, bitmeden `trial_template` ile "devam etmek istiyor musunuz?", bitince anında otomatik askı, geliri etkilemez, dönüşüm oranı).
   **Kalan (P2):** aynı işletmeye tekrar tekrar deneme başlatmayı engelleyen kural yok; "Deneme" filtre sekmesi yok (bitenler "Yaklaşan" altında); dönüşüm oranı yalnızca platform istatistiğinde.
-- [ ] **P1 Gelir metrikleri (Genel Bakış şu an sadece 4 sayı):** MRR/ARR (dönem fiyatı ÷ ay sayısı, deneme hariç), plan dağılımı, bu ay tahsilat/beklenen, **yenileme takvimi** (önümüzdeki 30 gün),
+- [x] (2026-10-15) **Gelir metrikleri YAPILDI** (Genel Bakış: MRR/ARR, ücretli/deneme sayısı, 12 aylık tahsilat grafiği, yenileme takvimi, dikkat/ayrılma riski, plan dağılımı, en çok kullanılan işletmeler). Kalan: kayıt kaybı yalnızca otomatik askıyı yakalar (elle pasife alma zaman damgası tutmuyor). Eski satır: MRR/ARR (dönem fiyatı ÷ ay sayısı, deneme hariç), plan dağılımı, bu ay tahsilat/beklenen, **yenileme takvimi** (önümüzdeki 30 gün),
   kaybedilen işletme, deneme→ücretli dönüşüm.
-- [ ] **P2 Kullanım metrikleri:** işletme başına aylık randevu, aktif müşteri, son aktivite; **30+ gündür randevusu olmayan işletme = ayrılma riski** listesi.
+- [x] (2026-10-15) Kullanım metrikleri + ayrılma riski listesi YAPILDI (Genel Bakış). Eski satır: işletme başına aylık randevu, aktif müşteri, son aktivite; **30+ gündür randevusu olmayan işletme = ayrılma riski** listesi.
 - [ ] **P2 Hatırlatma geçmişi:** hangi işletmeye ne zaman hatırlatıldı (şu an yalnızca `reminded_at` son zamanı tutuluyor).
 - [ ] **P2 Ödeme düzeltme/iade kaydı:** şu an yalnızca ödeme silinebiliyor; fazla ödeme eksi bakiye olarak kalıyor (iade/düzeltme kavramı yok).
 - [ ] **P3 Dönemler arası boşluk** uyarısı (şu an boşluk "kapsanıyor" sayılıyor).
@@ -97,7 +97,7 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 ## 5. Güvenlik
 
 - [ ] **P0** Canlı parolalar/sırlar, `ENVIRONMENT=production`, `/docs` kapatma, `TRUST_PROXY_HEADERS` (bkz. `CANLIYA_ALMA.md` §1, §3).
-- [ ] **P1 Personel/sahip girişi için "şifremi unuttum"** (kendi başına) ve **parola değiştirme** — şu an panel içinde kendi parolasını değiştirme akışı yok (yalnızca sahip, Ekip sayfasından personel parolasını değiştirebilir).
+- [x] (2026-10-15) Personel/sahip "şifremi unuttum" ve panelde şifre değiştirme YAPILDI. Not: sahibin Ekip sayfasından belirlediği şifre hâlâ min 6 karakter; kullanıcının kendi seçtiği yeni şifre min 8 + telefona eşit değil + yaygın değil.
 - [ ] **P1 Oturum süresi/yenileme:** token ömrü tek sabit (`ACCESS_TOKEN_EXPIRE_MINUTES`), refresh token yok; müşteri oturumu 30 dk. Süre dolunca kullanıcı girişe atılıyor — kullanıcı deneyimi gözden geçirilmeli.
 - [ ] **P1 Giriş sınırı atomik değil:** paralel tahmin denemeleri limiti hafifçe aşabilir; olmayan telefonda bcrypt atlandığı için yanıt süresi farkı kullanıcı varlığını sızdırabilir (sahte hash ile eşitleyin).
   Başarılı girişte o anahtarın başarısız kayıtları silindiği için IP sayacı da düşer.
@@ -140,3 +140,14 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 - Dönemi olmayan işletme "takip dışı": asla bildirim/askıya alma olmaz.
 - Yeni işletme kendiliğinden hizmet/çalışma saati içermez (panelden girilmeli).
 - Platform `Sistem` sayfasında WhatsApp "Erişilemiyor" = Evolution henüz bağlı/erişilebilir değil.
+
+## 9. Son turda eklenen/bulunan notlar (2026-10-15)
+
+- [x] **Personel "işten ayrıldı" (pasife alma) YAPILDI:** pasif personel giriş yapamaz, müşteri sitesinde/slotlarda görünmez, geçmiş randevu + gelir kayıtları ve gelir raporundaki personel dağılımı korunur;
+  gelecek randevusu olan personel pasife alınamaz (409); silme, randevusu olan personelde hâlâ engelli. Veritabanında `appointments.staff_id` artık `ON DELETE NO ACTION` (eskiden CASCADE'di: personel satırı SQL ile silinirse randevuları/geliri de silinirdi).
+- [ ] **P1 WhatsApp teslimat kodu yazıldı ama CANLI Evolution'a karşı HİÇ denenmedi.** `whatsapp_services.send_whatsapp_message` aynı yükte hem v1 (`textMessage.text`) hem v2 (`text`) biçimini gönderiyor (tahmin); numara `90…` (+ olmadan) gidiyor.
+  Üretimde Evolution bağlanana kadar müşteri `send-code` ve "şifremi unuttum" **503 verir**. QR okutulunca gerçek mesajla doğrulayın; gerekirse yük biçimini düzeltin.
+  Küçük sızıntı: Evolution kapalıyken "şifremi unuttum" 503'ü numaranın kayıtlı olduğunu ele verir (yalnızca kayıtlı numaraya gönderim denendiği için).
+- [ ] **P2** Churn tespiti yalnızca otomatik askıyı görür (elle pasife alma zaman damgası yok). `trial_conversion_rate` oranı 0..1; arayüz yüzde gösterir.
+- [ ] **P2** "Son aktif yönetici" koruması fiilen ulaşılamaz (çağıran zaten aktif yönetici); yalnızca "kendini pasife alamaz" test edilebiliyor.
+- [ ] **P3** Şifre kuralı tutarsızlığı: sahibin atadığı personel şifresi min 6; kullanıcının kendi seçtiği min 8. İsterseniz tek kurala indirin.

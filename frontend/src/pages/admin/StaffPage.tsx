@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Phone, Plus, Trash2, UserRound } from 'lucide-react'
+import { Pencil, Phone, Plus, Trash2, UserMinus, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { Avatar } from '../../components/ui/Avatar'
 import { Badge, type BadgeTone } from '../../components/ui/Badge'
@@ -33,6 +33,20 @@ export default function StaffPage() {
   const query = useStaffList()
   const [editing, setEditing] = useState<AdminStaff | 'new' | null>(null)
   const [deleting, setDeleting] = useState<AdminStaff | null>(null)
+  const [leaving, setLeaving] = useState<AdminStaff | null>(null)
+
+  const setActive = useMutation({
+    mutationFn: ({ s, active }: { s: AdminStaff; active: boolean }) => adminApi.updateStaff(s.id, { is_active: active }),
+    onSuccess: (_d, { active }) => {
+      void qc.invalidateQueries({ queryKey: qk.staff })
+      toast.success(active ? 'Ekip üyesi tekrar aktifleştirildi' : 'Ekip üyesi işten ayrıldı olarak işaretlendi')
+      setLeaving(null)
+    },
+    onError: (err) => {
+      toast.error(errorMessage(err))
+      setLeaving(null)
+    },
+  })
 
   const remove = useMutation({
     mutationFn: (s: AdminStaff) => adminApi.deleteStaff(s.id),
@@ -51,7 +65,8 @@ export default function StaffPage() {
   const canEdit = (s: AdminStaff) => isManager && (isOwner || s.role !== 'super_admin')
   const canDelete = (s: AdminStaff) => canEdit(s) && s.id !== me?.id
 
-  const rows = query.data ?? []
+  const rows = (query.data ?? []).filter((s) => s.is_active)
+  const former = (query.data ?? []).filter((s) => !s.is_active)
 
   const columns: Column<AdminStaff>[] = [
     {
@@ -91,13 +106,18 @@ export default function StaffPage() {
           </IconButton>
         )}
         {canDelete(s) && (
+          <IconButton label={`${fullName(s)} işten ayrıldı`} onClick={() => setLeaving(s)}>
+            <UserMinus className="size-[18px]" />
+          </IconButton>
+        )}
+        {canDelete(s) && (
           <IconButton label={`${fullName(s)} sil`} onClick={() => setDeleting(s)} className="hover:text-danger">
             <Trash2 className="size-[18px]" />
           </IconButton>
         )}
       </div>
     )
-    columns.push({ key: 'actions', header: '', align: 'right', hideOnMobile: true, className: 'w-28', cell: actions })
+    columns.push({ key: 'actions', header: '', align: 'right', hideOnMobile: true, className: 'w-36', cell: actions })
   }
 
   return (
@@ -133,6 +153,11 @@ export default function StaffPage() {
                       </IconButton>
                     )}
                     {canDelete(s) && (
+                      <IconButton label={`${fullName(s)} işten ayrıldı`} onClick={() => setLeaving(s)}>
+                        <UserMinus className="size-[18px]" />
+                      </IconButton>
+                    )}
+                    {canDelete(s) && (
                       <IconButton label={`${fullName(s)} sil`} onClick={() => setDeleting(s)} className="hover:text-danger">
                         <Trash2 className="size-[18px]" />
                       </IconButton>
@@ -145,7 +170,49 @@ export default function StaffPage() {
         />
       )}
 
+      {isManager && former.length > 0 && (
+        <section aria-labelledby="former-staff" className="mt-8">
+          <h2 id="former-staff" className="text-base font-semibold text-muted-strong">
+            Eski personel
+          </h2>
+          <p className="mb-3 mt-1 text-sm text-muted">Giriş yapamaz, müşteri sitesinde görünmez; geçmiş randevu ve gelir kayıtları korunur.</p>
+          <ul className="flex flex-col divide-y divide-panel-line rounded-md border border-panel-line">
+            {former.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+                <span className="flex min-w-0 items-center gap-3 text-muted">
+                  <Avatar name={fullName(s)} src={s.photo_image} size="sm" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{fullName(s)}</span>
+                    <span className="block text-xs">{s.left_at ? `Ayrılış: ${new Date(s.left_at + 'T00:00:00').toLocaleDateString('tr-TR')}` : 'İşten ayrıldı'}</span>
+                  </span>
+                </span>
+                {canEdit(s) && (
+                  <Button variant="ghost" size="sm" onClick={() => setActive.mutate({ s, active: true })} loading={setActive.isPending && setActive.variables?.s.id === s.id}>
+                    Tekrar aktifleştir
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {editing && <StaffForm key={editing === 'new' ? 'new' : editing.id} member={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
+
+      <ConfirmDialog
+        open={Boolean(leaving)}
+        onClose={() => setLeaving(null)}
+        onConfirm={() => leaving && setActive.mutate({ s: leaving, active: false })}
+        loading={setActive.isPending}
+        destructive
+        title="İşten ayrıldı olarak işaretlensin mi?"
+        description={
+          <>
+            <strong className="text-cream">{leaving ? fullName(leaving) : ''}</strong> için giriş kapanır ve müşteri sitesinde görünmez. Geçmiş randevu ve gelir kayıtları korunur. Gelecek randevusu varsa önce onları iptal etmeniz gerekir. İsterseniz sonra tekrar aktifleştirebilirsiniz.
+          </>
+        }
+        confirmLabel="İşten ayrıldı"
+      />
 
       <ConfirmDialog
         open={Boolean(deleting)}
@@ -156,7 +223,7 @@ export default function StaffPage() {
         title="Ekip üyesi silinsin mi?"
         description={
           <>
-            <strong className="text-cream">{deleting ? fullName(deleting) : ''}</strong> hesabı kalıcı olarak silinecek ve giriş yapamayacak. Randevusu olan üyeler silinemez.
+            <strong className="text-cream">{deleting ? fullName(deleting) : ''}</strong> hesabı kalıcı olarak silinecek ve giriş yapamayacak. Randevusu olan üyeler silinemez; çalışmayı bıraktıysa “İşten ayrıldı” kullanın.
           </>
         }
         confirmLabel="Sil"

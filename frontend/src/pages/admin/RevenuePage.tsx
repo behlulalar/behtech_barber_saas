@@ -14,7 +14,7 @@ import { useStaffAuth } from '../../lib/auth'
 import { addDaysISO, formatDateLong, formatMonthYear, formatNumber, formatPrice, fullName, parseISODateLocal, toLocalISO, todayLocalISO } from '../../lib/format'
 import type { ReportPeriod, RevenueReport } from '../../types/api'
 import { pointLabel, RankList, RevenueChart, RevenueTable, type RankItem } from './revenueParts'
-import { ErrorBlock, qk, useStaffList } from './shared'
+import { ErrorBlock, qk, StaffOptions, useStaffList } from './shared'
 
 const PERIOD_ITEMS: { value: ReportPeriod; label: string }[] = [
   { value: 'day', label: 'Günlük' },
@@ -134,11 +134,7 @@ export default function RevenuePage() {
           <div className="md:w-56">
             <Select aria-label="Personel filtresi" value={staffId} onChange={(e) => setStaffId(e.target.value)}>
               <option value="">Tüm personel</option>
-              {(staff.data ?? []).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {fullName(s)}
-                </option>
-              ))}
+              <StaffOptions staff={staff.data ?? []} />
             </Select>
           </div>
         )}
@@ -220,7 +216,7 @@ export default function RevenuePage() {
                     <RankList
                       items={report.by_staff.map<RankItem>((s) => ({
                         key: s.staff_id,
-                        label: fullName(s),
+                        label: s.is_active === false ? `${fullName(s)} (ayrıldı)` : fullName(s),
                         count: s.count,
                         revenue: s.revenue,
                         share: report.revenue ? (s.revenue * 100) / report.revenue : 0,

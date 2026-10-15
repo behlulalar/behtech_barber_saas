@@ -185,6 +185,7 @@ export interface StaffRevenue {
   surname: string
   count: number
   revenue: number
+  is_active?: boolean
 }
 
 export interface RevenueReport {
@@ -274,6 +275,9 @@ export interface AdminStaff {
   photo_image: string | null
   /** Bu personelin verdiği hizmetler. */
   service_ids: number[]
+  /** false = işten ayrıldı (giriş kapalı, geçmiş korunur). */
+  is_active: boolean
+  left_at: string | null
 }
 
 export interface AdminStaffCreate {
@@ -288,7 +292,7 @@ export interface AdminStaffCreate {
 }
 
 /** photo_image: null fotoğrafı kaldırır. */
-export type AdminStaffUpdate = Partial<AdminStaffCreate>
+export type AdminStaffUpdate = Partial<AdminStaffCreate> & { is_active?: boolean }
 
 export interface WorkingHour {
   day_of_week: number // 0=Pazar ... 6=Cumartesi (JS getDay)
@@ -350,6 +354,29 @@ export interface PlatformMe {
   id: number
   phone: string
   name?: string | null
+}
+
+export interface MetricsOverview {
+  mrr: number
+  arr: number
+  paying_tenants: number
+  trial_tenants: number
+  month_collected: number
+  plan_distribution: { plan_name: string; tenants: number; mrr: number }[]
+  renewals_next_30: { tenant_id: number; tenant_name: string; slug: string; end_date: string; days_left: number; amount_due: number; is_trial: boolean }[]
+  monthly_revenue: { month: string; revenue: number }[]
+  churned_last_30: { tenant_id: number; tenant_name: string; reason: string }[]
+  at_risk: {
+    tenant_id: number
+    tenant_name: string
+    slug: string
+    last_appointment_date: string | null
+    days_since: number
+    appointments_30d: number
+    appointments_prev_30d: number
+    reason: string
+  }[]
+  top_usage: { tenant_id: number; tenant_name: string; appointments_30d: number }[]
 }
 
 export interface PlatformStats {

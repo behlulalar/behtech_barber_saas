@@ -69,6 +69,9 @@ async def get_current_staff(
     # Bir dükkânın token'ı başka bir dükkânın subdomain'inde kullanılamaz.
     if staff is None or staff.tenant_id != tenant.id:
         raise _INVALID
+    # İşten ayrılan (pasif) personelin açık oturumları geçersizdir.
+    if not staff.is_active:
+        raise _INVALID
     # Şifre değişince sürüm artar; sürümü olmayan eski token'lar 0 sayılır.
     if payload.get("tv", 0) != staff.token_version:
         raise _INVALID

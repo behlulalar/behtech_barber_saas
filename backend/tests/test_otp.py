@@ -38,6 +38,11 @@ async def test_fixed_code_only_honoured_in_development(api, shop, monkeypatch):
     assert (await send(api, "5550000001")).json()["dev_code"] == "123456"
     # production'da sabit kod yok sayılır ve dev_code sızdırılmaz
     monkeypatch.setattr(settings, "environment", "production")
+
+    async def _no_delivery(phone, text):  # gerçek Evolution'a gitme
+        return None
+
+    monkeypatch.setattr("app.api.public.deliver_code", _no_delivery)
     r = await send(api, "5550000002")
     assert r.status_code == 200 and r.json()["dev_code"] is None
     async with SessionFactory() as db:

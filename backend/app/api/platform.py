@@ -23,6 +23,7 @@ from app.schemas.platform import (
     ImpersonateIn,
     ImpersonateOut,
     JobRunOut,
+    MetricsOverview,
     OwnerPasswordOut,
     OwnerPasswordReset,
     OwnerUpdate,
@@ -41,6 +42,7 @@ from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantP
 from app.services import (
     audit_services,
     job_services,
+    metrics_services,
     impersonation_services,
     login_throttle,
     platform_admin_services as admin_svc,
@@ -202,6 +204,13 @@ async def job_runs(
 @router.get("/system/status", response_model=SystemStatus)
 async def system_status(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
     return await system_services.get_status(db)
+
+
+@router.get("/metrics/overview", response_model=MetricsOverview)
+async def platform_metrics_overview(
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)
+):
+    return await metrics_services.overview(db)
 
 
 @router.get("/stats", response_model=PlatformStats)

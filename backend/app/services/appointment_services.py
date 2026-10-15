@@ -77,6 +77,13 @@ async def build_slot_grid(
     if service is None:
         raise HTTPException(status_code=404, detail="Hizmet bulunamadı")
 
+    # İşten ayrılan (pasif) berber için randevu/slot yoktur.
+    active = await db.execute(
+        select(Staff.id).where(Staff.id == staff_id, Staff.tenant_id == tenant_id, Staff.is_active == True)  # noqa: E712
+    )
+    if active.first() is None:
+        raise HTTPException(status_code=400, detail="Berber bulunamadı")
+
     # Berber yalnızca kendisine bağlı hizmetleri verir (staff_services).
     provides = await db.execute(
         select(StaffService.id).where(

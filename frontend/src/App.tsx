@@ -18,6 +18,7 @@ const AdminAppointmentsPage = lazy(() => import('./pages/admin/AppointmentsPage'
 const AdminCustomersPage = lazy(() => import('./pages/admin/CustomersPage'))
 const AdminServicesPage = lazy(() => import('./pages/admin/ServicesPage'))
 const AdminStaffPage = lazy(() => import('./pages/admin/StaffPage'))
+const AdminAccountPage = lazy(() => import('./pages/admin/AccountPage'))
 const AdminSchedulePage = lazy(() => import('./pages/admin/SchedulePage'))
 const AdminPaymentMethodsPage = lazy(() => import('./pages/admin/PaymentMethodsPage'))
 const AdminSettingsPage = lazy(() => import('./pages/admin/SettingsPage'))
@@ -103,6 +104,7 @@ function App() {
             <Route path="musteriler" element={<AdminCustomersPage />} />
             {/* Ekip: herkes görür, yalnızca yönetici düzenler (sayfa kendi içinde yetkiye göre davranır) */}
             <Route path="ekip" element={<AdminStaffPage />} />
+            <Route path="hesabim" element={<AdminAccountPage />} />
             {/* Yalnızca yönetici (işletme sahibi): personel bu adreslere girerse Genel Bakış'a döner */}
             <Route element={<RequireStaff managerOnly />}>
               <Route path="hizmetler" element={<AdminServicesPage />} />

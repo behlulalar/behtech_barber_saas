@@ -27,7 +27,7 @@ import {
   todayLocalISO,
 } from '../../lib/format'
 import type { AdminAppointmentOut, AdminAppointmentUpdate, AppointmentStatus } from '../../types/api'
-import { qk, telHref, useServiceList, usePaymentMethodList, useStaffList } from './shared'
+import { qk, telHref, useServiceList, usePaymentMethodList, useActiveStaffList } from './shared'
 
 /* ------------------------------------------------------------------ */
 /* Güncelleme mutasyonu                                                */
@@ -403,7 +403,7 @@ function NewAppointmentForm({ onClose, defaultDate, prefill, onCreated }: NewPro
   const { me, isManager } = useStaffAuth()
   const toast = useToast()
   const qc = useQueryClient()
-  const staffQ = useStaffList()
+  const staffQ = useActiveStaffList()
   const servicesQ = useServiceList()
 
   const [phone, setPhone] = useState(prefill?.phone ? formatPhone(prefill.phone) : '')

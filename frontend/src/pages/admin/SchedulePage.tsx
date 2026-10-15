@@ -18,7 +18,7 @@ import { useStaffAuth } from '../../lib/auth'
 import { cn } from '../../lib/cn'
 import { diffDaysISO, formatDate, formatDateShort, fullName, todayLocalISO } from '../../lib/format'
 import type { TimeOff, WorkingHour } from '../../types/api'
-import { ErrorBlock, hhmm, qk, useStaffList, WEEK_DAYS } from './shared'
+import { ErrorBlock, hhmm, qk, useActiveStaffList, WEEK_DAYS } from './shared'
 
 type DayDraft = { open: boolean; start: string; end: string }
 type WeekDraft = Record<number, DayDraft>
@@ -39,7 +39,7 @@ function serialize(draft: WeekDraft): string {
 
 export default function SchedulePage() {
   const { me, isManager } = useStaffAuth()
-  const staffQ = useStaffList()
+  const staffQ = useActiveStaffList()
   const [picked, setPicked] = useState('')
   const staffId = isManager ? Number(picked || me?.id || staffQ.data?.[0]?.id || 0) : (me?.id ?? 0)
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId)

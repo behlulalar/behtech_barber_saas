@@ -151,15 +151,15 @@ async def build_revenue_report(
     if include_staff:
         rows = (
             await db.execute(
-                select(Staff.id, Staff.name, Staff.surname, func.count(Appointment.id), func.coalesce(func.sum(Service.price), 0))
+                select(Staff.id, Staff.name, Staff.surname, Staff.is_active, func.count(Appointment.id), func.coalesce(func.sum(Service.price), 0))
                 .join(Service, Appointment.service_id == Service.id)
                 .join(Staff, Appointment.staff_id == Staff.id)
                 .where(*done)
-                .group_by(Staff.id, Staff.name, Staff.surname)
+                .group_by(Staff.id, Staff.name, Staff.surname, Staff.is_active)
                 .order_by(func.sum(Service.price).desc())
             )
         ).all()
-        by_staff = [StaffRevenue(staff_id=i, name=n, surname=s, count=int(c), revenue=int(r)) for i, n, s, c, r in rows]
+        by_staff = [StaffRevenue(staff_id=i, name=n, surname=s, is_active=a, count=int(c), revenue=int(r)) for i, n, s, a, c, r in rows]
 
     prev_start, prev_end = previous_range(period, anchor)
     return RevenueReport(

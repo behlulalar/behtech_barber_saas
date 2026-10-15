@@ -1,4 +1,4 @@
-import { CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserRound, Users, Wallet } from 'lucide-react'
+import { CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserCog, UserRound, Users, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
   { to: '/panel/hizmetler', label: 'Hizmetler', icon: Scissors, tab: true, managerOnly: true },
   { to: '/panel/gelir', label: 'Gelir Raporu', icon: ChartColumn, managerOnly: true },
   { to: '/panel/ekip', label: 'Ekip', icon: UserRound },
+  { to: '/panel/hesabim', label: 'Hesabım', icon: UserCog },
   { to: '/panel/calisma-saatleri', label: 'Çalışma Saatleri', icon: Clock, managerOnly: true },
   { to: '/panel/odeme-yontemleri', label: 'Ödeme Yöntemleri', icon: Wallet, managerOnly: true },
   { to: '/panel/ayarlar', label: 'Ayarlar', icon: Settings, managerOnly: true },

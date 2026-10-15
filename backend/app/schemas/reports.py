@@ -34,6 +34,7 @@ class StaffRevenue(BaseModel):
     surname: str
     count: int
     revenue: int
+    is_active: bool = True
 
 
 class PeriodTotals(BaseModel):

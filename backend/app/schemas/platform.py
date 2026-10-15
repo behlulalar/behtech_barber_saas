@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
@@ -185,3 +185,62 @@ class ImpersonateOut(BaseModel):
     code: str
     slug: str
     expires_in: int
+
+
+# ---------- gelir / kullanım metrikleri (Genel Bakış) ----------
+class PlanSlice(BaseModel):
+    plan_name: str
+    tenants: int
+    mrr: int
+
+
+class RenewalItem(BaseModel):
+    tenant_id: int
+    tenant_name: str
+    slug: str
+    end_date: date
+    days_left: int
+    amount_due: int
+    is_trial: bool
+
+
+class MonthRevenue(BaseModel):
+    month: str  # YYYY-MM
+    revenue: int
+
+
+class ChurnItem(BaseModel):
+    tenant_id: int
+    tenant_name: str
+    reason: str  # 'askıya alındı' | 'deneme bitti'
+
+
+class AtRiskItem(BaseModel):
+    tenant_id: int
+    tenant_name: str
+    slug: str
+    last_appointment_date: date | None
+    days_since: int
+    appointments_30d: int
+    appointments_prev_30d: int
+    reason: str
+
+
+class UsageItem(BaseModel):
+    tenant_id: int
+    tenant_name: str
+    appointments_30d: int
+
+
+class MetricsOverview(BaseModel):
+    mrr: int
+    arr: int
+    paying_tenants: int
+    trial_tenants: int
+    month_collected: int
+    plan_distribution: list[PlanSlice]
+    renewals_next_30: list[RenewalItem]
+    monthly_revenue: list[MonthRevenue]
+    churned_last_30: list[ChurnItem]
+    at_risk: list[AtRiskItem]
+    top_usage: list[UsageItem]

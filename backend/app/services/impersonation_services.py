@@ -43,9 +43,11 @@ async def start(
         )).scalar_one_or_none()
         if staff is None:
             raise HTTPException(status_code=404, detail="Personel bu işletmeye ait değil")
+        if not staff.is_active:
+            raise HTTPException(status_code=400, detail="Bu personel pasif (işten ayrıldı)")
     else:
         staff = (await db.execute(
-            select(Staff).where(Staff.tenant_id == tenant_id, Staff.role == RoleType.SUPER_ADMIN)
+            select(Staff).where(Staff.tenant_id == tenant_id, Staff.role == RoleType.SUPER_ADMIN, Staff.is_active == True)  # noqa: E712
             .order_by(Staff.id).limit(1)
         )).scalar_one_or_none()
         if staff is None:

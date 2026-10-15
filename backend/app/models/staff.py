@@ -1,8 +1,8 @@
-from sqlalchemy import Integer, DateTime, String, Text, func , ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Integer, DateTime, Date, Boolean, true, String, Text, func , ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from app.core.database import Base
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import Enum as SAEnum
 from enum import Enum
 
@@ -29,6 +29,9 @@ class Staff(Base):
         default=RoleType.STAFF,
     )
     photo_image: Mapped[str | None] = mapped_column(Text)
+    # İşten ayrılan personel silinmez (geçmiş randevu/gelir kalsın); pasife alınır.
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default=true(), default=True)
+    left_at: Mapped[date | None] = mapped_column(Date)
     token_version: Mapped[int] = mapped_column(Integer, server_default="0", default=0)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
 

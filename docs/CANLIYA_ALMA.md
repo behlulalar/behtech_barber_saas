@@ -18,7 +18,7 @@ tanınır: `<slug>.behtechlabs.com`. Ürünün tanıtım sitesi `randevu.behtech
   Canlıda (`ENVIRONMENT=production`) kod artık ekranda gösterilmez (`dev_code` null); WhatsApp bağlı değilse müşteri koda ulaşamaz →
   **kimse randevu alamaz** ve başka cihazdan "Giriş yap" çalışmaz.
   - Kod yeri: `backend/app/api/public.py` → `send_code_route` içindeki `TODO: WhatsApp (Evolution API) gönderimi`.
-  - Hazır parça: `backend/app/services/whatsapp_services.py` (`send_whatsapp_message`) yazılı ama HİÇBİR yerden çağrılmıyor.
+  - **Kod tarafı (2026-10-15) HAZIR:** `app/services/otp_delivery.py` (`deliver_code`) hem müşteri OTP'sinde hem "şifremi unuttum"da kullanılıyor; `development` dışında `whatsapp_services.send_whatsapp_message` ile gönderir, başarısızsa 503. **Canlı Evolution'a karşı hiç denenmedi** (QR okutulmadı, yük biçimi tahmin) — QR sonrası gerçek mesajla doğrulayın.
   - Altyapı: Evolution API Docker'da kurulu (`../evolution-api/`, instance `behtech`), **QR okutulmadı**. Adımlar §6.
   - Alternatif/yedek: SMS sağlayıcısı (Netgsm vb.) — karar verilmedi.
 - [ ] **Migration zinciri BOŞ veritabanında çalışmıyor.** İlk migration (`7efb0e9dab46`) `tenant_settings` tablosunu var sayıyor (tablolar
