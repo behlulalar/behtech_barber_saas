@@ -439,18 +439,22 @@ export default function TenantsPage() {
     else toggle.mutate(t)
   }
 
-  const actions = (t: PlatformTenant) => (
-    <div className="flex flex-wrap items-center justify-end gap-1">
-      {t.signup_status === 'pending' && (
-        <>
-          <Button size="sm" variant="secondary" leftIcon={<XCircle className="size-4" />} onClick={() => setReviewing({ tenant: t, action: 'reject' })}>
-            Reddet
-          </Button>
-          <Button size="sm" leftIcon={<CheckCircle2 className="size-4" />} onClick={() => setReviewing({ tenant: t, action: 'approve' })}>
-            Onayla
-          </Button>
-        </>
-      )}
+  // Onayla/Reddet: masaüstünde Durum sütununda (işlem sütunu geniş olup tabloyu taşırmasın), mobilde kartın işlem alanında.
+  const reviewButtons = (t: PlatformTenant, className: string) =>
+    t.signup_status === 'pending' && (
+      <div className={className}>
+        <Button size="sm" leftIcon={<CheckCircle2 className="size-4" />} onClick={() => setReviewing({ tenant: t, action: 'approve' })}>
+          Onayla
+        </Button>
+        <Button size="sm" variant="secondary" leftIcon={<XCircle className="size-4" />} onClick={() => setReviewing({ tenant: t, action: 'reject' })}>
+          Reddet
+        </Button>
+      </div>
+    )
+
+  const actions = (t: PlatformTenant, mobile = false) => (
+    <div className={mobile ? 'flex flex-wrap items-center justify-end gap-1' : 'flex items-center justify-end gap-1 whitespace-nowrap'}>
+      {mobile && reviewButtons(t, 'flex w-full flex-wrap gap-2 pb-1')}
       <IconButton label={`${t.name} abonelik ve ödemeler`} onClick={() => navigate(`/platform/isletmeler/${t.id}`)}>
         <Receipt className="size-4" />
       </IconButton>
@@ -530,7 +534,10 @@ export default function TenantsPage() {
       header: 'Durum',
       cell: (t) =>
         t.signup_status === 'pending' ? (
-          <Badge tone="warning">Onay bekliyor</Badge>
+          <div className="flex flex-col items-start gap-2">
+            <Badge tone="warning">Onay bekliyor</Badge>
+            {reviewButtons(t, 'hidden flex-col gap-1.5 md:flex')}
+          </div>
         ) : t.signup_status === 'rejected' ? (
           <Badge tone="danger">Reddedildi</Badge>
         ) : t.auto_suspended ? (
@@ -559,7 +566,7 @@ export default function TenantsPage() {
       ),
     },
     { key: 'created', header: 'Oluşturulma', className: 'hidden 2xl:table-cell', cell: (t) => <span className="text-muted-strong">{formatTimestamp(t.created_at)}</span> },
-    { key: 'actions', header: 'İşlem', align: 'right', hideOnMobile: true, cell: actions },
+    { key: 'actions', header: 'İşlem', align: 'right', hideOnMobile: true, cell: (t) => actions(t) },
   ]
 
   return (
@@ -635,7 +642,7 @@ export default function TenantsPage() {
           rows={rows}
           rowKey={(t) => t.id}
           loading={isLoading}
-          mobileActions={actions}
+          mobileActions={(t) => actions(t, true)}
           empty={
             <EmptyState
               icon={<Store />}

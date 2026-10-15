@@ -40,6 +40,7 @@ export default function PlatformLayout() {
   useDocumentTitle(detailName ?? label, detailName ? 'İşletmeler' : undefined, 'Platform', PRODUCT_NAME)
   return (
     <PanelShell
+      width="wide"
       eyebrow="Platform"
       brand="BehTech Randevu"
       nav={NAV}
