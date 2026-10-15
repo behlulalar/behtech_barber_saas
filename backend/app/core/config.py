@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from: str | None = None
     smtp_starttls: bool = True
+    # Giriş denemesi sınırı: aynı hesap için LOGIN_LOCK_MINUTES içinde LOGIN_MAX_FAILURES hatalı deneme kilitler.
+    login_max_failures: int = 5
+    login_lock_minutes: int = 15
+    # Reverse proxy (nginx) arkasında True yapın: IP, X-Forwarded-For'un ilk değerinden alınır.
+    # Proxy yoksa True yapmayın; istemci başlığı sahte yazabilir.
+    trust_proxy_headers: bool = False
     model_config = SettingsConfigDict(env_file=".env")
     
 settings = Settings()

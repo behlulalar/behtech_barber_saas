@@ -346,6 +346,7 @@ export interface AdminCustomer {
 export interface PlatformMe {
   id: number
   phone: string
+  name?: string | null
 }
 
 export interface PlatformStats {
@@ -551,4 +552,120 @@ export interface RunChecksResult {
 export interface PushSubscribeRequest {
   endpoint: string
   keys: { p256dh: string; auth: string }
+}
+
+/* ---------- Platform: yöneticiler, denetim kaydı, sistem ---------- */
+
+export interface PlatformAdmin {
+  id: number
+  phone: string
+  name: string | null
+  is_active: boolean
+  last_login_at: string | null
+  created_at: string
+  is_me: boolean
+}
+
+export interface PlatformAdminCreate {
+  phone: string
+  name?: string | null
+  password: string
+}
+
+export interface PlatformAdminUpdate {
+  name?: string | null
+  is_active?: boolean
+}
+
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+}
+
+export interface AuditLog {
+  id: number
+  created_at: string
+  actor_type: 'platform_admin' | 'staff' | 'system'
+  actor_id: number | null
+  actor_label: string
+  action: string
+  action_label: string
+  entity_type: string | null
+  entity_id: number | null
+  tenant_id: number | null
+  tenant_name: string | null
+  summary: string
+  details: Record<string, unknown> | null
+  ip: string | null
+}
+
+export interface AuditPage {
+  items: AuditLog[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface AuditParams {
+  limit?: number
+  offset?: number
+  action?: string
+  group?: string
+  tenant_id?: number
+  actor_id?: number
+  date_from?: string
+  date_to?: string
+  q?: string
+}
+
+export interface AuditActionInfo {
+  value: string
+  label: string
+  group: string
+}
+
+export interface JobRun {
+  id: number
+  job: string
+  trigger: 'cron' | 'manual'
+  started_at: string
+  finished_at: string | null
+  duration_ms: number | null
+  ok: boolean
+  result: Record<string, unknown> | null
+  error: string | null
+}
+
+export interface SystemStatus {
+  server_time: string
+  db: { ok: boolean; size_mb: number }
+  billing_job: {
+    last_run: JobRun | null
+    last_ok_at: string | null
+    hours_since_last_ok: number | null
+    overdue: boolean
+  }
+  backup: {
+    last_backup_at: string | null
+    file: string | null
+    size_mb: number | null
+    age_hours: number | null
+    ok: boolean
+    verified_at: string | null
+    verified_ok: boolean | null
+  }
+  channels: {
+    email_configured: boolean
+    push_configured: boolean
+    push_subscribers: number
+    whatsapp_configured: boolean
+    whatsapp_reachable: boolean | null
+  }
+  counts: {
+    tenants: number
+    active_tenants: number
+    platform_admins: number
+    audit_logs_last_24h: number
+    failed_logins_last_24h: number
+  }
 }

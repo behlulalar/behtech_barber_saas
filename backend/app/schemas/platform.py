@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
@@ -28,6 +29,7 @@ class TenantUpdate(BaseModel):
 class PlatformMe(BaseModel):
     id: int
     phone: str
+    name: str | None = None
 
 
 class PlatformStats(BaseModel):
@@ -35,3 +37,123 @@ class PlatformStats(BaseModel):
     active_tenant_count: int
     total_appointments: int
     appointments_last_30_days: int
+
+
+class PlatformAdminOut(BaseModel):
+    id: int
+    phone: str
+    name: str | None
+    is_active: bool
+    last_login_at: datetime | None
+    created_at: datetime | None
+    is_me: bool
+
+
+class PlatformAdminCreate(BaseModel):
+    phone: Phone
+    name: str | None = Field(default=None, max_length=100)
+    # Politika (uzunluk, yaygın şifre...) serviste Türkçe mesajla denetlenir.
+    password: str = Field(max_length=128)
+
+
+class PlatformAdminUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=100)
+    is_active: bool | None = None
+
+
+class PasswordResetIn(BaseModel):
+    password: str = Field(max_length=128)
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str = Field(max_length=128)
+    new_password: str = Field(max_length=128)
+
+
+class AuditActionOut(BaseModel):
+    value: str
+    label: str
+    group: str
+
+
+class AuditLogOut(BaseModel):
+    id: int
+    created_at: datetime
+    actor_type: str
+    actor_id: int | None
+    actor_label: str
+    action: str
+    action_label: str
+    entity_type: str | None
+    entity_id: int | None
+    tenant_id: int | None
+    tenant_name: str | None
+    summary: str
+    details: dict | None
+    ip: str | None
+
+
+class AuditPage(BaseModel):
+    items: list[AuditLogOut]
+    total: int
+    limit: int
+    offset: int
+
+
+class JobRunOut(BaseModel):
+    id: int
+    job: str
+    trigger: str
+    started_at: datetime
+    finished_at: datetime | None
+    duration_ms: int | None
+    ok: bool
+    result: dict | None
+    error: str | None
+
+
+class DbStatus(BaseModel):
+    ok: bool
+    size_mb: float
+
+
+class BillingJobStatus(BaseModel):
+    last_run: JobRunOut | None
+    last_ok_at: datetime | None
+    hours_since_last_ok: float | None
+    overdue: bool
+
+
+class BackupStatus(BaseModel):
+    last_backup_at: datetime | None
+    file: str | None
+    size_mb: float | None
+    age_hours: float | None
+    ok: bool
+    verified_at: datetime | None
+    verified_ok: bool | None
+
+
+class ChannelsStatus(BaseModel):
+    email_configured: bool
+    push_configured: bool
+    push_subscribers: int
+    whatsapp_configured: bool
+    whatsapp_reachable: bool | None
+
+
+class CountsStatus(BaseModel):
+    tenants: int
+    active_tenants: int
+    platform_admins: int
+    audit_logs_last_24h: int
+    failed_logins_last_24h: int
+
+
+class SystemStatus(BaseModel):
+    server_time: datetime
+    db: DbStatus
+    billing_job: BillingJobStatus
+    backup: BackupStatus
+    channels: ChannelsStatus
+    counts: CountsStatus

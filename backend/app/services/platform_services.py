@@ -1,17 +1,19 @@
 import re
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.models.appointment import Appointment
+from app.models.platform_admin import PlatformAdmin
 from app.models.staff import RoleType, Staff
 from app.models.tenant import Tenant
 from app.models.tenant_settings import TenantSettings
 from app.schemas.platform import TenantCreate
 from app.schemas.tenant import TenantOut
+from app.services.audit_services import audit
 
 RESERVED_SLUGS = {"www", "api", "admin", "platform", "app", "mail", "saleshub", "panel", "static", "randevu"}
 SLUG_RE = re.compile(r"^[a-z0-9-]{3,40}$")
@@ -83,7 +85,9 @@ async def get_tenant_out(db: Session, tenant_id: int) -> TenantOut:
     return _row_to_out(row)
 
 
-async def create_tenant(db: Session, data: TenantCreate) -> TenantOut:
+async def create_tenant(
+    db: Session, data: TenantCreate, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> TenantOut:
     validate_slug(data.slug)
     taken = await db.execute(select(Tenant.id).where(Tenant.slug == data.slug))
     if taken.first() is not None:
@@ -105,6 +109,9 @@ async def create_tenant(db: Session, data: TenantCreate) -> TenantOut:
                 role=RoleType.SUPER_ADMIN,
             )
         )
+        await audit(db, actor=actor, request=request, action="tenant.create", entity_type="tenant",
+                    entity_id=tenant.id, tenant_id=tenant.id, summary=f"'{tenant.name}' işletmesi oluşturuldu",
+                    details={"slug": tenant.slug, "owner_phone": data.owner_phone})
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -112,13 +119,24 @@ async def create_tenant(db: Session, data: TenantCreate) -> TenantOut:
     return await get_tenant_out(db, tenant.id)
 
 
-async def update_tenant(db: Session, tenant_id: int, name: str | None, is_active: bool | None) -> TenantOut:
+async def update_tenant(
+    db: Session, tenant_id: int, name: str | None, is_active: bool | None,
+    actor: PlatformAdmin | None = None, request: Request | None = None,
+) -> TenantOut:
     tenant = (await db.execute(select(Tenant).where(Tenant.id == tenant_id))).scalar_one_or_none()
     if tenant is None:
         raise HTTPException(status_code=404, detail="İşletme bulunamadı")
-    if name is not None:
+    if name is not None and name.strip() != tenant.name:
+        old = tenant.name
         tenant.name = name.strip()
+        await audit(db, actor=actor, request=request, action="tenant.rename", entity_type="tenant",
+                    entity_id=tenant.id, tenant_id=tenant.id,
+                    summary=f"İşletme adı '{old}' iken '{tenant.name}' yapıldı", details={"from": old, "to": tenant.name})
     if is_active is not None:
+        if is_active != tenant.is_active:
+            verb, action = ("aktifleştirildi", "tenant.activate") if is_active else ("devre dışı bırakıldı", "tenant.deactivate")
+            await audit(db, actor=actor, request=request, action=action, entity_type="tenant",
+                        entity_id=tenant.id, tenant_id=tenant.id, summary=f"'{tenant.name}' işletmesi {verb}")
         tenant.is_active = is_active
         if is_active:
             tenant.auto_suspended_at = None

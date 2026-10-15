@@ -1,4 +1,4 @@
-from sqlalchemy import DateTime, String, Text, func , ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Integer, DateTime, String, Text, func , ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from app.core.database import Base
@@ -29,6 +29,7 @@ class Staff(Base):
         default=RoleType.STAFF,
     )
     photo_image: Mapped[str | None] = mapped_column(Text)
+    token_version: Mapped[int] = mapped_column(Integer, server_default="0", default=0)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
 
     __table_args__ = (

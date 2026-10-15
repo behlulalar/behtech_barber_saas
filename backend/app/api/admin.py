@@ -1,7 +1,7 @@
 """Dükkân personeli / yönetici paneli route'ları. Tenant, Host header'ından çözülür; staff token'ı o tenant'a ait olmalı."""
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +41,7 @@ from app.schemas.admin import (
 from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.reports import ReportPeriod, RevenueReport
 from app.services import admin_services as svc
+from app.services import login_throttle
 from app.services import report_services
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
@@ -58,12 +59,26 @@ def _require_self_or_manager(current: Staff, staff_id: int) -> None:
 
 # ---------------------------------------------------------------- auth
 @router.post("/auth/login", response_model=TokenResponse)
-async def login(data: LoginRequest, tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db)):
+async def login(
+    data: LoginRequest,
+    request: Request,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    key = login_throttle.make_key(data.phone, tenant.id)
+    await login_throttle.ensure_not_locked(db, "staff", key, request)
     result = await db.execute(select(Staff).where(Staff.phone == data.phone, Staff.tenant_id == tenant.id))
     staff = result.scalar_one_or_none()
+    # Var olmayan telefon da başarısız sayılır; mesaj aynı kalır (kullanıcı varlığı sızmaz).
     if staff is None or not verify_password(data.password, staff.password):
+        if await login_throttle.record_failure(db, "staff", key, request):
+            raise login_throttle.locked_now_error()
         raise HTTPException(status_code=401, detail="Telefon veya şifre hatalı")
-    token = create_access_token({"sub": str(staff.id), "tenant_id": staff.tenant_id, "type": "staff"})
+    await login_throttle.clear_failures(db, "staff", key)
+    await db.commit()
+    token = create_access_token(
+        {"sub": str(staff.id), "tenant_id": staff.tenant_id, "type": "staff", "tv": staff.token_version}
+    )
     return TokenResponse(access_token=token, token_type="bearer")
 
 
@@ -332,6 +347,8 @@ async def update_staff(
         raise HTTPException(status_code=409, detail="Bu telefon numarası zaten kayıtlı")
     if "password" in changes:
         changes["password"] = hash_password(changes["password"])
+        # Şifre değişince personelin açık oturumları düşsün.
+        target.token_version += 1
     service_ids = changes.pop("service_ids", None)
     for k, v in changes.items():
         setattr(target, k, v)

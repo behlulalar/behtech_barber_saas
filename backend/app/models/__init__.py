@@ -16,3 +16,6 @@ from app.models.subscription import Subscription
 from app.models.payment import Payment
 from app.models.platform_settings import PlatformSettings
 from app.models.push_subscription import PushSubscription
+from app.models.login_attempt import LoginAttempt
+from app.models.audit_log import AuditLog
+from app.models.job_run import JobRun

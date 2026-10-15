@@ -2,6 +2,7 @@
 
 Usage: .venv/bin/python scripts/backup_database.py
 """
+import json
 import os
 import subprocess
 import sys
@@ -65,7 +66,18 @@ def cleanup_old_backups() -> None:
             print(f"Eski yedek silindi: {backup_file.name}")
 
 
+def write_last_backup(backup_file: Path) -> None:
+    """Sistem durumu sayfası bu dosyadan son yedeği okur."""
+    info = {
+        "at": datetime.now().isoformat(timespec="seconds"),
+        "file": backup_file.name,
+        "size_bytes": backup_file.stat().st_size,
+    }
+    (BACKUP_DIR / "last_backup.json").write_text(json.dumps(info))
+
+
 if __name__ == "__main__":
     backup_file = run_backup()
+    write_last_backup(backup_file)
     print(f"Yedek alındı: {backup_file}")
     cleanup_old_backups()

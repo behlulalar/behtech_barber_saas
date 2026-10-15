@@ -6,12 +6,13 @@ import re
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.payment import Payment
+from app.models.platform_admin import PlatformAdmin
 from app.models.plan import Plan
 from app.models.platform_settings import PlatformSettings
 from app.models.push_subscription import PushSubscription
@@ -36,9 +37,11 @@ from app.schemas.billing import (
     TenantBilling,
 )
 from app.services import notify_services, platform_services
+from app.services.audit_services import audit
 
 logger = logging.getLogger(__name__)
 
+MAX_PAYMENT = 10_000_000
 OVERLAP_MSG = "Bu tarihler başka bir dönemle çakışıyor"
 COVERED_STATUSES = {"active", "due_soon", "scheduled"}
 ATTENTION_ORDER = {"expired": 0, "grace": 1, "due_soon": 2}
@@ -186,6 +189,16 @@ async def _commit_or_409(db: AsyncSession, message: str) -> None:
         raise HTTPException(status_code=409, detail=message)
 
 
+async def _flush_or_409(db: AsyncSession, message: str) -> None:
+    """flush eder; benzersizlik ihlalini 409'a çevirir. Denetim kaydı (audit) yazılmadan ÖNCE çağrılmalı:
+    aksi halde ihlal, 409 koruması dışındaki bir flush'ta 500 olarak patlar."""
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail=message)
+
+
 async def _get_plan(db: AsyncSession, plan_id: int) -> Plan:
     plan = (await db.execute(select(Plan).where(Plan.id == plan_id))).scalar_one_or_none()
     if plan is None:
@@ -198,32 +211,52 @@ async def list_plans(db: AsyncSession) -> list[PlanOut]:
     return [_plan_out(p) for p in rows]
 
 
-async def create_plan(db: AsyncSession, data: PlanCreate) -> PlanOut:
+async def create_plan(
+    db: AsyncSession, data: PlanCreate, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> PlanOut:
     plan = Plan(
         name=data.name.strip(), duration_months=data.duration_months, price=data.price,
         is_active=data.is_active, sort_order=data.sort_order,
     )
     db.add(plan)
+    await _flush_or_409(db, "Bu isimde bir paket zaten var")
+    await audit(db, actor=actor, request=request, action="plan.create", entity_type="plan", entity_id=plan.id,
+                summary=f"'{plan.name}' paketi oluşturuldu",
+                details={"name": plan.name, "duration_months": plan.duration_months, "price": plan.price})
     await _commit_or_409(db, "Bu isimde bir paket zaten var")
     return _plan_out(plan)
 
 
-async def update_plan(db: AsyncSession, plan_id: int, data: PlanUpdate) -> PlanOut:
+async def update_plan(
+    db: AsyncSession, plan_id: int, data: PlanUpdate, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> PlanOut:
     plan = await _get_plan(db, plan_id)
+    changed: dict[str, dict] = {}
     for field, value in data.model_dump(exclude_unset=True).items():
         if value is None:
             continue
-        setattr(plan, field, value.strip() if field == "name" else value)
+        new = value.strip() if field == "name" else value
+        if getattr(plan, field) != new:
+            changed[field] = {"from": getattr(plan, field), "to": new}
+        setattr(plan, field, new)
+    await _flush_or_409(db, "Bu isimde bir paket zaten var")
+    if changed:
+        await audit(db, actor=actor, request=request, action="plan.update", entity_type="plan", entity_id=plan.id,
+                    summary=f"'{plan.name}' paketi güncellendi", details={"changes": changed})
     await _commit_or_409(db, "Bu isimde bir paket zaten var")
     return _plan_out(plan)
 
 
-async def delete_plan(db: AsyncSession, plan_id: int) -> None:
+async def delete_plan(
+    db: AsyncSession, plan_id: int, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> None:
     plan = await _get_plan(db, plan_id)
     used = (await db.execute(select(Subscription.id).where(Subscription.plan_id == plan_id).limit(1))).first()
     if used is not None:
         raise HTTPException(status_code=409, detail="Bu paket kullanılmış, silmek yerine pasife alın")
     await db.delete(plan)
+    await audit(db, actor=actor, request=request, action="plan.delete", entity_type="plan", entity_id=plan_id,
+                summary=f"'{plan.name}' paketi silindi", details={"name": plan.name})
     await db.commit()
 
 
@@ -255,7 +288,9 @@ async def _check_overlap(
         raise HTTPException(status_code=409, detail=OVERLAP_MSG)
 
 
-async def reactivate_if_covered(db: AsyncSession, tenant_id: int) -> bool:
+async def reactivate_if_covered(
+    db: AsyncSession, tenant_id: int, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> bool:
     """Otomatik askıdaki işletme tekrar kapsanıyorsa açar. Commit ETMEZ; açtıysa True döner."""
     tenant = await _get_tenant(db, tenant_id)
     if tenant.auto_suspended_at is None:
@@ -266,8 +301,33 @@ async def reactivate_if_covered(db: AsyncSession, tenant_id: int) -> bool:
     if state.status in COVERED_STATUSES:
         tenant.is_active = True
         tenant.auto_suspended_at = None
+        await audit(db, actor=actor, request=request, action="billing.auto_reactivate", entity_type="tenant",
+                    entity_id=tenant.id, tenant_id=tenant.id,
+                    summary=f"'{tenant.name}' abonelik kapsamına girdiği için yeniden açıldı")
         return True
     return False
+
+
+async def recompute_after_delete(
+    db: AsyncSession, tenant_id: int, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> None:
+    """Ödeme/dönem silindikten sonra işletmenin durumunu günlük kontrolle AYNI kurallarla yeniden hesaplar:
+    kapsanıyorsa (otomatik askıdaysa) açar; süresi (ek süre dahil) dolmuşsa otomatik askıya alır.
+    Commit ETMEZ; silme ve audit aynı transaction'da kalsın."""
+    if await reactivate_if_covered(db, tenant_id, actor, request):
+        return
+    tenant = await _get_tenant(db, tenant_id)
+    if not tenant.is_active or tenant.auto_suspended_at is not None:
+        return
+    ps = await get_settings_row(db)
+    subs = (await _subs_by_tenant(db, tenant_id)).get(tenant_id, [])
+    state = compute_state(subs, await _paid_map(db, tenant_id), ps, date.today())
+    if state.status == "expired":
+        tenant.is_active = False
+        tenant.auto_suspended_at = datetime.now()
+        await audit(db, actor=actor, request=request, action="billing.auto_suspend", entity_type="tenant",
+                    entity_id=tenant.id, tenant_id=tenant.id,
+                    summary=f"'{tenant.name}' kaydın silinmesi sonrası aboneliği bittiği için askıya alındı")
 
 
 async def _sub_out_by_id(db: AsyncSession, sub: Subscription) -> SubscriptionOut:
@@ -296,8 +356,11 @@ async def suggest_period(db: AsyncSession, tenant_id: int, plan_id: int) -> Sugg
     return SuggestOut(start_date=start, end_date=period_end(start, plan.duration_months), price=plan.price)
 
 
-async def create_subscription(db: AsyncSession, tenant_id: int, data: SubscriptionCreate) -> SubscriptionOut:
-    await _get_tenant(db, tenant_id)
+async def create_subscription(
+    db: AsyncSession, tenant_id: int, data: SubscriptionCreate,
+    actor: PlatformAdmin | None = None, request: Request | None = None,
+) -> SubscriptionOut:
+    tenant = await _get_tenant(db, tenant_id)
     if data.plan_id is not None:
         plan = await _get_plan(db, data.plan_id)
         if not plan.is_active:
@@ -323,17 +386,35 @@ async def create_subscription(db: AsyncSession, tenant_id: int, data: Subscripti
     await db.flush()
     if data.initial_payment is not None:
         ip = data.initial_payment
-        db.add(Payment(
+        if ip.amount > MAX_PAYMENT:
+            raise HTTPException(status_code=400, detail=f"Tutar en fazla {fmt_money(MAX_PAYMENT)} olabilir")
+        if ip.paid_on > date.today():
+            raise HTTPException(status_code=400, detail="Ödeme tarihi gelecekte olamaz")
+        first_payment = Payment(
             tenant_id=tenant_id, subscription_id=sub.id, amount=ip.amount, paid_on=ip.paid_on,
             method=ip.method.strip() or "IBAN", note=ip.note or None,
-        ))
+        )
+        db.add(first_payment)
         await db.flush()
-    await reactivate_if_covered(db, tenant_id)
+    await audit(db, actor=actor, request=request, action="subscription.create", entity_type="subscription",
+                entity_id=sub.id, tenant_id=tenant_id,
+                summary=f"'{tenant.name}' için {fmt_date(sub.start_date)} - {fmt_date(sub.end_date)} dönemi eklendi",
+                details={"plan_name": plan_name, "start_date": str(sub.start_date), "end_date": str(end),
+                         "price": price, "initial_payment": data.initial_payment.amount if data.initial_payment else None})
+    if data.initial_payment is not None:
+        await audit(db, actor=actor, request=request, action="payment.create", entity_type="payment",
+                    entity_id=first_payment.id, tenant_id=tenant_id,
+                    summary=f"'{tenant.name}' için {fmt_money(data.initial_payment.amount)} ilk ödeme alındı",
+                    details={"amount": data.initial_payment.amount, "subscription_id": sub.id})
+    await reactivate_if_covered(db, tenant_id, actor, request)
     await db.commit()
     return await _sub_out_by_id(db, sub)
 
 
-async def update_subscription(db: AsyncSession, sub_id: int, data: SubscriptionUpdate) -> SubscriptionOut:
+async def update_subscription(
+    db: AsyncSession, sub_id: int, data: SubscriptionUpdate,
+    actor: PlatformAdmin | None = None, request: Request | None = None,
+) -> SubscriptionOut:
     sub = await _get_sub(db, sub_id)
     fields = data.model_dump(exclude_unset=True)
     start = fields.get("start_date") or sub.start_date
@@ -341,31 +422,59 @@ async def update_subscription(db: AsyncSession, sub_id: int, data: SubscriptionU
     if end < start:
         raise HTTPException(status_code=400, detail="Bitiş tarihi başlangıçtan önce olamaz")
     await _check_overlap(db, sub.tenant_id, start, end, exclude_id=sub.id)
+    changed = [f for f, old, new in (("start_date", sub.start_date, start), ("end_date", sub.end_date, end)) if old != new]
     sub.start_date, sub.end_date = start, end
     if fields.get("plan_name"):
+        if sub.plan_name != fields["plan_name"].strip():
+            changed.append("plan_name")
         sub.plan_name = fields["plan_name"].strip()
     if fields.get("price") is not None:
+        if sub.price != fields["price"]:
+            changed.append("price")
         sub.price = fields["price"]
     if "note" in fields:
+        if sub.note != (fields["note"] or None):
+            changed.append("note")
         sub.note = fields["note"] or None
     await db.flush()
-    await reactivate_if_covered(db, sub.tenant_id)
+    tenant = await _get_tenant(db, sub.tenant_id)
+    await audit(db, actor=actor, request=request, action="subscription.update", entity_type="subscription",
+                entity_id=sub.id, tenant_id=sub.tenant_id,
+                summary=f"'{tenant.name}' için {fmt_date(sub.start_date)} - {fmt_date(sub.end_date)} dönemi güncellendi",
+                details={"changed_fields": changed, "start_date": str(sub.start_date),
+                         "end_date": str(sub.end_date), "price": sub.price})
+    await reactivate_if_covered(db, sub.tenant_id, actor, request)
     await db.commit()
     return await _sub_out_by_id(db, sub)
 
 
-async def delete_subscription(db: AsyncSession, sub_id: int) -> None:
+async def delete_subscription(
+    db: AsyncSession, sub_id: int, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> None:
     sub = await _get_sub(db, sub_id)
     has_payments = (await db.execute(select(Payment.id).where(Payment.subscription_id == sub_id).limit(1))).first()
     if has_payments is not None:
         raise HTTPException(status_code=409, detail="Bu döneme ait ödemeler var, önce ödemeleri silin")
+    tenant = await _get_tenant(db, sub.tenant_id)
     await db.delete(sub)
+    await db.flush()
+    await audit(db, actor=actor, request=request, action="subscription.delete", entity_type="subscription",
+                entity_id=sub_id, tenant_id=sub.tenant_id,
+                summary=f"'{tenant.name}' için {fmt_date(sub.start_date)} - {fmt_date(sub.end_date)} dönemi silindi",
+                details={"plan_name": sub.plan_name, "start_date": str(sub.start_date),
+                         "end_date": str(sub.end_date), "price": sub.price})
+    await recompute_after_delete(db, sub.tenant_id, actor, request)
     await db.commit()
 
 
-async def mark_reminded(db: AsyncSession, sub_id: int) -> SubscriptionOut:
+async def mark_reminded(
+    db: AsyncSession, sub_id: int, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> SubscriptionOut:
     sub = await _get_sub(db, sub_id)
     sub.reminded_at = datetime.now()
+    tenant = await _get_tenant(db, sub.tenant_id)
+    await audit(db, actor=actor, request=request, action="subscription.reminded", entity_type="subscription",
+                entity_id=sub.id, tenant_id=sub.tenant_id, summary=f"'{tenant.name}' için hatırlatma işaretlendi")
     await db.commit()
     return await _sub_out_by_id(db, sub)
 
@@ -402,8 +511,14 @@ async def list_payments(
     return [_payment_out(p, name, sub) for p, name, sub in rows]
 
 
-async def create_payment(db: AsyncSession, data: PaymentCreate) -> PaymentOut:
-    await _get_tenant(db, data.tenant_id)
+async def create_payment(
+    db: AsyncSession, data: PaymentCreate, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> PaymentOut:
+    tenant = await _get_tenant(db, data.tenant_id)
+    if data.amount > MAX_PAYMENT:
+        raise HTTPException(status_code=400, detail=f"Tutar en fazla {fmt_money(MAX_PAYMENT)} olabilir")
+    if data.paid_on > date.today():
+        raise HTTPException(status_code=400, detail="Ödeme tarihi gelecekte olamaz")
     if data.subscription_id is not None:
         sub = await _get_sub(db, data.subscription_id)
         if sub.tenant_id != data.tenant_id:
@@ -414,17 +529,32 @@ async def create_payment(db: AsyncSession, data: PaymentCreate) -> PaymentOut:
     )
     db.add(payment)
     await db.flush()
-    await reactivate_if_covered(db, data.tenant_id)
+    await audit(db, actor=actor, request=request, action="payment.create", entity_type="payment",
+                entity_id=payment.id, tenant_id=data.tenant_id,
+                summary=f"'{tenant.name}' için {fmt_money(payment.amount)} ödeme alındı",
+                details={"amount": payment.amount, "paid_on": str(payment.paid_on), "method": payment.method,
+                         "subscription_id": payment.subscription_id})
+    await reactivate_if_covered(db, data.tenant_id, actor, request)
     await db.commit()
     row = (await db.execute(_payments_query().where(Payment.id == payment.id))).one()
     return _payment_out(*row)
 
 
-async def delete_payment(db: AsyncSession, payment_id: int) -> None:
+async def delete_payment(
+    db: AsyncSession, payment_id: int, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> None:
     payment = (await db.execute(select(Payment).where(Payment.id == payment_id))).scalar_one_or_none()
     if payment is None:
         raise HTTPException(status_code=404, detail="Ödeme bulunamadı")
+    tenant = await _get_tenant(db, payment.tenant_id)
     await db.delete(payment)
+    await db.flush()
+    await audit(db, actor=actor, request=request, action="payment.delete", entity_type="payment",
+                entity_id=payment_id, tenant_id=payment.tenant_id,
+                summary=f"'{tenant.name}' için {fmt_money(payment.amount)} ödeme silindi",
+                details={"amount": payment.amount, "paid_on": str(payment.paid_on),
+                         "subscription_id": payment.subscription_id})
+    await recompute_after_delete(db, payment.tenant_id, actor, request)
     await db.commit()
 
 
@@ -524,7 +654,9 @@ async def get_settings(db: AsyncSession) -> PlatformSettingsOut:
     return _settings_out(await get_settings_row(db))
 
 
-async def update_settings(db: AsyncSession, data: PlatformSettingsUpdate) -> PlatformSettingsOut:
+async def update_settings(
+    db: AsyncSession, data: PlatformSettingsUpdate, actor: PlatformAdmin | None = None, request: Request | None = None
+) -> PlatformSettingsOut:
     row = await get_settings_row(db)
     iban = re.sub(r"\s+", "", data.iban or "").upper() or None
     if iban is not None and not IBAN_RE.match(iban):
@@ -532,14 +664,23 @@ async def update_settings(db: AsyncSession, data: PlatformSettingsUpdate) -> Pla
     email = (data.notify_email or "").strip() or None
     if email is not None and not EMAIL_RE.match(email):
         raise HTTPException(status_code=400, detail="Geçerli bir e-posta adresi girin")
-    row.iban = iban
-    row.account_holder = (data.account_holder or "").strip() or None
-    row.bank_name = (data.bank_name or "").strip() or None
-    row.reminder_days = data.reminder_days
-    row.grace_days = data.grace_days
-    row.notify_email = email
-    row.reminder_template = data.reminder_template
-    row.overdue_template = data.overdue_template
+    new_values = {
+        "iban": iban,
+        "account_holder": (data.account_holder or "").strip() or None,
+        "bank_name": (data.bank_name or "").strip() or None,
+        "reminder_days": data.reminder_days,
+        "grace_days": data.grace_days,
+        "notify_email": email,
+        "reminder_template": data.reminder_template,
+        "overdue_template": data.overdue_template,
+    }
+    # Denetim kaydına yalnızca değişen ALAN ADLARI yazılır (IBAN/e-posta/şablon içeriği asla).
+    changed = [k for k, v in new_values.items() if getattr(row, k) != v]
+    for k, v in new_values.items():
+        setattr(row, k, v)
+    if changed:
+        await audit(db, actor=actor, request=request, action="settings.update", entity_type="settings",
+                    summary="Platform ayarları değişti", details={"changed_fields": changed})
     await db.commit()
     return _settings_out(row)
 
@@ -621,10 +762,16 @@ async def run_billing_checks(db: AsyncSession) -> RunChecksResult:
             tenant.auto_suspended_at = now
             suspended.append(tenant.name)
             newly_suspended = True
+            await audit(db, actor=None, action="billing.auto_suspend", entity_type="tenant", entity_id=tenant.id,
+                        tenant_id=tenant.id, summary=f"'{tenant.name}' aboneliği bittiği için otomatik askıya alındı",
+                        details={"coverage_end": str(state.coverage_end)})
         elif state.status in COVERED_STATUSES and tenant.auto_suspended_at is not None:
             tenant.is_active = True
             tenant.auto_suspended_at = None
             reactivated.append(tenant.name)
+            await audit(db, actor=None, action="billing.auto_reactivate", entity_type="tenant", entity_id=tenant.id,
+                        tenant_id=tenant.id, summary=f"'{tenant.name}' abonelik kapsamına girdiği için otomatik yeniden açıldı",
+                        details={"coverage_end": str(state.coverage_end)})
 
         notify = newly_suspended
         if state.status in ("due_soon", "grace") and rel is not None and rel.last_notified_on != today:

@@ -63,6 +63,9 @@ async def get_current_staff(
     # Bir dükkânın token'ı başka bir dükkânın subdomain'inde kullanılamaz.
     if staff is None or staff.tenant_id != tenant.id:
         raise _INVALID
+    # Şifre değişince sürüm artar; sürümü olmayan eski token'lar 0 sayılır.
+    if payload.get("tv", 0) != staff.token_version:
+        raise _INVALID
     return staff
 
 
@@ -99,6 +102,6 @@ async def get_current_platform_admin(
     payload = _decode(token, "platform_admin")
     result = await db.execute(select(PlatformAdmin).where(PlatformAdmin.id == int(payload["sub"])))
     admin = result.scalar_one_or_none()
-    if admin is None:
+    if admin is None or not admin.is_active or payload.get("tv", 0) != admin.token_version:
         raise _INVALID
     return admin

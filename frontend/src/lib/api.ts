@@ -12,6 +12,15 @@ import type {
   AdminStaff,
   AdminStaffCreate,
   AdminStaffUpdate,
+  AuditActionInfo,
+  AuditPage,
+  AuditParams,
+  ChangePasswordRequest,
+  JobRun,
+  PlatformAdmin,
+  PlatformAdminCreate,
+  PlatformAdminUpdate,
+  SystemStatus,
   AppointmentPublicOut,
   AvailabilityParams,
   BillingOverview,
@@ -375,4 +384,30 @@ export const platformApi = {
   pushUnsubscribe: (endpoint: string) =>
     request<void>('/platform/push/unsubscribe', { method: 'POST', body: { endpoint }, auth: p }),
   pushTest: () => request<{ sent: number }>('/platform/push/test', { method: 'POST', auth: p }),
+
+  /* Yöneticiler & hesabım */
+  listAdmins: () => request<PlatformAdmin[]>('/platform/admins', { auth: p }),
+  createAdmin: (data: PlatformAdminCreate) =>
+    request<PlatformAdmin>('/platform/admins', { method: 'POST', body: data, auth: p }),
+  updateAdmin: (id: number, data: PlatformAdminUpdate) =>
+    request<PlatformAdmin>(`/platform/admins/${id}`, { method: 'PATCH', body: data, auth: p }),
+  resetAdminPassword: (id: number, password: string) =>
+    request<void>(`/platform/admins/${id}/reset-password`, { method: 'POST', body: { password }, auth: p }),
+  deleteAdmin: (id: number) => request<void>(`/platform/admins/${id}`, { method: 'DELETE', auth: p }),
+  /** Şifreyi değiştirir ve dönen yeni token'ı saklar (diğer cihazların oturumu düşer). */
+  changePassword: async (data: ChangePasswordRequest) => {
+    const res = await request<TokenResponse>('/platform/me/password', { method: 'POST', body: data, auth: p })
+    tokenStore.set('platform', res.access_token)
+    return res
+  },
+  logoutAll: () => request<void>('/platform/me/logout-all', { method: 'POST', auth: p }),
+
+  /* Denetim kaydı */
+  listAudit: (params?: AuditParams) => request<AuditPage>('/platform/audit', { auth: p, query: { ...params } }),
+  listAuditActions: () => request<AuditActionInfo[]>('/platform/audit/actions', { auth: p }),
+
+  /* Sistem */
+  getSystemStatus: () => request<SystemStatus>('/platform/system/status', { auth: p }),
+  listJobRuns: (job = 'billing_checks', limit = 10) =>
+    request<JobRun[]>('/platform/jobs/runs', { auth: p, query: { job, limit } }),
 }

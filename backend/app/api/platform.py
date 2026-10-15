@@ -1,37 +1,200 @@
 """Platform sahibi (SaaS owner) route'ları. Tenant'tan bağımsızdır, Host header'ına bakmaz."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.core.password_policy import enforce_password_policy
 
 from app.core.database import get_db
 from app.core.deps import get_current_platform_admin
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, hash_password, verify_password
 from app.models.appointment import Appointment
 from app.models.platform_admin import PlatformAdmin
 from app.models.tenant import Tenant
 from app.schemas.auth import LoginRequest, TokenResponse
-from app.schemas.platform import PlatformMe, PlatformStats, TenantCreate, TenantUpdate
+from app.schemas.platform import (
+    AuditActionOut,
+    AuditPage,
+    JobRunOut,
+    PasswordChangeIn,
+    PasswordResetIn,
+    PlatformAdminCreate,
+    PlatformAdminOut,
+    PlatformAdminUpdate,
+    PlatformMe,
+    PlatformStats,
+    SystemStatus,
+    TenantCreate,
+    TenantUpdate,
+)
 from app.schemas.tenant import TenantOut
-from app.services import platform_services
+from app.services import (
+    audit_services,
+    job_services,
+    login_throttle,
+    platform_admin_services as admin_svc,
+    platform_services,
+    system_services,
+)
+from app.services.audit_services import audit
 
 router = APIRouter(prefix="/platform")
 
 
 @router.post("/login", response_model=TokenResponse)
-async def platform_login(data: LoginRequest, db: Session = Depends(get_db)):
+async def platform_login(data: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    key = login_throttle.make_key(data.phone)
+    await login_throttle.ensure_not_locked(db, "platform", key, request)
     result = await db.execute(select(PlatformAdmin).where(PlatformAdmin.phone == data.phone))
     admin = result.scalar_one_or_none()
-    if admin is None or not verify_password(data.password, admin.password):
+    # Pasif yönetici de aynı genel mesajla reddedilir (hesabın var/pasif olduğu sızmaz).
+    if admin is None or not admin.is_active or not verify_password(data.password, admin.password):
+        if await login_throttle.record_failure(db, "platform", key, request):
+            await audit(db, actor=None, request=request, action="platform.login_locked",
+                        actor_label=key, summary=f"{key} numarası için giriş çok fazla hatalı denemeden kilitlendi",
+                        details={"phone": key, "lock_minutes": settings.login_lock_minutes})
+            await db.commit()
+            raise login_throttle.locked_now_error()
         raise HTTPException(status_code=401, detail="Telefon veya şifre hatalı")
-    token = create_access_token({"sub": str(admin.id), "type": "platform_admin"})
+    await login_throttle.clear_failures(db, "platform", key)
+    admin.last_login_at = datetime.now()
+    await audit(db, actor=admin, request=request, action="platform.login", entity_type="platform_admin",
+                entity_id=admin.id, summary="Platform girişi yapıldı")
+    await db.commit()
+    token = create_access_token({"sub": str(admin.id), "type": "platform_admin", "tv": admin.token_version})
     return TokenResponse(access_token=token, token_type="bearer")
 
 
 @router.get("/me", response_model=PlatformMe)
 async def platform_me(admin: PlatformAdmin = Depends(get_current_platform_admin)):
-    return PlatformMe(id=admin.id, phone=admin.phone)
+    return PlatformMe(id=admin.id, phone=admin.phone, name=admin.name)
+
+
+@router.post("/me/password", response_model=TokenResponse)
+async def platform_change_password(
+    data: PasswordChangeIn,
+    request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(data.current_password, admin.password):
+        raise HTTPException(status_code=400, detail="Mevcut şifre hatalı")
+    enforce_password_policy(data.new_password, admin.phone)
+    admin.password = hash_password(data.new_password)
+    admin.token_version += 1  # diğer cihazlardaki oturumlar düşer
+    await audit(db, actor=admin, request=request, action="platform.password_changed",
+                entity_type="platform_admin", entity_id=admin.id, summary="Şifre değiştirildi")
+    await db.commit()
+    token = create_access_token({"sub": str(admin.id), "type": "platform_admin", "tv": admin.token_version})
+    return TokenResponse(access_token=token, token_type="bearer")
+
+
+@router.post("/me/logout-all", status_code=204)
+async def platform_logout_all(
+    request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    admin.token_version += 1
+    await audit(db, actor=admin, request=request, action="platform.logout_all",
+                entity_type="platform_admin", entity_id=admin.id, summary="Tüm cihazlardan çıkış yapıldı")
+    await db.commit()
+    return Response(status_code=204)
+
+
+# Yöneticiler
+@router.get("/admins", response_model=list[PlatformAdminOut])
+async def list_admins(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
+    return await admin_svc.list_admins(db, admin)
+
+
+@router.post("/admins", response_model=PlatformAdminOut, status_code=201)
+async def create_admin(
+    data: PlatformAdminCreate,
+    request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    return await admin_svc.create_admin(db, admin, data, request)
+
+
+@router.patch("/admins/{admin_id}", response_model=PlatformAdminOut)
+async def update_admin(
+    admin_id: int,
+    data: PlatformAdminUpdate,
+    request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    return await admin_svc.update_admin(db, admin, admin_id, data, request)
+
+
+@router.post("/admins/{admin_id}/reset-password", status_code=204)
+async def reset_admin_password(
+    admin_id: int,
+    data: PasswordResetIn,
+    request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    await admin_svc.reset_password(db, admin, admin_id, data.password, request)
+    return Response(status_code=204)
+
+
+@router.delete("/admins/{admin_id}", status_code=204)
+async def delete_admin(
+    admin_id: int,
+    request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    await admin_svc.delete_admin(db, admin, admin_id, request)
+    return Response(status_code=204)
+
+
+# Denetim kaydı, işler, sistem durumu
+@router.get("/audit/actions", response_model=list[AuditActionOut])
+async def audit_actions(admin: PlatformAdmin = Depends(get_current_platform_admin)):
+    return audit_services.actions_catalog()
+
+
+@router.get("/audit", response_model=AuditPage)
+async def audit_list(
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    action: str | None = None,
+    group: str | None = None,
+    tenant_id: int | None = None,
+    actor_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    q: str | None = None,
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    return await audit_services.list_audit(
+        db, limit=limit, offset=offset, action=action or None, group=group or None, tenant_id=tenant_id,
+        actor_id=actor_id, date_from=date_from, date_to=date_to, q=q,
+    )
+
+
+@router.get("/jobs/runs", response_model=list[JobRunOut])
+async def job_runs(
+    job: str | None = None,
+    limit: int = Query(default=20, ge=1, le=200),
+    admin: PlatformAdmin = Depends(get_current_platform_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    return await job_services.list_runs(db, job, limit)
+
+
+@router.get("/system/status", response_model=SystemStatus)
+async def system_status(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
+    return await system_services.get_status(db)
 
 
 @router.get("/stats", response_model=PlatformStats)
@@ -70,17 +233,19 @@ async def platform_list_tenants(
 @router.post("/tenants", response_model=TenantOut)
 async def platform_create_tenant(
     data: TenantCreate,
+    request: Request,
     admin: PlatformAdmin = Depends(get_current_platform_admin),
     db: Session = Depends(get_db),
 ):
-    return await platform_services.create_tenant(db, data)
+    return await platform_services.create_tenant(db, data, admin, request)
 
 
 @router.patch("/tenants/{tenant_id}", response_model=TenantOut)
 async def platform_update_tenant(
     tenant_id: int,
     data: TenantUpdate,
+    request: Request,
     admin: PlatformAdmin = Depends(get_current_platform_admin),
     db: Session = Depends(get_db),
 ):
-    return await platform_services.update_tenant(db, tenant_id, data.name, data.is_active)
+    return await platform_services.update_tenant(db, tenant_id, data.name, data.is_active, admin, request)

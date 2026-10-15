@@ -477,7 +477,20 @@ iyi bir çalışma malzemesi.
       (`/randevularim`, şifre/üyelik yok, oturum 30 dk). Randevu sonrası ekran başka cihazdan
       giriş yapılabileceğini söyler. NOT: canlıda OTP'nin müşteriye ulaşması WhatsApp
       (Evolution API) bağlantısına bağlı — bağlanmadan başka cihazdan giriş fiilen mümkün değil.
-      **Açık kalanlar:** personel/platform girişinde brute-force sınırı yok;
+      2026-10-15: PLATFORM SAĞLAMLAŞTIRMA (Aşama A, ajanlarla): giriş sınırı (5 yanlış → 15 dk kilit,
+      platform + personel girişi, `login_attempts`), token sürümü `tv` (şifre değişimi / tüm cihazlardan
+      çıkış / pasif yönetici oturumları düşürür), platform yöneticileri CRUD + şifre politikası
+      (min 8), denetim kaydı (`audit_logs`, platformdaki her yazma işlemi; sayfalı UI `/platform/denetim`),
+      günlük kontrol kaydı (`job_runs`) ve `/platform/sistem` durum sayfası, ödeme/dönem silince
+      işletme durumu yeniden hesaplanır, `scripts/verify_backup.py` (yedeği geçici DB'ye geri yükleyip
+      sayıları karşılaştırır; AYRI bakım kullanıcısı `BACKUP_VERIFY_DB_USER` ister — uygulama
+      kullanıcısına CREATEDB VERİLMEZ), docs/OPERATIONS.md + deploy/crontab.example,
+      otomatik testler `backend/tests` (`bash scripts/run_tests.sh`, ayrı `behtech_saas_test` DB, 140 test).
+      CANLIYA ÇIKIŞ LİSTESİ (bilinen): nginx arkasında `TRUST_PROXY_HEADERS=true` (yoksa IP kuralı herkesi
+      kilitleyebilir); migration zinciri BOŞ DB'de çalışmıyor (ilk migration schema.sql varsayıyor) —
+      yeni kurulum öncesi düzelt; OTP kodları WhatsApp'a bağlanmadan müşteriye ulaşmaz; şifreler ve
+      sabit OTP (123456) gerçek değerlerle değiştirilecek; cron kurulacak.
+      **Açık kalanlar:** (giriş sınırı artık var;)
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.
 - [x] Mevcut verinin geçişi — TAMAMLANDI. `backend/scripts/migrate_old_data.py`

@@ -29,6 +29,9 @@ const PlatformTenantDetailPage = lazy(() => import('./pages/platform/TenantDetai
 const PlatformPaymentsPage = lazy(() => import('./pages/platform/PaymentsPage'))
 const PlatformPlansPage = lazy(() => import('./pages/platform/PlansPage'))
 const PlatformSettingsPage = lazy(() => import('./pages/platform/SettingsPage'))
+const PlatformAdminsPage = lazy(() => import('./pages/platform/AdminsPage'))
+const PlatformAuditPage = lazy(() => import('./pages/platform/AuditPage'))
+const PlatformSystemPage = lazy(() => import('./pages/platform/SystemPage'))
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const TenantGate = lazy(() => import('./pages/TenantGate'))
@@ -53,6 +56,9 @@ const platformRoutes = (
         <Route path="odemeler" element={<PlatformPaymentsPage />} />
         <Route path="paketler" element={<PlatformPlansPage />} />
         <Route path="ayarlar" element={<PlatformSettingsPage />} />
+        <Route path="yoneticiler" element={<PlatformAdminsPage />} />
+        <Route path="denetim" element={<PlatformAuditPage />} />
+        <Route path="sistem" element={<PlatformSystemPage />} />
       </Route>
     </Route>
   </>

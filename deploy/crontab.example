@@ -1,0 +1,16 @@
+# BehTech Berber SaaS - örnek crontab (sunucuda: crontab -e)
+# BACKEND dizinini ve log yolunu kendi sunucunuza göre değiştirin.
+# Saat dilimi sunucunun yerel saatidir (TR için: timedatectl set-timezone Europe/Istanbul).
+
+BACKEND=/opt/berber-saas/backend
+LOGDIR=/var/log/berber-saas
+
+# Günlük abonelik kontrolü: her gün 09:00 (askıya alma/açma, hatırlatma bildirimleri)
+0 9 * * * cd $BACKEND && .venv/bin/python scripts/run_billing_checks.py >> $LOGDIR/billing_checks.log 2>&1
+
+# Veritabanı yedeği: her gün 03:00
+0 3 * * * cd $BACKEND && .venv/bin/python scripts/backup_database.py >> $LOGDIR/backup.log 2>&1
+
+# Yedek doğrulama (geçici veritabanına geri yükler): her Pazar 04:00
+# Not: veritabanı kullanıcısının CREATEDB yetkisi olmalı (docs/OPERATIONS.md)
+0 4 * * 0 cd $BACKEND && .venv/bin/python scripts/verify_backup.py >> $LOGDIR/verify_backup.log 2>&1
