@@ -210,9 +210,18 @@ async def test_queue_drops_message_of_cancelled_appointment_and_expires_stale(sh
     monkeypatch.setattr(settings, "whatsapp_queue_gap_min", 0.0)
     monkeypatch.setattr(settings, "whatsapp_queue_gap_max", 0.0)
     await connect_whatsapp(shop.tenant.id)
-    appt = await make_upcoming(shop, 50)
+    # Saate bağımlı OLMASIN (gece sessizlik saatlerinde hatırlatma kuyruğa girmez): sabit "öğle" saati kullan.
+    appt = await make_appointment(shop.tenant.id, (await make_customer(shop.tenant.id, "5550006001")).id, shop.staff.id,
+                                  shop.cut.id, NOON.date(), time(13, 50))
     async with SessionFactory() as db:
-        await notif.enqueue_due_reminders(db)
+        await db.execute(update(Appointment).where(Appointment.id == appt.id).values(created_at=NOON - timedelta(hours=6)))
+        await db.commit()
+    async with SessionFactory() as db:
+        assert await notif.enqueue_due_reminders(db, NOON) == 1
+        # Kuyruk gerçek saatle çalışır; gece sessizliği not_before'u ertelemiş olabilir -> test saatten bağımsız olsun
+        await db.execute(update(OutboundMessage).values(not_before=datetime.now() - timedelta(minutes=1),
+                                                        expires_at=datetime.now() + timedelta(hours=1)))
+        await db.commit()
     async with SessionFactory() as db:  # hatırlatma kuyruktayken randevu iptal edildi
         await db.execute(update(Appointment).where(Appointment.id == appt.id).values(status=AppointmentStatus.CANCELLED))
         await db.commit()
