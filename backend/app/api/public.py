@@ -34,7 +34,9 @@ from app.services.appointment_services import (
 from app.services import signup_services, whatsapp_connection_services
 from app.services.consent_services import require_customer_consent
 from app.services.customer_services import get_or_create_customer
+from app.core.net import client_ip
 from app.services.otp_delivery import deliver_code
+from app.services.whatsapp_texts import otp_text
 from app.services.otp_services import send_code, verify_code
 
 router = APIRouter()
@@ -148,7 +150,7 @@ async def send_code_route(
     await require_customer_consent(db, tenant.id, data.phone, data.kvkk_accepted, request)
     code = await send_code(db, tenant.id, data.phone)
     # Geliştirmede no-op (kod dev_code ile döner); üretimde WhatsApp, başarısızsa 503.
-    await deliver_code(db, tenant.id, "otp", data.phone, f"{tenant.name} randevu doğrulama kodunuz: {code}. Kodu kimseyle paylaşmayın.")
+    await deliver_code(db, tenant.id, "otp", data.phone, otp_text(tenant.name, code), ip=client_ip(request))
     is_dev = settings.environment == "development"
     return SendCodeResponse(message="Doğrulama kodu gönderildi", dev_code=code if is_dev else None)
 

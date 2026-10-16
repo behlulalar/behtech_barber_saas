@@ -78,6 +78,7 @@ import type {
   TenantSettings,
   WhatsappConnectOut,
   WhatsappStatus,
+  PlatformWhatsapp,
   TimeOff,
   TimeOffCreate,
   TokenResponse,
@@ -393,6 +394,9 @@ export const platformApi = {
     request<Subscription>(`/platform/tenants/${tenantId}/trial`, { method: 'POST', body: data ?? {}, auth: p }),
   approveSignup: (id: number) => request<PlatformTenant>(`/platform/tenants/${id}/signup/approve`, { method: 'POST', auth: p }),
   rejectSignup: (id: number) => request<PlatformTenant>(`/platform/tenants/${id}/signup/reject`, { method: 'POST', auth: p }),
+  getTenantWhatsapp: (id: number) => request<PlatformWhatsapp>(`/platform/tenants/${id}/whatsapp`, { auth: p }),
+  setTenantWhatsappPaused: (id: number, paused: boolean, reason?: string) =>
+    request<PlatformWhatsapp>(`/platform/tenants/${id}/whatsapp/pause`, { method: 'POST', body: { paused, ...(reason ? { reason } : {}) }, auth: p }),
   updateTenant: (id: number, data: PlatformTenantUpdate) =>
     request<PlatformTenant>(`/platform/tenants/${id}`, { method: 'PATCH', body: data, auth: p }),
   /* Paketler */

@@ -47,10 +47,12 @@ from app.schemas.reports import ReportPeriod, RevenueReport
 from app.services import admin_services as svc
 from app.services import impersonation_services
 from app.services import login_throttle, otp_services
+from app.core.net import client_ip
 from app.services.otp_delivery import deliver_code
+from app.services.whatsapp_texts import reset_text
 from app.services import report_services
 from app.services import announcement_services, platform_services, whatsapp_connection_services as wa_svc
-from app.services import whatsapp_services
+from app.services import whatsapp_guard as wa_guard, whatsapp_services
 from app.services.otp_delivery import to_whatsapp_number
 from app.schemas.whatsapp import WhatsappConnectIn, WhatsappConnectOut, WhatsappStatusOut, WhatsappTestIn
 from app.models.message_log import MessageLog
@@ -162,6 +164,7 @@ BAD_CODE = "Kod geçersiz veya süresi dolmuş"
 @router.post("/auth/forgot/send-code", response_model=SendCodeResponse)
 async def forgot_send_code(
     data: ForgotSendCode,
+    request: Request,
     tenant: Tenant = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
@@ -174,7 +177,7 @@ async def forgot_send_code(
     ).scalar_one_or_none()
     code = await otp_services.send_code(db, tenant.id, data.phone, purpose=otp_services.RESET_PURPOSE)
     if staff is not None:
-        await deliver_code(db, tenant.id, "password_reset", data.phone, f"{tenant.name} şifre sıfırlama kodunuz: {code}. Kodu kimseyle paylaşmayın.")
+        await deliver_code(db, tenant.id, "password_reset", data.phone, reset_text(tenant.name, code), ip=client_ip(request))
     is_dev = settings.environment == "development"
     return SendCodeResponse(message=FORGOT_MESSAGE, dev_code=code if (is_dev and staff is not None) else None)
 
@@ -800,7 +803,9 @@ def _wa_out(row, reachable: bool) -> WhatsappStatusOut:
     if row is None:
         return WhatsappStatusOut(state="close", server_reachable=reachable)
     return WhatsappStatusOut(state=row.state, phone=row.phone, profile_name=row.profile_name,
-                             connected_at=row.connected_at, server_reachable=reachable)
+                             connected_at=row.connected_at, server_reachable=reachable, paused=row.paused,
+                             paused_reason=row.paused_reason, disconnect_reason=row.disconnect_reason,
+                             disconnected_at=row.disconnected_at)
 
 
 @router.get("/admin/whatsapp", response_model=WhatsappStatusOut)
@@ -837,12 +842,15 @@ async def admin_whatsapp_test(
     row = await wa_svc.get_row(db, tenant.id)
     if row is None or row.state != "open":
         raise HTTPException(status_code=409, detail="Önce WhatsApp hesabınızı bağlayın")
+    wa_guard.ensure_usable(row)
     try:
         await whatsapp_services.send_text(row.instance_name, to_whatsapp_number(data.phone),
-                                          f"{tenant.name}: WhatsApp bağlantınız çalışıyor. Doğrulama kodları bu numaradan gidecek.")
+                                          f"{tenant.name}: WhatsApp bağlantınız çalışıyor. Doğrulama kodları bu numaradan gidecek.",
+                                          delay_ms=wa_guard.otp_delay_ms())
         ok = True
     except whatsapp_services.EvolutionError:
         ok = False
+    await wa_guard.record_result(db, row, ok=ok)
     db.add(MessageLog(tenant_id=tenant.id, kind="test", ok=ok))
     await db.commit()
     if not ok:

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tenant import Tenant
 from app.models.whatsapp_connection import WhatsappConnection
-from app.services import whatsapp_services as evo
+from app.services import whatsapp_guard as guard, whatsapp_services as evo
 
 UNREACHABLE = "WhatsApp sunucusuna şu an ulaşılamıyor, lütfen biraz sonra tekrar deneyin"
 
@@ -26,7 +26,13 @@ async def is_open(db: AsyncSession, tenant_id: int) -> bool:
     return row is not None and row.state == "open"
 
 
-async def _apply_state(db: AsyncSession, row: WhatsappConnection, state: str) -> None:
+# Evolution/Baileys kopma kodları: 401 = oturum kapatıldı (cihaz telefondan kaldırıldı ya da hesap engellendi),
+# 403 = erişim yasak (çoğunlukla ban). Diğerleri geçici ağ kopmalarıdır.
+BAN_LIKE = {"401": "logged_out", "403": "forbidden"}
+
+
+async def _apply_state(db: AsyncSession, row: WhatsappConnection, state: str, reason: str | None = None,
+                       user_initiated: bool = False) -> None:
     was_open = row.state == "open"
     row.state = state
     if state == "open":
@@ -36,8 +42,21 @@ async def _apply_state(db: AsyncSession, row: WhatsappConnection, state: str) ->
             except evo.EvolutionError:
                 pass
             row.connected_at = row.connected_at if was_open else datetime.now()
+        row.disconnect_reason = row.disconnected_at = None
+        row.consecutive_failures = 0
+        if row.paused and (row.paused_reason or "").startswith(guard.AUTO_PAUSE_PREFIX):
+            row.paused, row.paused_reason, row.paused_at = False, None, None  # yeniden bağlandı: otomatik durdurma kalkar
     elif state == "close":
+        phone = row.phone
         row.phone = row.profile_name = row.connected_at = None
+        if was_open and not user_initiated:
+            # Sahip kesmedi: hat koptu ya da engellendi. Panelde şerit + platforma bildirim.
+            row.disconnect_reason = BAN_LIKE.get(str(reason), reason or "connection_lost")[:60]
+            row.disconnected_at = datetime.now()
+            name = (await db.execute(select(Tenant.name).where(Tenant.id == row.tenant_id))).scalar_one_or_none()
+            kind = "engellenmiş ya da oturumu kapatılmış olabilir" if str(reason) in BAN_LIKE else "bağlantısı koptu"
+            await guard.alert_platform(db, "İşletme WhatsApp'ı koptu",
+                                       f"'{name}' WhatsApp hattı ({phone or '-'}) {kind}. Müşteriler kod alamıyor.")
 
 
 async def refresh(db: AsyncSession, tenant: Tenant) -> tuple[WhatsappConnection | None, bool]:
@@ -85,9 +104,25 @@ async def disconnect(db: AsyncSession, tenant: Tenant) -> WhatsappConnection | N
         await evo.logout(row.instance_name)
     except evo.EvolutionError:
         raise HTTPException(status_code=503, detail=UNREACHABLE)
-    await _apply_state(db, row, "close")
+    await _apply_state(db, row, "close", user_initiated=True)
     await db.commit()
     return row
+
+
+async def health_check(db: AsyncSession) -> int:
+    """Bağlı görünen hatları Evolution'a sorar (webhook kaçırıldıysa kopmayı yakalar). Kopan sayısını döner."""
+    rows = (await db.execute(select(WhatsappConnection).where(WhatsappConnection.state == "open"))).scalars().all()
+    dropped = 0
+    for row in rows:
+        try:
+            state = await evo.connection_state(row.instance_name)
+        except evo.EvolutionError:
+            return dropped  # sunucuya ulaşılamıyor: hatları kopmuş sayma
+        if state != "open":
+            await _apply_state(db, row, state, reason="health_check")
+            dropped += 1
+    await db.commit()
+    return dropped
 
 
 async def handle_webhook(db: AsyncSession, payload: dict) -> None:
@@ -103,5 +138,6 @@ async def handle_webhook(db: AsyncSession, payload: dict) -> None:
     row = (await db.execute(select(WhatsappConnection).where(WhatsappConnection.instance_name == name))).scalar_one_or_none()
     if row is None:
         return
-    await _apply_state(db, row, state)
+    reason = data.get("statusReason") if state == "close" else None
+    await _apply_state(db, row, state, reason=str(reason) if reason is not None else None)
     await db.commit()

@@ -168,3 +168,15 @@ export function formatPhone(input: string): string {
   if (d.length !== 10) return input
   return `0${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 8)} ${d.slice(8)}`
 }
+
+/** WhatsApp hattının kopma nedeni (backend kodu) -> Türkçe. Bilinmeyen kodlar olduğu gibi gösterilir. */
+export function whatsappReasonLabel(reason: string | null | undefined): string {
+  if (!reason) return ''
+  const map: Record<string, string> = {
+    logged_out: 'Oturum kapatıldı (cihaz kaldırılmış ya da hesap engellenmiş olabilir)',
+    forbidden: 'Erişim reddedildi (hesap engellenmiş olabilir)',
+    connection_lost: 'Bağlantı koptu',
+    health_check: 'Periyodik kontrolde bağlantı kapalı bulundu',
+  }
+  return map[reason] ?? reason
+}

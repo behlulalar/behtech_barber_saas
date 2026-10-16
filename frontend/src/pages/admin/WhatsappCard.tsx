@@ -97,6 +97,25 @@ export function WhatsappCard() {
             </p>
           )}
 
+          {s.paused && (
+            <p className="flex items-start gap-2.5 rounded-sm border border-warning/40 bg-warning/5 px-3.5 py-3 text-sm text-warning" role="status">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 break-words">
+                Mesaj gönderimi durduruldu{s.paused_reason ? `: ${s.paused_reason}` : '.'} Destek için bizimle iletişime geçin.
+              </span>
+            </p>
+          )}
+          {!connected && s.disconnect_reason && (
+            <p className="flex items-start gap-2.5 rounded-sm border border-danger/40 bg-danger/5 px-3.5 py-3 text-sm text-danger" role="alert">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 break-words">
+                Bağlantı koptu.
+                {(s.disconnect_reason === 'forbidden' || s.disconnect_reason === 'logged_out') && ' Hesap engellenmiş ya da cihaz telefonunuzdan kaldırılmış olabilir.'}
+                {s.disconnected_at && ` (${formatConnectedAt(s.disconnected_at)})`} Yeniden bağlayın.
+              </span>
+            </p>
+          )}
+
           {connected ? (
             <>
               <div className="min-w-0 text-sm">
@@ -157,6 +176,18 @@ export function WhatsappCard() {
 
 function StateBadge({ s }: { s: WhatsappStatus }) {
   const dot = <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
+  if (s.paused)
+    return (
+      <Badge tone="warning">
+        {dot}Durduruldu
+      </Badge>
+    )
+  if (s.state !== 'open' && s.disconnect_reason)
+    return (
+      <Badge tone="danger">
+        {dot}Koptu
+      </Badge>
+    )
   if (s.state === 'open')
     return (
       <Badge tone="success">
@@ -263,6 +294,7 @@ function ConnectModal({ open, state, onClose, onConnected }: { open: boolean; st
             </Button>
           )}
           <Steps />
+          <RiskTips />
         </div>
       ) : (
         <div className="flex flex-col gap-4 pb-2">
@@ -282,6 +314,7 @@ function ConnectModal({ open, state, onClose, onConnected }: { open: boolean; st
             </div>
           )}
           <Steps pairing />
+          <RiskTips />
         </div>
       )}
     </Modal>
@@ -302,5 +335,18 @@ function Steps({ pairing }: { pairing?: boolean }) {
         <li key={t}>{t}</li>
       ))}
     </ol>
+  )
+}
+
+function RiskTips() {
+  return (
+    <div className="w-full rounded-sm border border-line bg-panel px-3.5 py-3">
+      <p className="text-sm font-medium text-cream">Ban riskini azaltmak için</p>
+      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-muted-strong">
+        <li>Yeni alınmış hat yerine müşterilerinizin kayıtlı olduğu işletme numaranızı kullanın.</li>
+        <li>Mümkünse WhatsApp Business uygulamasını kullanın.</li>
+        <li>Bu numaradan toplu reklam mesajı göndermeyin.</li>
+      </ul>
+    </div>
   )
 }

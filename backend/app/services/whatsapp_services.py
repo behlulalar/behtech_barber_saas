@@ -117,6 +117,22 @@ async def logout(name: str) -> None:
     await _call("DELETE", f"/instance/logout/{name}", ok_statuses=(400, 404))
 
 
-async def send_text(name: str, number: str, message: str) -> None:
-    """Dükkânın kendi instance'ından metin mesajı. v1 (`textMessage.text`) ve v2 (`text`) biçimi birlikte gönderilir."""
-    await _call("POST", f"/message/sendText/{name}", json={"number": number, "text": message, "textMessage": {"text": message}})
+async def send_text(name: str, number: str, message: str, delay_ms: int | None = None) -> None:
+    """Dükkânın kendi instance'ından metin mesajı. v1 (`textMessage.text`) ve v2 (`text`) biçimi birlikte gönderilir.
+    delay_ms: göndermeden önce karşı tarafta "yazıyor..." gösterip bekler (bot görüntüsünü azaltır, ban koruması)."""
+    body: dict = {"number": number, "text": message, "textMessage": {"text": message}}
+    if delay_ms:
+        body["delay"] = int(delay_ms)
+    await _call("POST", f"/message/sendText/{name}", json=body, timeout=10.0 + (delay_ms or 0) / 1000)
+
+
+async def has_whatsapp(name: str, number: str) -> bool | None:
+    """Numara WhatsApp kullanıyor mu? Bilinmiyorsa (sunucu yanıtı beklenmedik) None.
+    WhatsApp'ı olmayan numaralara mesaj denemek ban sinyalidir; gönderimden önce sorulur."""
+    r = await _call("POST", f"/chat/whatsappNumbers/{name}", json={"numbers": [number]}, timeout=6.0)
+    data = _json(r)
+    items = data if isinstance(data, list) else (data.get("numbers") or data.get("response") or []) if isinstance(data, dict) else []
+    for it in items if isinstance(items, list) else []:
+        if isinstance(it, dict) and "exists" in it:
+            return bool(it["exists"])
+    return None

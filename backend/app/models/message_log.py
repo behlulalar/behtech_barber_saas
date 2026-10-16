@@ -14,9 +14,11 @@ class MessageLog(Base):
     tenant_id: Mapped[int | None] = mapped_column(ForeignKey("tenants.id", ondelete="SET NULL"), nullable=True)
     kind: Mapped[str] = mapped_column(String(20))  # otp | password_reset
     ok: Mapped[bool] = mapped_column(Boolean)
+    ip: Mapped[str | None] = mapped_column(String(64), nullable=True)  # yalnızca dışarıdan tetiklenen kodlarda (IP sınırı için)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_message_logs_tenant_created", "tenant_id", "created_at"),
         Index("idx_message_logs_created", "created_at"),
+        Index("idx_message_logs_ip", "ip", "created_at"),
     )

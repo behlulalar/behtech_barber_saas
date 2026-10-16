@@ -2,6 +2,7 @@ import { CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, 
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
+import { WhatsappAlertBanner } from '../components/WhatsappAlertBanner'
 import { Button } from '../components/ui/Button'
 import { authApi } from '../lib/api'
 import { useStaffAuth } from '../lib/auth'
@@ -79,7 +80,12 @@ export default function AdminLayout() {
   return (
     <PanelShell
       banner={imp ? <SupportBanner who={imp.name || imp.phone} readOnly={!!me?.read_only} /> : undefined}
-      notice={<AnnouncementBanner />}
+      notice={
+        <>
+          <WhatsappAlertBanner />
+          <AnnouncementBanner />
+        </>
+      }
       eyebrow="Yönetim"
       brand={tenant.data?.business_name ?? 'Randevu Paneli'}
       nav={nav}

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Database, HardDrive, Play, RefreshCw, TriangleAlert, Workflow } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card, CardHeader } from '../../components/ui/Card'
@@ -11,7 +12,7 @@ import { StatCard } from '../../components/ui/StatCard'
 import { Table, type Column } from '../../components/ui/Table'
 import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
-import { formatNumber } from '../../lib/format'
+import { formatNumber, whatsappReasonLabel } from '../../lib/format'
 import type { JobRun, SystemStatus } from '../../types/api'
 import { StatusMark, type MarkState } from './SystemParts'
 import { formatDateTimeDMY, ServerError } from './platformShared'
@@ -143,8 +144,35 @@ function WhatsappCard({ c, w }: { c: SystemStatus['channels']; w: SystemStatus['
         <Row label="Başarısız (24 sa)">
           <span className={w.failed_24h > 0 ? 'font-medium text-danger' : undefined}>{formatNumber(w.failed_24h)}</span>
         </Row>
-        <Row label="İşletme başına saatlik sınır">{formatNumber(w.hourly_limit)} mesaj</Row>
+        <Row label="Kuyrukta bekleyen">
+          <span className={w.queue_pending > 0 ? 'font-medium text-warning' : undefined}>{formatNumber(w.queue_pending)}</span>
+        </Row>
+        <Row label="İşletme başına saatlik doğrulama kodu tavanı">{formatNumber(w.hourly_limit)} (sistem mesajları sınırsız, sırayla gönderilir)</Row>
       </Rows>
+      {w.alerts.length > 0 && (
+        <>
+          <h3 className="mb-2 mt-5 text-sm font-medium text-cream">Dikkat gerektiren işletmeler</h3>
+          <ul className="divide-y divide-panel-line rounded-sm border border-panel-line">
+            {w.alerts.map((a) => (
+              <li key={`${a.tenant_id}-${a.kind}`} className="flex flex-col gap-1 px-3.5 py-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link to={`/platform/isletmeler/${a.tenant_id}`} className="inline-flex min-h-11 items-center break-words font-medium text-copper-bright hover:underline">
+                    {a.name}
+                  </Link>
+                  <Badge tone={a.kind === 'paused' ? 'warning' : 'danger'}>{a.kind === 'paused' ? 'Durduruldu' : 'Koptu'}</Badge>
+                </div>
+                {(a.reason || a.since) && (
+                  <p className="break-words text-xs text-muted">
+                    {a.kind === 'disconnected' ? whatsappReasonLabel(a.reason) : a.reason}
+                    {a.reason && a.since ? ' · ' : ''}
+                    {a.since ? formatDateTimeDMY(a.since) : ''}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       <h3 className="mb-2 mt-5 text-sm font-medium text-cream">En çok mesaj gönderen 5 işletme (24 sa)</h3>
       <Table
         columns={cols}

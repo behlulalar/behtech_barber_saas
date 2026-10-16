@@ -72,6 +72,13 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 
 ### Aşama D — Sonrası
 - [x] ~~Paket limitleri / özellik bayrakları~~ **KARAR: yapılmayacak** (tek paket, her özellik açık).
+- [x] (2026-10-16) **WhatsApp ban / kötüye kullanım koruması YAPILDI** (`app/services/whatsapp_guard.py`, `whatsapp_queue.py`). İlke: hacmi değil kötüye kullanımı sınırla.
+  - Doğrulama kodu (dışarıdan tetiklenebilen tek mesaj): IP başına saatte 10 / günde 30; dükkân başına saatte 300 / günde 2000 tavan (son çare);
+    **doğrulanmayan kod alarmı** (son 1 saatte 3 dk'dan eski 25+ girilmemiş kod -> gönderim durur + platform bildirimi); WhatsApp'ı olmayan numaraya gönderilmez (Evolution `whatsappNumbers`, 24 sa önbellek);
+    1-2 sn "yazıyor" beklemesi; metin 3 kalıptan dönüşümlü; mesajda link yok.
+  - Sistem mesajları (onay/iptal/hatırlatma/personel): **sınırsız, kuyrukta** (`outbound_messages`), aynı numaradan 3-8 sn rastgele aralık, 1,5-3,5 sn "yazıyor", hatırlatmalar 22:00-08:30 arası bekler, 3 denemede üstel geri çekilme, bağlantı yoksa 24 sa bekler sonra iptal, gönderilince telefon/metin silinir. Çok worker'da güvenli (SKIP LOCKED).
+  - Hat sağlığı: arka arkaya 5 hatada otomatik durdurma (yeniden bağlanınca kalkar); kopma/ban tespiti (webhook `statusReason` 401/403 + 5 dk'da bir sağlık kontrolü) -> sahip panelinde kapatılamaz kırmızı şerit + platforma push/e-posta; platformda dükkân başına "Gönderimi durdur" anahtarı (denetim kaydı); Sistem sayfasında kuyruk ve uyarı listesi; 90 günden eski mesaj kayıtları silinir.
+  - **Kalan:** onay/iptal/hatırlatma mesajlarının kendisi henüz üretilmiyor (kuyruk hazır, `whatsapp_queue.enqueue` ile bağlanacak — bkz. §3 randevu hatırlatma); CAPTCHA yok (gerekirse Cloudflare Turnstile); süreç içi önbellek ve "yazıyor" aralığı worker başına; resmi WhatsApp Cloud API'ye geçiş seçeneği değerlendirilmedi.
 - [x] (2026-10-16) **WhatsApp durum paneli + işletme başına saatlik hız sınırı YAPILDI** (`message_logs`, `WHATSAPP_TENANT_HOURLY_LIMIT`=60, Sistem sayfasında bağlantı durumu/24 sa sayıları/en çok gönderen 5 işletme). **Kalan:** Evolution `connectionState` yanıt biçimi canlıda doğrulanmadı (tahmin); `message_logs` temizliği (eski kayıtlar silinmiyor); yalnızca OTP/şifre sıfırlama kayıtlı (ileride hatırlatma mesajları da).
 - [x] (2026-10-16) **Duyuru YAPILDI** (`/platform/duyurular`; tümü/seçili işletme, başlangıç-bitiş tarihi, bilgi/uyarı; işletme panelinde kapatılabilir banner, kapatma tarayıcıda hatırlanır). WhatsApp ile gönderim bilerek YOK.
 - [ ] **P2 Makbuz/fatura:** şimdilik PDF makbuz; resmileşince e-fatura entegrasyonu (GİB özel entegratör / Paraşüt vb.) ve online ödeme (iyzico/PayTR).

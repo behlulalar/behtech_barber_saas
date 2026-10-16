@@ -39,7 +39,7 @@ async def test_fixed_code_only_honoured_in_development(api, shop, monkeypatch):
     # production'da sabit kod yok sayılır ve dev_code sızdırılmaz
     monkeypatch.setattr(settings, "environment", "production")
 
-    async def _no_delivery(db, tenant_id, kind, phone, text):  # gerçek Evolution'a gitme
+    async def _no_delivery(db, tenant_id, kind, phone, text, **kw):  # gerçek Evolution'a gitme
         return None
 
     monkeypatch.setattr("app.api.public.deliver_code", _no_delivery)

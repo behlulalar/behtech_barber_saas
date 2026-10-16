@@ -169,10 +169,20 @@ class WhatsappTenantUsage(BaseModel):
     failed: int
 
 
+class WhatsappAlert(BaseModel):
+    tenant_id: int
+    name: str
+    kind: str  # paused | disconnected
+    reason: str | None = None
+    since: datetime | None = None
+
+
 class WhatsappStats(BaseModel):
     sent_24h: int
     failed_24h: int
-    hourly_limit: int  # işletme başına saatlik üst sınır
+    hourly_limit: int  # işletme başına saatlik doğrulama kodu tavanı (sistem mesajları sınırsız, kuyrukta)
+    queue_pending: int = 0
+    alerts: list[WhatsappAlert] = []  # durdurulan / kopan işletme hatları
     top_tenants: list[WhatsappTenantUsage]  # son 24 saatte en çok mesaj gönderen işletmeler
 
 

@@ -11,6 +11,11 @@ class WhatsappStatusOut(BaseModel):
     profile_name: str | None = None
     connected_at: datetime | None = None
     server_reachable: bool  # Evolution sunucusuna (platform altyapısı) ulaşılabildi mi
+    paused: bool = False  # true: bu dükkândan hiç mesaj gitmez (platform ya da otomatik koruma durdurdu)
+    paused_reason: str | None = None
+    # Sahip kesmeden kopma: 'logged_out' | 'forbidden' (ban şüphesi) | 'connection_lost' | 'health_check' | Evolution kodu
+    disconnect_reason: str | None = None
+    disconnected_at: datetime | None = None
 
 
 class WhatsappConnectIn(BaseModel):
@@ -25,3 +30,20 @@ class WhatsappConnectOut(WhatsappStatusOut):
 
 class WhatsappTestIn(BaseModel):
     phone: Phone
+
+
+class PlatformWhatsappOut(WhatsappStatusOut):
+    """Platform panelinde dükkânın WhatsApp hattı: durum + koruma göstergeleri."""
+    instance_name: str | None = None
+    consecutive_failures: int = 0
+    sent_24h: int = 0
+    failed_24h: int = 0
+    queue_pending: int = 0
+    unverified_last_hour: int = 0  # gönderilip girilmeyen müşteri kodu (kötüye kullanım sinyali)
+    breaker_threshold: int = 0
+    abuse_alerted_at: datetime | None = None
+
+
+class WhatsappPauseIn(BaseModel):
+    paused: bool
+    reason: str | None = None

@@ -12,13 +12,14 @@ from app.models.audit_log import AuditLog
 from app.models.job_run import JobRun
 from app.models.login_attempt import LoginAttempt
 from app.models.message_log import MessageLog
+from app.models.outbound_message import OutboundMessage
 from app.models.whatsapp_connection import WhatsappConnection
 from app.models.platform_admin import PlatformAdmin
 from app.models.push_subscription import PushSubscription
 from app.models.tenant import Tenant
 from app.schemas.platform import (
     BackupStatus, BillingJobStatus, ChannelsStatus, CountsStatus, DbStatus, SystemStatus, WhatsappStats,
-    WhatsappTenantUsage,
+    WhatsappTenantUsage, WhatsappAlert,
 )
 from app.services import notify_services
 from app.services.job_services import BILLING_JOB, job_run_out
@@ -68,8 +69,21 @@ async def _whatsapp_stats(db: AsyncSession, since: datetime) -> WhatsappStats:
         .group_by(MessageLog.tenant_id, Tenant.name)
         .order_by(func.count(MessageLog.id).desc()).limit(5)
     )).all()
+    alert_rows = (await db.execute(
+        select(WhatsappConnection, Tenant.name).join(Tenant, Tenant.id == WhatsappConnection.tenant_id)
+        .where((WhatsappConnection.paused == True) | (WhatsappConnection.disconnect_reason.is_not(None)))  # noqa: E712
+        .order_by(Tenant.name)
+    )).all()
+    alerts = [
+        WhatsappAlert(tenant_id=r.tenant_id, name=n, kind="paused" if r.paused else "disconnected",
+                      reason=r.paused_reason if r.paused else r.disconnect_reason,
+                      since=r.paused_at if r.paused else r.disconnected_at)
+        for r, n in alert_rows
+    ]
+    pending = (await db.execute(select(func.count()).select_from(OutboundMessage).where(OutboundMessage.status == "pending"))).scalar_one()
     return WhatsappStats(
         sent_24h=sent, failed_24h=failed, hourly_limit=settings.whatsapp_tenant_hourly_limit,
+        queue_pending=pending, alerts=alerts,
         top_tenants=[WhatsappTenantUsage(tenant_id=t, name=n or "(silinmiş işletme)", sent=o, failed=b) for t, n, o, b in rows],
     )
 

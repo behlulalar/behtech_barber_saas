@@ -34,8 +34,23 @@ class Settings(BaseSettings):
     smtp_from: str | None = None
     smtp_starttls: bool = True
     # Giriş denemesi sınırı: aynı hesap için LOGIN_LOCK_MINUTES içinde LOGIN_MAX_FAILURES hatalı deneme kilitler.
-    # İşletme başına saatlik WhatsApp (OTP) mesaj üst sınırı: bir işletme spam yaparsa ortak hat yanmasın.
-    whatsapp_tenant_hourly_limit: int = 60
+    # --- WhatsApp ban / kötüye kullanım koruması (yalnızca dışarıdan tetiklenen doğrulama kodlarına uygulanır;
+    # onay/iptal/hatırlatma gibi sistem mesajları kuyrukta aralıklı gider, ASLA düşürülmez) ---
+    # Dükkân başına saatlik/günlük doğrulama kodu tavanı (son çare güvenlik sınırı; normal kullanımda erişilmez).
+    whatsapp_tenant_hourly_limit: int = 300
+    whatsapp_tenant_daily_limit: int = 2000
+    # Aynı IP'den doğrulama kodu isteği (saatlik / günlük).
+    otp_ip_hourly_limit: int = 10
+    otp_ip_daily_limit: int = 30
+    # Doğrulanmayan kod alarmı: son 1 saatte bu kadar kod gönderilip girilmediyse gönderim geçici durur.
+    otp_unverified_breaker: int = 25
+    # Arka arkaya bu kadar başarısız gönderimde dükkânın gönderimi otomatik durur.
+    whatsapp_failure_pause: int = 5
+    # Kuyruk: aynı numaradan iki mesaj arası rastgele boşluk (saniye).
+    whatsapp_queue_gap_min: float = 3.0
+    whatsapp_queue_gap_max: float = 8.0
+    # Kuyruk ve sağlık kontrolü uygulama içinde çalışsın mı (testlerde kapalı).
+    whatsapp_worker_enabled: bool = True
     login_max_failures: int = 5
     login_lock_minutes: int = 15
     # Reverse proxy (nginx) arkasında True yapın: IP, X-Forwarded-For'un ilk değerinden alınır.

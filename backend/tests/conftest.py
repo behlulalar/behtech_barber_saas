@@ -23,6 +23,7 @@ os.environ["ENVIRONMENT"] = "development"
 os.environ["OTP_FIXED_CODE"] = ""  # boş: rastgele OTP
 os.environ["DAILY_APPOINTMENT_LIMIT"] = "50"
 os.environ["BASE_DOMAIN"] = "behtechlabs.com"
+os.environ["WHATSAPP_WORKER_ENABLED"] = "false"  # testlerde arka plan işçisi yok; kuyruk process_one ile elle işlenir
 # .env yoksa bile ayarlar yüklensin (varsa .env değerleri yine de ortam değişkeninden sonra gelir)
 for _k, _v in {
     "JWT_SECRET": "test-secret-not-for-production-use-0123456789",

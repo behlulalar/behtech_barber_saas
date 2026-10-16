@@ -357,6 +357,31 @@ export interface WhatsappStatus {
   profile_name: string | null
   connected_at: string | null
   server_reachable: boolean
+  /** Platform gönderimi durdurdu. */
+  paused: boolean
+  paused_reason: string | null
+  /** Dolu: sahip kesmeden hat koptu ('logged_out' | 'forbidden' | 'connection_lost' | 'health_check' | ...). */
+  disconnect_reason: string | null
+  disconnected_at: string | null
+}
+
+export interface PlatformWhatsapp extends WhatsappStatus {
+  instance_name: string | null
+  consecutive_failures: number
+  sent_24h: number
+  failed_24h: number
+  queue_pending: number
+  unverified_last_hour: number
+  breaker_threshold: number
+  abuse_alerted_at: string | null
+}
+
+export interface WhatsappAlert {
+  tenant_id: number
+  name: string
+  kind: 'paused' | 'disconnected'
+  reason: string | null
+  since: string | null
 }
 
 export interface WhatsappConnectOut extends WhatsappStatus {
@@ -823,6 +848,8 @@ export interface SystemStatus {
     sent_24h: number
     failed_24h: number
     hourly_limit: number
+    queue_pending: number
+    alerts: WhatsappAlert[]
     top_tenants: { tenant_id: number | null; name: string; sent: number; failed: number }[]
   }
   counts: {

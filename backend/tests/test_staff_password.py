@@ -181,6 +181,8 @@ async def test_deliver_uses_the_shops_own_instance(monkeypatch, shop, shop2):
     seen = []
 
     def handler(request: httpx.Request):
+        if "/chat/whatsappNumbers/" in request.url.path:
+            return httpx.Response(200, json=[{"exists": True, "number": "905551234567"}])
         seen.append((str(request.url), request.headers["apikey"], request.content.decode()))
         return httpx.Response(201, json={"ok": True})
 
@@ -217,7 +219,7 @@ async def test_deliver_failure_is_503(monkeypatch, shop, failure):
 async def test_customer_send_code_uses_delivery_and_503s(api, shop, monkeypatch):
     sent = []
 
-    async def ok(db, tenant_id, kind, phone, text):
+    async def ok(db, tenant_id, kind, phone, text, **kw):
         sent.append((phone, text))
 
     monkeypatch.setattr("app.api.public.deliver_code", ok)
@@ -226,7 +228,7 @@ async def test_customer_send_code_uses_delivery_and_503s(api, shop, monkeypatch)
     assert r.status_code == 200 and r.json()["dev_code"] is None  # üretimde kod yanıtta dönmez
     assert len(sent) == 1 and "5551234567" == sent[0][0]
 
-    async def boom(db, tenant_id, kind, phone, text):
+    async def boom(db, tenant_id, kind, phone, text, **kw):
         from fastapi import HTTPException
         raise HTTPException(status_code=503, detail=otp_delivery.DELIVERY_FAILED)
 
@@ -238,7 +240,7 @@ async def test_customer_send_code_uses_delivery_and_503s(api, shop, monkeypatch)
 async def test_forgot_delivers_only_for_existing_staff(api, shop, monkeypatch):
     sent = []
 
-    async def ok(db, tenant_id, kind, phone, text):
+    async def ok(db, tenant_id, kind, phone, text, **kw):
         sent.append(phone)
 
     monkeypatch.setattr("app.api.admin.deliver_code", ok)

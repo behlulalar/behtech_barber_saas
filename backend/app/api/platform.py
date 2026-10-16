@@ -39,7 +39,9 @@ from app.schemas.platform import (
     TenantUpdate,
 )
 from app.schemas.announcement import AnnouncementIn, AnnouncementOut, AnnouncementUpdate
+from app.schemas.whatsapp import PlatformWhatsappOut, WhatsappPauseIn
 from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantPage
+from app.services import whatsapp_admin_services as whatsapp_admin
 from app.services import (
     announcement_services,
     audit_services,
@@ -286,6 +288,22 @@ async def platform_delete_announcement(
 ):
     await announcement_services.delete_one(db, announcement_id, admin, request)
     return Response(status_code=204)
+
+
+@router.get("/tenants/{tenant_id}/whatsapp", response_model=PlatformWhatsappOut)
+async def platform_tenant_whatsapp(
+    tenant_id: int, admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)
+):
+    return await whatsapp_admin.platform_status(db, tenant_id)
+
+
+@router.post("/tenants/{tenant_id}/whatsapp/pause", response_model=PlatformWhatsappOut)
+async def platform_tenant_whatsapp_pause(
+    tenant_id: int, data: WhatsappPauseIn, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    """Kötüye kullanımda dükkânın tüm WhatsApp gönderimini elle durdurur / yeniden açar."""
+    return await whatsapp_admin.set_paused(db, tenant_id, data.paused, data.reason, admin, request)
 
 
 @router.get("/tenants/options", response_model=list[TenantOption])

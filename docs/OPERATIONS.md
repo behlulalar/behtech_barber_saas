@@ -38,7 +38,12 @@ Hazır örnek: [`deploy/crontab.example`](../deploy/crontab.example). Özet:
 | `BACKUP_RETENTION_DAYS` | - | Yedeklerin saklanma süresi (gün) |
 | `EVOLUTION_API_BASE_URL`, `EVOLUTION_API_KEY` | - | Evolution sunucusu (platform altyapısı) adresi ve anahtarı |
 | `EVOLUTION_WEBHOOK_URL`, `EVOLUTION_WEBHOOK_SECRET` | yok | Dükkân WhatsApp bağlantı olaylarının geleceği adres ve `?token=` anahtarı; yoksa durum yalnızca panel açıldığında yenilenir |
-| `WHATSAPP_TENANT_HOURLY_LIMIT` | 60 | Bir işletmenin saatte gönderebileceği en çok doğrulama/şifre sıfırlama mesajı (aşılırsa 429); ortak WhatsApp hattını spam'den korur |
+| `WHATSAPP_TENANT_HOURLY_LIMIT` / `WHATSAPP_TENANT_DAILY_LIMIT` | 300 / 2000 | Dükkân başına doğrulama kodu tavanı (son çare). Onay/hatırlatma gibi sistem mesajları SINIRSIZ, kuyrukta aralıklı gider |
+| `OTP_IP_HOURLY_LIMIT` / `OTP_IP_DAILY_LIMIT` | 10 / 30 | Aynı IP'den doğrulama kodu isteği |
+| `OTP_UNVERIFIED_BREAKER` | 25 | Son 1 saatte girilmeyen kod eşiği; aşılınca kod gönderimi durur, platforma bildirim gider |
+| `WHATSAPP_FAILURE_PAUSE` | 5 | Arka arkaya başarısız gönderimde dükkânın gönderimi otomatik durur (yeniden bağlanınca kalkar) |
+| `WHATSAPP_QUEUE_GAP_MIN` / `_MAX` | 3 / 8 | Kuyrukta aynı numaradan iki mesaj arası rastgele boşluk (sn) |
+| `WHATSAPP_WORKER_ENABLED` | true | Kuyruk + 5 dk'lık hat sağlık kontrolü uygulama içinde çalışır |
 
 **Giriş kilidi:** aynı telefon (personelde telefon + işletme) için pencere içinde `LOGIN_MAX_FAILURES` hatalı
 deneme, ya da aynı IP'den 30'dan fazla hatalı deneme hesabı kilitler; kilitliyken doğru şifre de reddedilir
