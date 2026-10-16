@@ -515,6 +515,7 @@ iyi bir çalışma malzemesi.
       2026-10-16: Gizli panel giriş adresi (`/panel/g/<anahtar>`, backend'de zorunlu) + işletme paneli PWA (kurulabilir uygulama).
       Sırada: 2FA (TOTP) — önce platform yöneticileri.
       2026-10-16: Platform 2FA (TOTP + yedek kodlar; production'da zorunlu, kurtarma: başka yönetici ya da `scripts/reset_platform_2fa.py`).
+      2026-10-16: WhatsApp bildirimleri (onay, iptal [müşteri/işletme], 1 saat kala hatırlatma, berbere bilgi, karşılama; kuyrukla, her türde >=3 metin).
       **Açık kalanlar:** (giriş sınırı artık var;)
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

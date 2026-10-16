@@ -10,6 +10,16 @@ import httpx
 from app.core.config import settings
 
 
+def to_whatsapp_number(phone: str) -> str:
+    """5XXXXXXXXX -> 905XXXXXXXXX (uluslararası biçim, '+' olmadan)."""
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    if len(digits) == 10 and digits.startswith("5"):
+        return "90" + digits
+    if len(digits) == 11 and digits.startswith("05"):
+        return "9" + digits
+    return digits
+
+
 class EvolutionError(Exception):
     """Evolution'a ulaşılamadı ya da beklenmeyen yanıt verdi."""
 
@@ -55,7 +65,7 @@ def _webhook() -> dict | None:
         "url": f"{settings.evolution_webhook_url}{sep}token={settings.evolution_webhook_secret}",
         "byEvents": False,
         "base64": False,
-        "events": ["CONNECTION_UPDATE"],
+        "events": ["CONNECTION_UPDATE", "MESSAGES_UPSERT"],
     }
 
 
@@ -78,6 +88,13 @@ async def create_instance(name: str) -> None:
     if r.status_code in (403, 409):  # "This name is already in use" -> var, devam
         if hook:
             await _call("POST", f"/webhook/set/{name}", json={"webhook": hook}, ok_statuses=(400, 404))
+
+
+async def ensure_webhook(name: str) -> None:
+    """Var olan instance'ın webhook'unu güncel olay listesiyle (bağlantı + gelen mesaj) ayarlar. Webhook ayarsızsa sessizce geçer."""
+    hook = _webhook()
+    if hook:
+        await _call("POST", f"/webhook/set/{name}", json={"webhook": hook}, ok_statuses=(400, 404))
 
 
 async def connect(name: str, number: str | None = None) -> tuple[str | None, str | None]:

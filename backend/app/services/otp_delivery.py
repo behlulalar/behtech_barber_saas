@@ -10,22 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.message_log import MessageLog
 from app.services import whatsapp_connection_services, whatsapp_guard as guard, whatsapp_services
+from app.services.whatsapp_services import to_whatsapp_number  # noqa: F401  (diğer modüller buradan da alır)
 
 logger = logging.getLogger(__name__)
 
 DELIVERY_FAILED = "Doğrulama kodu şu an gönderilemiyor, lütfen tekrar deneyin"
 NOT_CONNECTED = "Bu işletmenin WhatsApp bağlantısı kurulu değil, doğrulama kodu gönderilemiyor. Lütfen işletmeyi arayın"
 TENANT_LIMITED = guard.TENANT_LIMITED
-
-
-def to_whatsapp_number(phone: str) -> str:
-    """5XXXXXXXXX -> 905XXXXXXXXX (uluslararası biçim, '+' olmadan)."""
-    digits = "".join(ch for ch in phone if ch.isdigit())
-    if len(digits) == 10 and digits.startswith("5"):
-        return "90" + digits
-    if len(digits) == 11 and digits.startswith("05"):
-        return "9" + digits
-    return digits
 
 
 async def _send(db: AsyncSession, tenant_id: int | None, phone: str, text_: str) -> None:

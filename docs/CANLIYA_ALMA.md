@@ -126,6 +126,7 @@ Evolution sunucusu platformun altyapısıdır (repo dışında `../evolution-api
 - [ ] Evolution **v2.3.7+** kullanın (v2.1.1 güncel WhatsApp Web sürümüyle QR üretemiyordu; 2026-10-16'da yükseltildi). Docker, güçlü `AUTHENTICATION_API_KEY`, dışarıya KAPALI (`127.0.0.1:8080`, yalnızca backend erişir).
 - [ ] Backend `.env`: `EVOLUTION_API_BASE_URL`, `EVOLUTION_API_KEY` (= Evolution'ın `AUTHENTICATION_API_KEY`), `EVOLUTION_WEBHOOK_URL` (canlıda Evolution'ın backend'e ulaştığı iç adres, ör. `http://127.0.0.1:8001/api/webhooks/evolution`), `EVOLUTION_WEBHOOK_SECRET` (uzun rastgele). `EVOLUTION_INSTANCE_NAME` artık kullanılmıyor.
 - [ ] Webhook yolu Nginx'te dışarı AÇILMAMALI ya da yalnızca token ile çalıştığından emin olun (token yoksa 401).
+- [ ] **Mesaj akışları uçtan uca** (gerçek telefonla): randevu al → onay + berbere bilgi geldi mi; iptal (müşteri ve işletme); 1 saat kala hatırlatma; dükkân numarasına başka bir telefondan yaz → karşılama (ikinci yazışta gelmemeli). Mevcut instance'ların webhook'u `health_check` ile `MESSAGES_UPSERT`'e abone edilir (5 dk içinde).
 - [ ] İlk dükkânda uçtan uca deneme: WhatsApp Bağlantısı sayfasında "WhatsApp'ı bağla" → telefondan okut → durum "Bağlı" → "Test mesajı gönder" → müşteri sitesinden kod iste.
 - [ ] Platform → Sistem: "Evolution sunucusu: Erişilebilir", "WhatsApp'ı bağlı işletme: N".
 - [ ] Ban riski artık dükkân başına (her biri kendi numarası); işletme başına saatlik sınır (`WHATSAPP_TENANT_HOURLY_LIMIT`) yine geçerli.

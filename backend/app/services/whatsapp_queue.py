@@ -16,11 +16,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import SessionFactory
+from app.models.appointment import Appointment, AppointmentStatus
 from app.models.message_log import MessageLog
 from app.models.outbound_message import OutboundMessage
 from app.models.whatsapp_connection import WhatsappConnection
-from app.services import whatsapp_connection_services, whatsapp_guard as guard, whatsapp_services
-from app.services.otp_delivery import to_whatsapp_number
+from app.services import appointment_notifications, whatsapp_connection_services, whatsapp_guard as guard, whatsapp_services
+from app.services.whatsapp_services import to_whatsapp_number
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +42,26 @@ def _after_quiet(now: datetime) -> datetime:
     return now
 
 
-async def enqueue(db: AsyncSession, tenant_id: int, kind: str, phone: str, body: str,
-                  not_before: datetime | None = None) -> OutboundMessage:
-    """Mesajı sıraya koyar (commit ÇAĞIRANDA). phone: 10 haneli 5XXXXXXXXX."""
-    when = not_before or datetime.now()
+# Bayat mesaj gitmesin: hat bir süre kopuk kalıp dönünce eski onay/hatırlatmalar toplu yağmasın.
+TTL = {"confirm": timedelta(hours=2), "cancel_customer": timedelta(hours=2), "cancel_shop": timedelta(hours=2),
+       "staff_new": timedelta(hours=2), "staff_cancel": timedelta(hours=2), "reminder": timedelta(minutes=30),
+       "welcome": timedelta(minutes=10)}
+APPOINTMENT_KINDS = {"confirm", "reminder", "staff_new"}  # randevu iptal edildiyse gönderilmez
+
+
+async def enqueue(db: AsyncSession, tenant_id: int, kind: str, phone: str | None, body: str,
+                  not_before: datetime | None = None, appointment_id: int | None = None,
+                  to_number: str | None = None) -> OutboundMessage:
+    """Mesajı sıraya koyar (commit ÇAĞIRANDA). phone: 10 haneli 5XXXXXXXXX; to_number verilirse (ör. @lid kimliği) o kullanılır."""
+    now = datetime.now()
+    when = not_before or now
     if kind in QUIET_KINDS:
         when = _after_quiet(when)
-    msg = OutboundMessage(tenant_id=tenant_id, kind=kind, to_phone=to_whatsapp_number(phone), body=body, not_before=when)
+    ttl = TTL.get(kind)
+    msg = OutboundMessage(
+        tenant_id=tenant_id, kind=kind, to_phone=to_number or to_whatsapp_number(phone or ""), body=body, not_before=when,
+        expires_at=(when + ttl) if ttl else None, appointment_id=appointment_id,
+    )
     db.add(msg)
     return msg
 
@@ -62,6 +76,7 @@ async def process_one(db: AsyncSession) -> bool:
         .where(
             OutboundMessage.status == "pending",
             OutboundMessage.not_before <= now,
+            or_(OutboundMessage.expires_at.is_(None), OutboundMessage.expires_at > now),
             WhatsappConnection.state == "open",
             WhatsappConnection.paused == False,  # noqa: E712
             or_(WhatsappConnection.last_sent_at.is_(None), WhatsappConnection.last_sent_at <= now - gap_min),
@@ -79,10 +94,17 @@ async def process_one(db: AsyncSession) -> bool:
         await db.rollback()  # başka worker bu numaradan az önce gönderdi
         return False
 
+    if msg.appointment_id and msg.kind in APPOINTMENT_KINDS:
+        status = (await db.execute(select(Appointment.status).where(Appointment.id == msg.appointment_id))).scalar_one_or_none()
+        if status != AppointmentStatus.CONFIRMED:  # iptal/silinmiş: eski onay ya da hatırlatma gitmesin
+            msg.status, msg.error, msg.to_phone, msg.body = "cancelled", "appointment_not_active", None, None
+            await db.commit()
+            return True
+
     ok = True
     try:
-        exists = guard.cached_has_whatsapp(msg.to_phone)
-        if exists is None:
+        exists = guard.cached_has_whatsapp(msg.to_phone) if "@" not in msg.to_phone else None
+        if exists is None and "@" not in msg.to_phone:
             try:
                 exists = await whatsapp_services.has_whatsapp(row.instance_name, msg.to_phone)
                 if exists is not None:
@@ -121,6 +143,11 @@ async def housekeeping(db: AsyncSession) -> None:
     now = datetime.now()
     await db.execute(
         update(OutboundMessage)
+        .where(OutboundMessage.status == "pending", OutboundMessage.expires_at.is_not(None), OutboundMessage.expires_at < now)
+        .values(status="cancelled", error="expired", to_phone=None, body=None)
+    )
+    await db.execute(
+        update(OutboundMessage)
         .where(OutboundMessage.status == "pending", OutboundMessage.created_at < now - EXPIRE_AFTER)
         .values(status="cancelled", error="expired", to_phone=None, body=None)
     )
@@ -135,8 +162,13 @@ async def housekeeping(db: AsyncSession) -> None:
 async def run_worker(stop: asyncio.Event) -> None:
     """Uygulama ayaktayken çalışır: kuyruğu işler, 5 dk'da bir hat sağlığı ve temizlik."""
     last_health = datetime.min
+    last_reminders = datetime.min
     while not stop.is_set():
         try:
+            if datetime.now() - last_reminders >= timedelta(seconds=60):
+                last_reminders = datetime.now()
+                async with SessionFactory() as db:
+                    await appointment_notifications.enqueue_due_reminders(db)
             async with SessionFactory() as db:
                 worked = await process_one(db)
             if datetime.now() - last_health >= HEALTH_EVERY:

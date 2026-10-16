@@ -26,3 +26,4 @@ from app.models.announcement import Announcement, AnnouncementTarget
 from app.models.whatsapp_connection import WhatsappConnection
 from app.models.outbound_message import OutboundMessage
 from app.models.platform_admin import PlatformBackupCode
+from app.models.welcome_contact import WelcomeContact

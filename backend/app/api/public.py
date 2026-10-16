@@ -32,7 +32,7 @@ from app.services.appointment_services import (
     get_available_slots,
     lock_staff_schedule,
 )
-from app.services import signup_services, whatsapp_connection_services
+from app.services import appointment_notifications, signup_services, whatsapp_connection_services
 from app.services.consent_services import require_customer_consent
 from app.services.customer_services import get_or_create_customer
 from app.core.net import client_ip
@@ -170,7 +170,7 @@ async def send_code_route(
     await require_customer_consent(db, tenant.id, data.phone, data.kvkk_accepted, request)
     code = await send_code(db, tenant.id, data.phone)
     # Geliştirmede no-op (kod dev_code ile döner); üretimde WhatsApp, başarısızsa 503.
-    await deliver_code(db, tenant.id, "otp", data.phone, otp_text(tenant.name, code), ip=client_ip(request))
+    await deliver_code(db, tenant.id, "otp", data.phone, otp_text(tenant.name, code, tenant.id), ip=client_ip(request))
     is_dev = settings.environment == "development"
     return SendCodeResponse(message="Doğrulama kodu gönderildi", dev_code=code if is_dev else None)
 
@@ -271,6 +271,7 @@ async def appointment_create(
         await db.rollback()
         raise HTTPException(status_code=409, detail="Bu saat artık müsait değil, lütfen başka bir saat seçin")
     await db.refresh(appointment)
+    await appointment_notifications.on_created(db, tenant, appointment)
     return _to_public(appointment, service, staff)
 
 
@@ -323,6 +324,7 @@ async def customer_cancel_appointment(
     appointment.status = AppointmentStatus.CANCELLED
     await db.commit()
     await db.refresh(appointment)
+    await appointment_notifications.on_cancelled(db, tenant, appointment, by="customer")
     return _to_public(appointment, service, staff)
 
 

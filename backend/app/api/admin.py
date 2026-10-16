@@ -51,7 +51,7 @@ from app.core.net import client_ip
 from app.services.otp_delivery import deliver_code
 from app.services.whatsapp_texts import reset_text
 from app.services import report_services
-from app.services import announcement_services, platform_services, whatsapp_connection_services as wa_svc
+from app.services import appointment_notifications, announcement_services, platform_services, whatsapp_connection_services as wa_svc
 from app.services import whatsapp_guard as wa_guard, whatsapp_services
 from app.services.otp_delivery import to_whatsapp_number
 from app.schemas.whatsapp import WhatsappConnectIn, WhatsappConnectOut, WhatsappStatusOut, WhatsappTestIn
@@ -194,7 +194,7 @@ async def forgot_send_code(
     ).scalar_one_or_none()
     code = await otp_services.send_code(db, tenant.id, data.phone, purpose=otp_services.RESET_PURPOSE)
     if staff is not None:
-        await deliver_code(db, tenant.id, "password_reset", data.phone, reset_text(tenant.name, code), ip=client_ip(request))
+        await deliver_code(db, tenant.id, "password_reset", data.phone, reset_text(tenant.name, code, tenant.id), ip=client_ip(request))
     is_dev = settings.environment == "development"
     return SendCodeResponse(message=FORGOT_MESSAGE, dev_code=code if (is_dev and staff is not None) else None)
 
@@ -346,6 +346,8 @@ async def create_appointment(
     )
     db.add(appt)
     await svc.commit_or_409(db, svc.SLOT_TAKEN)
+    tenant = (await db.execute(select(Tenant).where(Tenant.id == tid))).scalar_one()
+    await appointment_notifications.on_created(db, tenant, appt, actor=current)
     return await svc.get_appointment_out(db, tid, appt.id)
 
 
@@ -378,10 +380,16 @@ async def update_appointment(
                 db, tid, appt.staff_id, appt.appointment_date, appt.appointment_time, duration, exclude_id=appt.id
             ):
                 raise HTTPException(status_code=409, detail=SLOT_MSG)
+        was_active = appt.status == AppointmentStatus.CONFIRMED
         appt.status = data.status
+    else:
+        was_active = False
     if "payment_method" in fields:
         appt.payment_method = data.payment_method or None
     await svc.commit_or_409(db, SLOT_MSG)
+    if was_active and appt.status == AppointmentStatus.CANCELLED:
+        tenant = (await db.execute(select(Tenant).where(Tenant.id == tid))).scalar_one()
+        await appointment_notifications.on_cancelled(db, tenant, appt, by="shop", actor=current)
     return await svc.get_appointment_out(db, tid, appointment_id)
 
 

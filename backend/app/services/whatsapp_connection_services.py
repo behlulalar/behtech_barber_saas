@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tenant import Tenant
 from app.models.whatsapp_connection import WhatsappConnection
-from app.services import whatsapp_guard as guard, whatsapp_services as evo
+from app.services import welcome_services, whatsapp_guard as guard, whatsapp_services as evo
 
 UNREACHABLE = "WhatsApp sunucusuna şu an ulaşılamıyor, lütfen biraz sonra tekrar deneyin"
 
@@ -109,12 +109,18 @@ async def disconnect(db: AsyncSession, tenant: Tenant) -> WhatsappConnection | N
     return row
 
 
+_HOOKED: set[str] = set()
+
+
 async def health_check(db: AsyncSession) -> int:
     """Bağlı görünen hatları Evolution'a sorar (webhook kaçırıldıysa kopmayı yakalar). Kopan sayısını döner."""
     rows = (await db.execute(select(WhatsappConnection).where(WhatsappConnection.state == "open"))).scalars().all()
     dropped = 0
     for row in rows:
         try:
+            if row.instance_name not in _HOOKED:  # süreç başına bir kez: eski instance'lar gelen mesaj olayına abone olsun
+                await evo.ensure_webhook(row.instance_name)
+                _HOOKED.add(row.instance_name)
             state = await evo.connection_state(row.instance_name)
         except evo.EvolutionError:
             return dropped  # sunucuya ulaşılamıyor: hatları kopmuş sayma
@@ -128,6 +134,12 @@ async def health_check(db: AsyncSession) -> int:
 async def handle_webhook(db: AsyncSession, payload: dict) -> None:
     """CONNECTION_UPDATE: {"event": "connection.update", "instance": "<ad>", "data": {"state": "open", ...}}."""
     event = str(payload.get("event") or "").lower().replace("_", ".")
+    if event == "messages.upsert":
+        name = payload.get("instance")
+        row = (await db.execute(select(WhatsappConnection).where(WhatsappConnection.instance_name == name))).scalar_one_or_none() if name else None
+        if row is not None:
+            await welcome_services.handle_inbound(db, row, payload)
+        return
     if event != "connection.update":
         return
     data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
