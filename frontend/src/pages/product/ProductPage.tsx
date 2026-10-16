@@ -69,6 +69,31 @@ const btnBase =
 const btnPrimary = `${btnBase} bg-copper text-on-accent hover:bg-copper-bright`
 const btnGhost = `${btnBase} border border-line-strong text-cream hover:border-copper hover:text-copper-bright`
 
+/** Kelimeleri sırayla yumuşak geçişle değiştirir; aynı anda tek biri görünür. Genişlik en uzun kelimeye sabit
+ * (yerleşim zıplamaz). Ekran okuyucu hepsini tek seferde okur; hareket azaltma açıksa yalnızca ilki durur. */
+function RotatingWords({ words, interval = 2600 }: { words: string[]; interval?: number }) {
+  const [i, setI] = useState(0)
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const t = window.setInterval(() => setI((n) => (n + 1) % words.length), interval)
+    return () => window.clearInterval(t)
+  }, [words.length, interval])
+  return (
+    <span className="relative inline-grid">
+      <span className="sr-only">{words.join(', ')}</span>
+      {words.map((w, n) => (
+        <span
+          key={w}
+          aria-hidden="true"
+          className={`col-start-1 row-start-1 transition-all duration-500 ease-out ${n === i ? 'translate-y-0 opacity-100' : 'translate-y-1.5 opacity-0'}`}
+        >
+          {w}
+        </span>
+      ))}
+    </span>
+  )
+}
+
 function Pole({ className = '', anim = false }: { className?: string; anim?: boolean }) {
   return <span aria-hidden className={`pole block ${anim ? 'pole-anim' : ''} ${className}`} />
 }
@@ -142,7 +167,7 @@ function Hero() {
           <Rv>
             <p className="eyebrow flex items-center gap-3">
               <Pole className="h-2 w-10" />
-              Berber ve kuaförler için
+              <RotatingWords words={['Berberler için', 'Kuaförler için']} />
             </p>
           </Rv>
           <Rv delay={80}>
