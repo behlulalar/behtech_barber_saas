@@ -92,7 +92,7 @@ SETUP_CHECKS = (
     ("staff", "En az bir berber", "İşletme panelinde Personel'den berber ekleyin"),
     ("working_hours", "Her berberin çalışma saati var", "Personel'de her berber için çalışma saati tanımlayın"),
     ("staff_services", "Her berber en az bir hizmet veriyor", "Personel'de her berbere en az bir hizmet atayın"),
-    ("whatsapp", "WhatsApp bağlı", "Ayarlar'dan işletmenin kendi WhatsApp hesabını bağlayın (doğrulama kodları buradan gider)"),
+    ("whatsapp", "WhatsApp bağlı", "Panelde 'WhatsApp Bağlantısı' sayfasından işletmenin kendi WhatsApp hesabını bağlayın (doğrulama kodları buradan gider)"),
     ("address", "Adres girilmiş", "Ayarlar'dan işletme adresini girin"),
     ("first_appointment", "İlk randevu alınmış", "Henüz randevu alınmadı"),
 )

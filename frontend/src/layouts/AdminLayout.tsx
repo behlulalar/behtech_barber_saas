@@ -1,4 +1,4 @@
-import { CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserCog, UserRound, Users, Wallet } from 'lucide-react'
+import { CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserCog, UserRound, Users, Wallet, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
@@ -21,6 +21,7 @@ const NAV: NavItem[] = [
   { to: '/panel/hesabim', label: 'Hesabım', icon: UserCog },
   { to: '/panel/calisma-saatleri', label: 'Çalışma Saatleri', icon: Clock, managerOnly: true },
   { to: '/panel/odeme-yontemleri', label: 'Ödeme Yöntemleri', icon: Wallet, managerOnly: true },
+  { to: '/panel/whatsapp', label: 'WhatsApp Bağlantısı', icon: MessageCircle, managerOnly: true },
   { to: '/panel/ayarlar', label: 'Ayarlar', icon: Settings, managerOnly: true },
 ]
 

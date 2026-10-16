@@ -34,7 +34,7 @@ export function WhatsappAlertBanner() {
           <div className="min-w-0 flex-1 text-sm">
             <p className="break-words font-semibold">WhatsApp bağlantınız koptu — müşterileriniz doğrulama kodu alamıyor.</p>
             {blocked && <p className="mt-0.5 break-words text-muted-strong">Hesap engellenmiş ya da cihaz telefonunuzdan kaldırılmış olabilir.</p>}
-            <Link to="/panel/ayarlar" className="mt-1 inline-flex min-h-11 items-center font-medium text-copper-bright hover:underline">
+            <Link to="/panel/whatsapp" className="mt-1 inline-flex min-h-11 items-center font-medium text-copper-bright hover:underline">
               Yeniden bağla
             </Link>
           </div>

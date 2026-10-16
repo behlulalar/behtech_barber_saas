@@ -15,7 +15,6 @@ import { adminApi, errorMessage } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
 import type { TenantSettings } from '../../types/api'
 import { ErrorBlock, qk } from './shared'
-import { WhatsappCard } from './WhatsappCard'
 
 export default function SettingsPage() {
   const query = useQuery({ queryKey: qk.settings, queryFn: adminApi.getSettings })
@@ -85,8 +84,6 @@ function SettingsForm({ initial }: { initial: TenantSettings }) {
       {!isManager && (
         <p className="rounded-md border border-panel-line bg-panel px-4 py-3 text-sm text-muted-strong">Ayarları yalnızca yöneticiler değiştirebilir.</p>
       )}
-
-      {isManager && <WhatsappCard />}
 
       <Card>
         <CardHeader title="İşletme" description="Randevu sayfasında ve bildirimlerde bu bilgiler kullanılır." />

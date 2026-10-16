@@ -21,6 +21,7 @@ const AdminStaffPage = lazy(() => import('./pages/admin/StaffPage'))
 const AdminAccountPage = lazy(() => import('./pages/admin/AccountPage'))
 const AdminSchedulePage = lazy(() => import('./pages/admin/SchedulePage'))
 const AdminPaymentMethodsPage = lazy(() => import('./pages/admin/PaymentMethodsPage'))
+const AdminWhatsappPage = lazy(() => import('./pages/admin/WhatsappPage'))
 const AdminSettingsPage = lazy(() => import('./pages/admin/SettingsPage'))
 const AdminRevenuePage = lazy(() => import('./pages/admin/RevenuePage'))
 
@@ -122,6 +123,7 @@ function App() {
               <Route path="gelir" element={<AdminRevenuePage />} />
               <Route path="calisma-saatleri" element={<AdminSchedulePage />} />
               <Route path="odeme-yontemleri" element={<AdminPaymentMethodsPage />} />
+              <Route path="whatsapp" element={<AdminWhatsappPage />} />
               <Route path="ayarlar" element={<AdminSettingsPage />} />
             </Route>
           </Route>

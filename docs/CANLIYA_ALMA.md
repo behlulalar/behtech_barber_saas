@@ -15,7 +15,7 @@ tanınır: `<slug>.behtechlabs.com`. Ürünün tanıtım sitesi `randevu.behtech
 ## 0. DURDURUCU ENGELLER (bunlar olmadan canlıya çıkılamaz)
 
 - [ ] **WhatsApp: her dükkân kendi numarasını bağlar** (platform ortak hat vermez). Canlıda bağlı olmayan dükkânın müşterisi doğrulama kodu alamaz → online randevu alamaz.
-  - Kod HAZIR (2026-10-16): `whatsapp_connections` tablosu, panel Ayarlar → WhatsApp kartı (QR / eşleştirme kodu), `otp_delivery` dükkânın instance'ından gönderir, webhook `?token=` ile durum günceller. Yerel Evolution v2.3.7'ye karşı QR/eşleştirme kodu/webhook kurulumu doğrulandı.
+  - Kod HAZIR (2026-10-16): `whatsapp_connections` tablosu, panel WhatsApp Bağlantısı sayfası kartı (QR / eşleştirme kodu), `otp_delivery` dükkânın instance'ından gönderir, webhook `?token=` ile durum günceller. Yerel Evolution v2.3.7'ye karşı QR/eşleştirme kodu/webhook kurulumu doğrulandı.
   - Kalan: gerçek bir telefonla bağlayıp kod gönderimini uçtan uca denemek (bkz. §6).
 - [ ] **Migration zinciri BOŞ veritabanında çalışmıyor.** İlk migration (`7efb0e9dab46`) `tenant_settings` tablosunu var sayıyor (tablolar
   `backend/schema.sql` ile kurulmuştu). Yeni sunucuda sırayla: `psql -f backend/schema.sql` → `alembic upgrade head`.
@@ -124,7 +124,7 @@ Evolution sunucusu platformun altyapısıdır (repo dışında `../evolution-api
 - [ ] Evolution **v2.3.7+** kullanın (v2.1.1 güncel WhatsApp Web sürümüyle QR üretemiyordu; 2026-10-16'da yükseltildi). Docker, güçlü `AUTHENTICATION_API_KEY`, dışarıya KAPALI (`127.0.0.1:8080`, yalnızca backend erişir).
 - [ ] Backend `.env`: `EVOLUTION_API_BASE_URL`, `EVOLUTION_API_KEY` (= Evolution'ın `AUTHENTICATION_API_KEY`), `EVOLUTION_WEBHOOK_URL` (canlıda Evolution'ın backend'e ulaştığı iç adres, ör. `http://127.0.0.1:8001/api/webhooks/evolution`), `EVOLUTION_WEBHOOK_SECRET` (uzun rastgele). `EVOLUTION_INSTANCE_NAME` artık kullanılmıyor.
 - [ ] Webhook yolu Nginx'te dışarı AÇILMAMALI ya da yalnızca token ile çalıştığından emin olun (token yoksa 401).
-- [ ] İlk dükkânda uçtan uca deneme: Ayarlar → WhatsApp'ı bağla → telefondan okut → durum "Bağlı" → "Test mesajı gönder" → müşteri sitesinden kod iste.
+- [ ] İlk dükkânda uçtan uca deneme: WhatsApp Bağlantısı sayfası'ı bağla → telefondan okut → durum "Bağlı" → "Test mesajı gönder" → müşteri sitesinden kod iste.
 - [ ] Platform → Sistem: "Evolution sunucusu: Erişilebilir", "WhatsApp'ı bağlı işletme: N".
 - [ ] Ban riski artık dükkân başına (her biri kendi numarası); işletme başına saatlik sınır (`WHATSAPP_TENANT_HOURLY_LIMIT`) yine geçerli.
 
