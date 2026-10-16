@@ -10,6 +10,7 @@ import { cn } from '../lib/cn'
 import { formatPhone } from '../lib/format'
 import { PRODUCT_NAME, useDocumentTitle, useFavicon, useRouteLabel } from '../lib/head'
 import { useTenant } from '../lib/queries'
+import { ThemeToggle } from '../lib/theme'
 import { DEMO_SLUG, productSiteUrl } from '../lib/site'
 
 const LINKS = [
@@ -84,6 +85,7 @@ export default function PublicLayout() {
             <Link to="/randevu" className={buttonStyles({ size: 'sm' })}>
               Randevu Al
             </Link>
+            <ThemeToggle className="-mr-2" />
           </nav>
 
           <button
@@ -108,6 +110,7 @@ export default function PublicLayout() {
                 {l.label}
               </Link>
             ))}
+            <ThemeToggle withLabel className="mt-1 w-full border-b border-line" />
             <Link to="/randevularim" className={cn(buttonStyles({ size: 'lg', variant: 'secondary', fullWidth: true }), 'mt-5')}>
               {isAuthenticated ? <CalendarCheck className="size-5" aria-hidden="true" /> : <LogIn className="size-5" aria-hidden="true" />}
               {isAuthenticated ? 'Randevularım' : 'Giriş yap'}

@@ -1,5 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import { ThemeToggle } from '../../lib/theme'
 import { LegalContent } from '../../components/LegalModal'
 import { LEGAL_DOCS, type LegalSlug } from '../../lib/legal'
 import { PRODUCT_NAME, useDocumentTitle } from '../../lib/head'
@@ -15,10 +16,13 @@ export default function LegalPage() {
   return (
     <div className="pt-safe pb-safe min-h-svh bg-ink text-cream">
       <div className="mx-auto w-full max-w-3xl px-5 py-8 md:px-10 md:py-14">
-        <Link to="/" className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-strong hover:text-cream">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Ana sayfaya dön
-        </Link>
+        <div className="flex items-center justify-between gap-4">
+          <Link to="/" className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-strong hover:text-cream">
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Ana sayfaya dön
+          </Link>
+          <ThemeToggle className="-mr-2" />
+        </div>
 
         <article className="mt-4">
           <p className="eyebrow">Yasal</p>

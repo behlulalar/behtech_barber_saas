@@ -2,7 +2,7 @@ import { cn } from '../../lib/cn'
 
 /** Yüklenirken içerik yerine geçen blok. Boyutu className ile verin (h-4 w-32 gibi). */
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={cn('animate-shimmer rounded-sm bg-line', className)} />
+  return <div aria-hidden="true" className={cn('animate-shimmer rounded-sm bg-line-strong', className)} />
 }
 
 /** Birkaç satırlık metin iskeleti. */

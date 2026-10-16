@@ -27,9 +27,9 @@
 
   /* Vurgu: açık zeminde okunur olsun diye koyu temadan daha derin bakır.
      copper-bright = vurgulu metin/bağlantı ve hover tonu (açık temada daha koyu). */
-  --color-copper: #b4652c;
-  --color-copper-bright: #934d1b;
-  --color-copper-deep: #7e4115;
+  --color-copper: #a65a22;
+  --color-copper-bright: #874515;
+  --color-copper-deep: #6f3810;
   /* Bakır zemin üstündeki metin */
   --color-on-accent: #ffffff;
 

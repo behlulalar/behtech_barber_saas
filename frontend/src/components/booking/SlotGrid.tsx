@@ -187,13 +187,13 @@ function SlotCell({
         className={cn(
           CELL,
           'flex cursor-not-allowed flex-col items-center justify-center border border-line/70 bg-transparent px-1',
-          tooShort ? 'text-muted/60' : 'text-muted',
+          tooShort ? 'text-muted/75' : 'text-muted',
         )}
       >
         <span className={cn('font-display text-base tabular-nums leading-tight', slot.status === 'busy' && 'line-through decoration-muted/50')}>
           {slot.start} – {slot.end}
         </span>
-        <span className={cn('text-xs', slot.status === 'busy' ? 'font-medium text-danger' : 'text-muted/80')}>{label}</span>
+        <span className={cn('text-xs', slot.status === 'busy' ? 'font-medium text-danger' : 'text-muted')}>{label}</span>
       </div>
     )
   }

@@ -34,7 +34,7 @@ function render(img: HTMLImageElement, maxDim: number, type: ImageType, quality:
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
   if (type === 'image/jpeg') {
-    ctx.fillStyle = '#15110e'
+    ctx.fillStyle = '#ffffff' // JPEG'de şeffaflık yok: şeffaf pikseller beyaz olur (her iki temada nötr)
     ctx.fillRect(0, 0, w, h)
   }
   ctx.drawImage(img, 0, 0, w, h)

@@ -10,6 +10,7 @@ import { PasswordHints } from '../../components/ui/PasswordHints'
 import { PhoneInput } from '../../components/ui/PhoneInput'
 import { Spinner } from '../../components/ui/Spinner'
 import { errorMessage, publicApi } from '../../lib/api'
+import { ThemeToggle } from '../../lib/theme'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 import { PRODUCT_NAME, useDocumentTitle } from '../../lib/head'
 import { passwordValid } from '../../lib/passwordPolicy'
@@ -104,9 +105,12 @@ export default function SignupPage() {
           <Link to="/" className="font-display text-lg tracking-tight text-cream">
             BehTech <span className="italic text-copper-bright">Randevu</span>
           </Link>
-          <Link to="/" className="inline-flex min-h-11 items-center text-sm text-muted-strong hover:text-cream">
-            Ana sayfa
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/" className="inline-flex min-h-11 items-center text-sm text-muted-strong hover:text-cream">
+              Ana sayfa
+            </Link>
+            <ThemeToggle className="-mr-2" />
+          </div>
         </div>
       </header>
 

@@ -90,7 +90,8 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 - [ ] **P2 Berbere özel fiyat:** `staff_services.price` sütunu var, kullanılmıyor (usta berber daha pahalı vb.).
 - [ ] **P2 Hizmet kategorileri**, toplu içe aktarma (CSV: müşteri/randevu), müşteri notu/etiketi, müşteri bazında no-show sayacı.
 - [ ] **P2 Dükkân sahibi için denetim kaydı** (personel ne yaptı: randevu iptali, fiyat değişimi). Şu an yalnızca platform tarafında var.
-- [ ] **P3** Personelin kendi çalışma saati/izin *talebi* (düzenleyemez, talep edebilir), çok dilli arayüz (şu an yalnızca Türkçe), karanlık/açık tema seçeneği.
+- [ ] **P3** Personelin kendi çalışma saati/izin *talebi* (düzenleyemez, talep edebilir), çok dilli arayüz (şu an yalnızca Türkçe).
+- [x] (2026-10-16) **Açık/koyu tema YAPILDI:** varsayılan AÇIK, koyu tema güneş/ay düğmesiyle (panel kenar çubuğu, giriş sayfaları, müşteri ve tanıtım sitesi başlıkları). Renkler `src/index.css` tokenlarından; koyu değerler `:root[data-theme="dark"]`; tercih tarayıcıda (`localStorage.theme`), backend'e gitmez; `index.html`'de yanıp sönmeyi önleyen erken script. Yeni renk eklerken sabit hex YAZMAYIN, token kullanın (bakır zemin üstü metin: `text-on-accent`). Kalan: tercih cihazlar arası senkron değil; sistem temasını (prefers-color-scheme) izleme yok; PWA manifest `theme_color` sabit açık.
 - [ ] **Not:** Müşteri listesi personelde yalnızca kendi müşterileriyle sınırlı → yeni randevu formunda başka berberin müşterisinin adı otomatik dolmaz (telefon yine eşleşir). Gerekirse yeniden değerlendirin.
 
 ## 4. Müşteri tarafı

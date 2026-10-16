@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
 import { Drawer } from '../components/ui/Drawer'
 import { cn } from '../lib/cn'
+import { ThemeToggle } from '../lib/theme'
 
 export interface NavItem {
   to: string
@@ -81,6 +82,7 @@ function UserBlock({ user, onLogout }: { user: PanelShellProps['user']; onLogout
           <p className="truncate text-xs text-muted">{user.subtitle}</p>
         </div>
       </div>
+      <ThemeToggle withLabel className="mt-1 w-full hover:bg-panel-raised" />
       <button
         type="button"
         onClick={onLogout}

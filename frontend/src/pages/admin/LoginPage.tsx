@@ -7,6 +7,7 @@ import { Spinner } from '../../components/ui/Spinner'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
 import { PhoneInput } from '../../components/ui/PhoneInput'
+import { ThemeToggle } from '../../lib/theme'
 import AuthLayout from '../../layouts/AuthLayout'
 import { errorMessage } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
@@ -53,6 +54,8 @@ export default function LoginPage() {
   }
 
   return (
+    <>
+    <div className="pt-safe fixed right-3 top-3 z-10"><ThemeToggle /></div>
     <AuthLayout
       brand={tenant.data?.business_name}
       eyebrow={forgot ? 'Şifre sıfırlama' : 'Personel girişi'}
@@ -104,5 +107,6 @@ export default function LoginPage() {
       )
       )}
     </AuthLayout>
+    </>
   )
 }

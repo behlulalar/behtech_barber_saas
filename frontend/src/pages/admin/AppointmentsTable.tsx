@@ -241,7 +241,7 @@ export function AppointmentsTable({ date, appointments, staff, flow, onCreate }:
                     <div
                       key={m}
                       aria-hidden="true"
-                      className={cn(base, !inWindow && c.loaded && 'bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgb(255_255_255/0.035)_6px_12px)]', past && inWindow && 'bg-ink/30')}
+                      className={cn(base, !inWindow && c.loaded && 'bg-[repeating-linear-gradient(135deg,transparent_0_6px,color-mix(in_srgb,var(--color-cream)_5%,transparent)_6px_12px)]', past && inWindow && 'bg-ink/30')}
                       style={style}
                     />
                   )
@@ -312,7 +312,7 @@ export function AppointmentsTable({ date, appointments, staff, flow, onCreate }:
           </span>
         ))}
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-sm border border-panel-line bg-[repeating-linear-gradient(135deg,transparent_0_2px,rgb(255_255_255/0.12)_2px_4px)]" aria-hidden="true" />
+          <span className="size-2.5 rounded-sm border border-panel-line bg-[repeating-linear-gradient(135deg,transparent_0_2px,color-mix(in_srgb,var(--color-cream)_25%,transparent)_2px_4px)]" aria-hidden="true" />
           Çalışmıyor / izinli
         </span>
         <span className="basis-full sm:ml-auto sm:basis-auto">Boş bir saate dokunarak randevu ekleyin.</span>

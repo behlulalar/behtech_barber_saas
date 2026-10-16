@@ -88,7 +88,7 @@ export function ColumnChart({
 
           {active && (
             <div
-              className="pointer-events-none absolute top-1 z-10 min-w-36 rounded-sm border border-line-strong bg-ink px-3 py-2 shadow-lg"
+              className="pointer-events-none absolute top-1 z-10 min-w-36 rounded-sm border border-line-strong bg-surface-raised px-3 py-2 shadow-pop"
               style={{ left: `${((hover! + 0.5) / n) * 100}%`, transform: `translateX(${tipShift})` }}
             >
               <p className="text-xs text-muted">{active.title}</p>

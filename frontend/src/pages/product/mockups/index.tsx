@@ -27,7 +27,7 @@ export function PhoneBookingMockup({ className }: MockupProps) {
           <div className="mk-status"><span>9:41</span><span>●●●</span></div>
           <div className="mk-scroll">
             <div className="mk-disp" style={{ fontSize: '6em', margin: '0.4em 0 0.1em' }}>Usta Berber</div>
-            <div style={{ fontSize: '3.2em', color: '#9c8c7c' }}>Kadıköy, İstanbul · Online randevu</div>
+            <div style={{ fontSize: '3.2em', color: 'var(--color-muted)' }}>Kadıköy, İstanbul · Online randevu</div>
 
             <div className="mk-label">Hizmet</div>
             <div className="mk-svc">
@@ -178,7 +178,7 @@ export function PhonePanelMockup({ className }: MockupProps) {
           <div className="mk-island" />
           <div className="mk-status"><span>9:41</span><span>●●●</span></div>
           <div className="mk-scroll">
-            <div style={{ fontSize: '3em', color: '#e0945a', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600, marginTop: '0.6em' }}>Pazartesi, 14 Ekim</div>
+            <div style={{ fontSize: '3em', color: 'var(--color-copper-bright)', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600, marginTop: '0.6em' }}>Pazartesi, 14 Ekim</div>
             <div className="mk-disp" style={{ fontSize: '6.4em', margin: '0.15em 0 0.5em' }}>Günaydın, Kerem</div>
             <div className="mk-pp-stats">
               {[['Bugün', '6'], ['Biten', '2'], ['Ciro', '1.300 ₺']].map(([l, v]) => (

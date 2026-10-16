@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Menu, X, Plus, Minus } from 'lucide-react'
+import { ThemeToggle } from '../../lib/theme'
 import { LegalLink } from '../../components/LegalModal'
 import type { LegalSlug } from '../../lib/legal'
 import { CONTACT, DEMO_SITE_URL, PRODUCT_NAME } from './content'
@@ -93,6 +94,7 @@ function Header() {
           <Link to="/kayit" className="inline-flex min-h-11 items-center rounded-sm bg-copper px-5 text-sm font-semibold text-on-accent hover:bg-copper-bright">
             Ücretsiz dene
           </Link>
+          <ThemeToggle className="-mr-2" />
         </nav>
         <button
           type="button"
@@ -117,6 +119,7 @@ function Header() {
               {n.label}
             </a>
           ))}
+          <ThemeToggle withLabel className="mt-1 w-full border-b border-line" />
           <Link to="/kayit" onClick={() => setOpen(false)} className={`${btnPrimary} mt-5 w-full`}>
             Ücretsiz dene
           </Link>

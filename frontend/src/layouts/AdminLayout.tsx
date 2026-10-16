@@ -49,7 +49,7 @@ function SupportBanner({ who, readOnly }: { who: string; readOnly: boolean }) {
   }
 
   return (
-    <div role="status" className="border-b border-danger/40 bg-[#3a1d18] text-cream">
+    <div role="status" className="border-b border-danger/40 bg-[color-mix(in_srgb,var(--color-danger)_14%,var(--color-ink))] text-cream">
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 md:px-8">
         <p className="flex min-w-0 items-start gap-2 text-sm leading-snug">
           <LifeBuoy className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden="true" />
