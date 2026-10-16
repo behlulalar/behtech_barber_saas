@@ -33,8 +33,9 @@ Sırlar (`/opt/berber/deploy/prod/.env`, `backend.env`) rsync'ten HARİÇTİR; i
 `deploy/prod/apply-nginx.sh <alan> https [wildcard]` — yapılandırmayı üretir, `nginx -t` ile sınar, **başarısızsa eskiyi geri koyar** (diğer sitelerin yeniden yüklemesi bozulmasın). nginx 1.18: `http2` yönergesi `listen ... ssl http2` biçiminde.
 
 ## Sertifika
-- Ana alan adı: Let's Encrypt HTTP-01 (webroot `/var/www/berber-acme`), certbot otomatik yeniler.
-- **Dükkân alt alan adları için JOKER sertifika gerekir** (DNS-01, Cloudflare API belirteci). Bkz. aşağı.
+- **Joker sertifika (2026-10-16 alındı):** `berberpanelim.behlulalar.online` + `*.berberpanelim.behlulalar.online`, Let's Encrypt DNS-01, Cloudflare API belirteci (`/root/.secrets/berber-cloudflare.ini`, 600; yalnızca `behlulalar.online` bölgesinde DNS Write + Zone Read, yalnızca bu sunucunun IP'sinden). certbot otomatik yeniler; yenilemeden sonra `renew_hook = systemctl reload nginx` (yalnızca bu sertifikanın yenileme dosyasında). Yenileme provası: `certbot renew --cert-name berberpanelim.behlulalar.online --dry-run`.
+- Dükkân alt alan adları için Cloudflare'de **joker DNS** kaydı gerekir: `*.berberpanelim` A -> 45.141.150.48, **DNS only (gri bulut)** (Cloudflare ücretsiz sertifikası 2. seviye alt alan adlarını kapsamaz; kendi joker sertifikamız kullanılır). Ana alan adı (`berberpanelim`) turuncu bulut olabilir.
+- Belirteç süresiz; sunucu IP'si değişirse Cloudflare'de IP filtresini güncelleyin, yoksa yenileme bozulur.
 
 ## Yedek ve geri yükleme
 - Her gün 03:30: `backup.sh` -> `/opt/berber/backups/backup_*.sql.gz` (uygulama) + `evolution_*.sql.gz` (WhatsApp oturumları), 14 gün saklanır.
@@ -56,7 +57,7 @@ docker compose exec backend python scripts/run_billing_checks.py
 ```
 
 ## Bilinen sınırlar / yapılacaklar
-- Joker DNS + joker sertifika (dükkân alt alan adları) — kullanıcı eylemi gerekir (Cloudflare).
+- Joker DNS kaydı (`*.berberpanelim`, gri bulut) Cloudflare'de eklenmeli (sertifika ve nginx hazır).
 - SMTP (e-posta bildirimi) ayarlanmadı; `backend.env`'e `SMTP_*` eklenip `docker compose up -d backend`.
 - Sunucu dışı yedek, izleme/uyarı (uptime, disk), `scripts/verify_backup.py` (ayrı bakım kullanıcısı gerekir) kurulmadı.
 - Cloudflare "Web Analytics" betiği CSP'ye takılır (zararsız); istenirse Cloudflare'de kapatın ya da CSP'ye izin verin.
