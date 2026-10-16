@@ -25,7 +25,7 @@ from app.services.otp_delivery import to_whatsapp_number
 logger = logging.getLogger(__name__)
 
 QUIET_KINDS = {"reminder"}  # gece gönderilmez
-QUIET_START, QUIET_END = time(22, 0), time(8, 30)
+QUIET_START, QUIET_END = time(23, 0), time(8, 0)
 MAX_ATTEMPTS = 3
 EXPIRE_AFTER = timedelta(hours=24)  # bağlantı gelmezse bekleyen mesaj iptal
 HEALTH_EVERY = timedelta(minutes=5)

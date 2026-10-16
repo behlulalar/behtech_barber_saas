@@ -230,8 +230,9 @@ def test_quiet_hours_only_for_reminders():
     late = datetime(2026, 10, 16, 23, 15)
     early = datetime(2026, 10, 16, 6, 0)
     noon = datetime(2026, 10, 16, 12, 0)
-    assert whatsapp_queue._after_quiet(late) == datetime(2026, 10, 17, 8, 30)
-    assert whatsapp_queue._after_quiet(early) == datetime(2026, 10, 16, 8, 30)
+    assert whatsapp_queue._after_quiet(late) == datetime(2026, 10, 17, 8, 0)
+    assert whatsapp_queue._after_quiet(early) == datetime(2026, 10, 16, 8, 0)
+    assert whatsapp_queue._after_quiet(datetime(2026, 10, 16, 22, 30)) == datetime(2026, 10, 16, 22, 30)  # 23:00 öncesi bekletilmez
     assert whatsapp_queue._after_quiet(noon) == noon
 
 
