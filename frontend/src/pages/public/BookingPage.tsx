@@ -395,6 +395,7 @@ export default function BookingPage() {
           <div className="min-w-0 flex-1">
             {step === 'contact' ? (
               <Button
+                key="contact-submit"
                 type="submit"
                 form="contact-form"
                 size="lg"
@@ -404,11 +405,13 @@ export default function BookingPage() {
                 {sessionPhoneMatches ? 'Randevuyu onayla' : 'Kod gönder'}
               </Button>
             ) : step === 'verify' ? (
-              <Button type="submit" form="verify-form" size="lg" fullWidth loading={create.isPending}>
+              <Button key="verify-submit" type="submit" form="verify-form" size="lg" fullWidth loading={create.isPending}>
                 Doğrula ve onayla
               </Button>
             ) : (
               <Button
+                key="next"
+                type="button"
                 size="lg"
                 fullWidth
                 disabled={!canNext}
