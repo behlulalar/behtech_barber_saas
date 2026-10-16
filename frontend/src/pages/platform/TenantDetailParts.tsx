@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, KeyRound, LifeBuoy, MessageCircle, Pencil, ScrollText } from 'lucide-react'
+import { Check, Copy, KeyRound, LifeBuoy, Link2, MessageCircle, Pencil, RefreshCw, ScrollText } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
@@ -14,7 +14,7 @@ import { Skeleton } from '../../components/ui/Skeleton'
 import { Textarea } from '../../components/ui/Textarea'
 import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
-import { tenantOrigin } from '../../lib/site'
+import { tenantOrigin, tenantSiteUrl } from '../../lib/site'
 import { formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
 import type { PlatformTenantDetail } from '../../types/api'
 import { SetupList } from './SetupParts'
@@ -176,7 +176,7 @@ function TempPasswordModal({ tenant, password, onClose }: { tenant: PlatformTena
 
   const message =
     `Merhaba ${o.name}, ${tenant.name} yönetim paneliniz için geçici şifreniz hazır.\n` +
-    `Giriş adresi: https://${tenant.slug}.behtechlabs.com/panel/giris\n` +
+    (tenant.panel_login_path ? `Giriş adresi: ${tenantSiteUrl(tenant.slug)}${tenant.panel_login_path}\n` : '') +
     `Telefon: ${formatPhone(o.phone)}\n` +
     `Geçici şifre: ${password}\n` +
     `Giriş yaptıktan sonra Hesabım sayfasından şifrenizi değiştirebilirsiniz.`
@@ -369,6 +369,94 @@ export function SupportCard({ tenant }: { tenant: PlatformTenantDetail }) {
         </div>
         {!tenant.is_active && <p className="text-xs text-muted">İşletme pasif; önce aktifleştirin.</p>}
       </div>
+    </Card>
+  )
+}
+
+/* ------------------------------ Panel giriş adresi ------------------------------ */
+
+export function PanelLoginCard({ tenant }: { tenant: PlatformTenantDetail }) {
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [copied, setCopied] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const url = tenant.panel_login_path ? `${tenantOrigin(tenant.slug)}${tenant.panel_login_path}` : ''
+  const ownerPhone = tenant.owner_phone ?? tenant.owner?.phone ?? null
+
+  const regenerate = useMutation({
+    mutationFn: () => platformApi.regenerateLoginToken(tenant.id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['platform'] })
+      setConfirming(false)
+      toast.success('Panel giriş adresi yenilendi')
+    },
+    onError: (err) => {
+      setConfirming(false)
+      toast.error(errorMessage(err))
+    },
+  })
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast.error('Kopyalanamadı, adresi elle seçip kopyalayın')
+    }
+  }
+
+  const waText = `Merhaba, ${tenant.name} yönetim paneli giriş adresiniz: ${url} — Bu adresi sadece ekibinizle paylaşın.`
+
+  return (
+    <Card>
+      <CardHeader title="Panel giriş adresi" description="Personel panele yalnızca bu gizli adresten girer." />
+      {url ? (
+        <div className="flex flex-col gap-3">
+          <Input readOnly value={url} aria-label="Panel giriş adresi" onFocus={(e) => e.currentTarget.select()} />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={copy} leftIcon={copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}>
+              {copied ? 'Kopyalandı' : 'Kopyala'}
+            </Button>
+            {ownerPhone && (
+              <a
+                href={`https://wa.me/90${ownerPhone}?text=${encodeURIComponent(waText)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line-strong px-4 text-sm font-medium text-cream hover:bg-cream/5"
+              >
+                <MessageCircle className="size-4" aria-hidden="true" />
+                Sahibe WhatsApp ile gönder
+              </a>
+            )}
+            <Button variant="secondary" onClick={() => setConfirming(true)} leftIcon={<RefreshCw className="size-4" />}>
+              Adresi yenile
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <p className="flex items-center gap-2 text-sm text-muted">
+            <Link2 className="size-4" aria-hidden="true" />
+            Bu işletmenin giriş adresi henüz oluşturulmamış.
+          </p>
+          <div>
+            <Button variant="secondary" onClick={() => regenerate.mutate()} loading={regenerate.isPending}>
+              Adres oluştur
+            </Button>
+          </div>
+        </div>
+      )}
+      <ConfirmDialog
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        onConfirm={() => regenerate.mutate()}
+        loading={regenerate.isPending}
+        destructive
+        title="Adres yenilensin mi?"
+        description="Eski adres hemen çalışmaz olur; personelinize yenisini iletmeniz gerekir."
+        confirmLabel="Yenile"
+      />
     </Card>
   )
 }

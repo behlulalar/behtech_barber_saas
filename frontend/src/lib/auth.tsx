@@ -1,6 +1,8 @@
 // Üç bağımsız oturum: staff, customer, platform. Her biri kendi localStorage anahtarında.
 import {
   createContext,
+  lazy,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -9,9 +11,12 @@ import {
   type ReactNode,
 } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { AUTH_EVENT, LOGIN_PATHS, authApi, platformApi, tokenExpiresAt, tokenStore, type TokenKind } from './api'
+import { AUTH_EVENT, authApi, platformApi, tokenExpiresAt, tokenStore, type TokenKind } from './api'
 import type { CustomerName, PlatformMe, StaffMe, VerifyCodeResponse } from '../types/api'
 import { Spinner } from '../components/ui/Spinner'
+import { getPanelKey, panelLoginPath } from './panelKey'
+
+const NotFoundPage = lazy(() => import('../pages/NotFoundPage'))
 
 /** Bir token'ı reaktif olarak izler (diğer sekmelerdeki değişiklikler dahil). */
 function useToken(kind: TokenKind): string | null {
@@ -121,7 +126,16 @@ export function RequireStaff({ children, managerOnly }: { children?: ReactNode; 
   const location = useLocation()
   if (status === 'loading') return <FullScreenLoader />
   if (status === 'unauthenticated') {
-    return <Navigate to={LOGIN_PATHS.staff} replace state={{ from: location.pathname + location.search }} />
+    // Panelin varlığı sızmasın: gizli giriş anahtarı bu cihazda yoksa 404 gösterilir.
+    const key = getPanelKey()
+    if (!key) {
+      return (
+        <Suspense fallback={<FullScreenLoader />}>
+          <NotFoundPage />
+        </Suspense>
+      )
+    }
+    return <Navigate to={panelLoginPath(key)} replace state={{ from: location.pathname + location.search }} />
   }
   if (managerOnly && !isManager) return <Navigate to="/panel" replace />
   return <>{children ?? <Outlet />}</>
@@ -194,7 +208,7 @@ export function RequirePlatform({ children }: { children?: ReactNode }) {
   const location = useLocation()
   if (status === 'loading') return <FullScreenLoader />
   if (status === 'unauthenticated') {
-    return <Navigate to={LOGIN_PATHS.platform} replace state={{ from: location.pathname }} />
+    return <Navigate to="/platform/giris" replace state={{ from: location.pathname }} />
   }
   return <>{children ?? <Outlet />}</>
 }

@@ -82,6 +82,7 @@ def _row_to_out(row, setup: SetupOut | None = None) -> TenantOut:
         owner_phone=owner_phone,
         auto_suspended=tenant.auto_suspended_at is not None,
         note=tenant.note,
+        panel_login_path=f"/panel/g/{tenant.login_token}",
         signup_status=tenant.signup_status,
         setup=setup,
     )
@@ -380,3 +381,15 @@ async def reset_owner_password(
                 details={"generated": password is None})  # şifrenin kendisi asla yazılmaz
     await db.commit()
     return plain
+
+
+async def regenerate_login_token(db: Session, tenant_id: int, actor: PlatformAdmin, request: Request) -> TenantOut:
+    from app.models.tenant import new_login_token
+    tenant = (await db.execute(select(Tenant).where(Tenant.id == tenant_id))).scalar_one_or_none()
+    if tenant is None:
+        raise HTTPException(status_code=404, detail="İşletme bulunamadı")
+    tenant.login_token = new_login_token()
+    await audit(db, actor=actor, request=request, action="tenant.login_token_regenerate", entity_type="tenant",
+                entity_id=tenant.id, tenant_id=tenant.id, summary=f"'{tenant.name}' panel giriş adresi yenilendi")
+    await db.commit()
+    return await get_tenant_out(db, tenant.id)

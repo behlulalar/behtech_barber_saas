@@ -41,12 +41,12 @@ from app.schemas.admin import (
     WorkingHourIn,
     WorkingHourOut,
 )
-from app.schemas.auth import ForgotReset, ForgotSendCode, ImpersonateExchange, LoginRequest, PasswordChange, TokenResponse
+from app.schemas.auth import PanelKeyVerify, PanelLoginUrlOut, ForgotReset, ForgotSendCode, ImpersonateExchange, LoginRequest, PasswordChange, TokenResponse
 from app.schemas.public import SendCodeResponse
 from app.schemas.reports import ReportPeriod, RevenueReport
 from app.services import admin_services as svc
 from app.services import impersonation_services
-from app.services import login_throttle, otp_services
+from app.services import login_throttle, otp_services, panel_key
 from app.core.net import client_ip
 from app.services.otp_delivery import deliver_code
 from app.services.whatsapp_texts import reset_text
@@ -84,6 +84,7 @@ async def login(
     tenant: Tenant = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
+    await panel_key.require(db, tenant, data.panel_key, request)
     key = login_throttle.make_key(data.phone, tenant.id)
     await login_throttle.ensure_not_locked(db, "staff", key, request)
     result = await db.execute(select(Staff).where(Staff.phone == data.phone, Staff.tenant_id == tenant.id))
@@ -99,6 +100,21 @@ async def login(
     if not staff.is_active:
         raise HTTPException(status_code=403, detail="Bu hesap pasif. İşletme sahibiyle görüşün")
     return TokenResponse(access_token=_staff_token(staff, remember=data.remember), token_type="bearer")
+
+
+@router.post("/auth/panel-key/verify", status_code=204)
+async def verify_panel_key(
+    data: PanelKeyVerify, request: Request, tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db),
+):
+    """Giriş sayfası açılırken adresin geçerli olduğunu doğrular; geçersizse 404 (sayfa hiç görünmez)."""
+    await panel_key.require(db, tenant, data.panel_key, request)
+    return Response(status_code=204)
+
+
+@router.get("/admin/login-url", response_model=PanelLoginUrlOut)
+async def admin_login_url(current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant)):
+    """Personelin gireceği gizli adres (yalnızca yönetici görür; personele sahip iletir)."""
+    return PanelLoginUrlOut(path=panel_key.login_path(tenant))
 
 
 @router.get("/auth/me", response_model=StaffMe)
@@ -170,6 +186,7 @@ async def forgot_send_code(
 ):
     """Her zaman aynı yanıt: numaranın kayıtlı olup olmadığı sızmaz. Kod satırı numara kayıtsız olsa da yazılır,
     böylece sınırlar (60 sn / 10 dk'da 3) iki durumda da aynı davranır; yalnızca kayıtlı numaraya gönderilir."""
+    await panel_key.require(db, tenant, data.panel_key, request)
     staff = (
         await db.execute(
             select(Staff).where(Staff.phone == data.phone, Staff.tenant_id == tenant.id, Staff.is_active == True)  # noqa: E712
@@ -189,6 +206,7 @@ async def forgot_reset(
     tenant: Tenant = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
+    await panel_key.require(db, tenant, data.panel_key, request)
     key = login_throttle.make_key(data.phone, tenant.id)
     await login_throttle.ensure_not_locked(db, "staff_reset", key, request)
     # Zayıf şifre kodu yakmasın: önce kural, sonra kod.

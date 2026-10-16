@@ -512,6 +512,8 @@ iyi bir çalışma malzemesi.
       2026-10-16: WhatsApp dükkân başına — her dükkân kendi numarasını panelden bağlar (QR / eşleştirme kodu), kodlar dükkânın
       kendi instance'ından gider; platform ortak hat vermez. Yerel Evolution v2.1.1 -> v2.3.7 yükseltildi (eski sürüm QR üretemiyordu).
       Ayrıca: açık tema varsayılan + koyu tema seçimi; tanıtım sayfası görsel ağırlıklı sadeleştirildi.
+      2026-10-16: Gizli panel giriş adresi (`/panel/g/<anahtar>`, backend'de zorunlu) + işletme paneli PWA (kurulabilir uygulama).
+      Sırada: 2FA (TOTP) — önce platform yöneticileri.
       **Açık kalanlar:** (giriş sınırı artık var;)
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

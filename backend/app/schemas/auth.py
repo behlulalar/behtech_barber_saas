@@ -7,6 +7,8 @@ class LoginRequest(BaseModel):
     phone: str
     password: str
     remember: bool = False
+    # Giriş adresindeki gizli parça (/panel/g/<panel_key>). Yoksa/yanlışsa 404: giriş yalnızca bu adresten yapılabilir.
+    panel_key: str | None = Field(default=None, max_length=64)
 
 class TokenResponse(BaseModel):
 
@@ -26,9 +28,19 @@ class PasswordChange(BaseModel):
 
 class ForgotSendCode(BaseModel):
     phone: Phone
+    panel_key: str | None = Field(default=None, max_length=64)
 
 
 class ForgotReset(BaseModel):
     phone: Phone
     code: str = Field(min_length=1, max_length=10)
     new_password: str = Field(max_length=128)
+    panel_key: str | None = Field(default=None, max_length=64)
+
+
+class PanelKeyVerify(BaseModel):
+    panel_key: str = Field(max_length=64)
+
+
+class PanelLoginUrlOut(BaseModel):
+    path: str  # "/panel/g/<gizli parça>" — alan adı arayüzde eklenir

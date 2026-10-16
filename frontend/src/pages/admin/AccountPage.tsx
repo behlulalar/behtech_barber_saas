@@ -1,5 +1,5 @@
-import { useMutation } from '@tanstack/react-query'
-import { LogOut, ShieldAlert } from 'lucide-react'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { Check, Copy, LogOut, MessageCircle, ShieldAlert } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Avatar } from '../../components/ui/Avatar'
 import { Badge } from '../../components/ui/Badge'
@@ -12,13 +12,63 @@ import { PageHeader } from '../../components/ui/PageHeader'
 import { PasswordHints } from '../../components/ui/PasswordHints'
 import { useToast } from '../../components/ui/Toast'
 import { ROLE_LABELS } from '../../layouts/AdminLayout'
-import { authApi, errorMessage, tokenStore } from '../../lib/api'
+import { adminApi, authApi, errorMessage, tokenStore } from '../../lib/api'
+import { useTenant } from '../../lib/queries'
 import { useStaffAuth } from '../../lib/auth'
 import { formatPhone, fullName } from '../../lib/format'
 import { passwordValid } from '../../lib/passwordPolicy'
 
+/** Personelin panele gireceği gizli adres (yalnızca yönetici). */
+function StaffLoginUrlCard() {
+  const toast = useToast()
+  const tenant = useTenant()
+  const [copied, setCopied] = useState(false)
+  const q = useQuery({ queryKey: ['admin', 'login-url'], queryFn: adminApi.getLoginUrl })
+  const url = q.data ? `${window.location.origin}${q.data.path}` : ''
+  const waText = `${tenant.data?.business_name ?? 'İşletme'} paneline giriş adresi: ${url}`
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast.error('Kopyalanamadı, adresi elle seçip kopyalayın')
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader title="Personel giriş adresi" description="Personeliniz panele yalnızca bu adresten girebilir. Adresi sadece ekibinizle paylaşın." />
+      {q.isError ? (
+        <p role="alert" className="text-sm text-danger">{errorMessage(q.error)}</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <Input readOnly value={url} aria-label="Personel giriş adresi" onFocus={(e) => e.currentTarget.select()} />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={copy} disabled={!url} leftIcon={copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}>
+              {copied ? 'Kopyalandı' : 'Kopyala'}
+            </Button>
+            {url && (
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(waText)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line-strong px-4 text-sm font-medium text-cream hover:bg-cream/5"
+              >
+                <MessageCircle className="size-4" aria-hidden="true" />
+                WhatsApp ile paylaş
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
+  )
+}
+
 export default function AccountPage() {
-  const { me, logout } = useStaffAuth()
+  const { me, logout, isManager } = useStaffAuth()
   const toast = useToast()
   const support = Boolean(me?.impersonated_by)
   const [current, setCurrent] = useState('')
@@ -81,6 +131,8 @@ export default function AccountPage() {
             </div>
           </div>
         </Card>
+
+        {isManager && <StaffLoginUrlCard />}
 
         <Card>
           <CardHeader title="Şifreyi değiştir" description="Değişince diğer cihazlardaki oturumlar kapanır." />

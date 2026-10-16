@@ -3,6 +3,9 @@
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
+// Boş fetch dinleyicisi: yalnızca Chrome'un "yüklenebilir uygulama" ölçütü için. Önbellek/offline YOK.
+self.addEventListener('fetch', () => {})
+
 self.addEventListener('push', (event) => {
   let payload = {}
   try {

@@ -28,6 +28,7 @@ CATALOG: list[tuple[str, str, str]] = [
     ("admin.password_reset", "Yönetici şifresi sıfırlandı", G_ADMIN),
     ("admin.delete", "Yönetici silindi", G_ADMIN),
     ("tenant.create", "İşletme oluşturuldu", G_TENANT),
+    ("tenant.login_token_regenerate", "Panel giriş adresi yenilendi", G_TENANT),
     ("tenant.signup", "İşletme kendi kayıt oldu", G_TENANT),
     ("tenant.signup_approve", "Kayıt başvurusu onaylandı", G_TENANT),
     ("tenant.signup_reject", "Kayıt başvurusu reddedildi", G_TENANT),

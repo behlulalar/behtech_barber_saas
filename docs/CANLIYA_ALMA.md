@@ -114,6 +114,7 @@ Geliştirme veritabanında SADECE demo/sahte veri var (kullanıcı kararı, 2026
 - [ ] **Tanıtım sitesi içeriği:** `frontend/src/pages/product/content.ts` → `CONTACT.whatsapp` ve `CONTACT.email` **boş**; doldurulmazsa "Demo talep et" yalnızca demo bağlantısı gösterir.
   `DEMO_SITE_URL` canlıda `https://demo.behtechlabs.com/` — bu dükkânın canlıda var olması (ya da adresin değiştirilmesi) gerekir.
 - [ ] Tanıtım sitesi SEO: `<title>/<meta description>`, Open Graph görseli, `robots.txt`, `sitemap.xml` (şu an yok). Dükkân siteleri için de `robots`/başlık kararı.
+- [ ] **Gizli panel giriş adresleri:** canlıya çıkarken her işletmenin `/panel/g/<anahtar>` adresini Platform → İşletme detayından alıp sahibine iletin (sahip Hesabım'dan personelle paylaşır). Nginx'te `/api/auth/login`, `/api/auth/panel-key/verify` için hız sınırı. PWA'nın kurulabilmesi HTTPS ister.
 - [ ] Platform PWA: HTTPS altında telefona kur (iPhone: Safari → Paylaş → Ana Ekrana Ekle, iOS 16.4+), Ayarlar'dan bildirimi aç, "Test bildirimi" gönder.
   **Gerçek bir cihazda hiç denenmedi.**
 

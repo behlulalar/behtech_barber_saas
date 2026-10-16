@@ -107,7 +107,7 @@ function App() {
         </Route>
 
         {/* Personel paneli */}
-        <Route path="panel/giris" element={<AdminLoginPage />} />
+        <Route path="panel/g/:key" element={<AdminLoginPage />} />
         <Route path="panel/destek" element={<AdminSupportEntryPage />} />
         <Route path="panel" element={<RequireStaff />}>
           <Route element={<AdminLayout />}>

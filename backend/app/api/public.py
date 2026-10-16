@@ -1,9 +1,10 @@
 """Herkese açık (müşteri tarafı) ve müşteri (OTP token'lı) route'ları. Tenant, Host header'ından çözülür."""
+import json
 import logging
 import secrets
 from datetime import date, datetime, time, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -56,6 +57,25 @@ async def public_signup_route(data: SignupRequest, request: Request, db: Session
     """Tanıtım sitesinden işletme kaydı (tenant Host'una bağlı değil). Hesap platform onayına kadar kapalıdır."""
     tenant = await signup_services.signup(db, data, request)
     return SignupResponse(message="Başvurunuz alındı. Onaylanınca size haber vereceğiz.", slug=tenant.slug)
+
+
+@router.get("/public/panel-manifest")
+async def public_panel_manifest(request: Request, tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)):
+    """Yönetim panelinin PWA manifest'i (dükkân adıyla). Gerçek bir adresten verilir: blob: manifest'ler bazı tarayıcılarda
+    'uygulamayı yükle' ölçütünü sağlamaz. İçinde gizli bilgi yok (giriş adresi/anahtar YOK); start_url /panel'dir."""
+    ts = (await db.execute(select(TenantSettings).where(TenantSettings.tenant_id == tenant.id))).scalar_one_or_none()
+    name = (ts.business_name if ts and ts.business_name else tenant.name).strip()
+    manifest = {
+        "id": "/panel", "name": f"{name} Yönetim", "short_name": name[:12], "start_url": "/panel", "scope": "/panel",
+        "display": "standalone", "lang": "tr", "background_color": "#F6F1E9", "theme_color": "#F6F1E9",
+        "icons": [
+            {"src": "/icons/platform-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/platform-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": "/icons/platform-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ],
+    }
+    return Response(content=json.dumps(manifest, ensure_ascii=False), media_type="application/manifest+json",
+                    headers={"Cache-Control": "no-cache"})
 
 
 @router.get("/public/tenant", response_model=TenantPublicOut)

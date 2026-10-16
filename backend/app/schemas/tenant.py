@@ -38,6 +38,7 @@ class TenantOut(BaseModel):
     owner_phone: str | None = None
     auto_suspended: bool = False
     note: str | None = None
+    panel_login_path: str | None = None  # "/panel/g/<gizli>" (yalnızca platform uçlarında dolu)
     signup_status: str | None = None
     setup: SetupOut | None = None
 

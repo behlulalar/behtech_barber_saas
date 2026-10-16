@@ -87,6 +87,8 @@ import type {
   WorkingHour,
 } from '../types/api'
 
+import { getPanelKey, panelLoginPath } from './panelKey'
+
 /* ------------------------------------------------------------------ */
 /* Token deposu                                                        */
 /* ------------------------------------------------------------------ */
@@ -99,9 +101,11 @@ const STORAGE_KEYS: Record<TokenKind, string> = {
   platform: 'beh.platform_token',
 }
 
-export const LOGIN_PATHS: Record<Exclude<TokenKind, 'customer'>, string> = {
-  staff: '/panel/giris',
-  platform: '/platform/giris',
+/** Personel girişi gizli adrestedir (`/panel/g/<key>`); anahtar yoksa panel adresi 404 gibi davranır. */
+function loginPathFor(kind: Exclude<TokenKind, 'customer'>): string {
+  if (kind === 'platform') return '/platform/giris'
+  const key = getPanelKey()
+  return key ? panelLoginPath(key) : '/panel'
 }
 
 /** Bir token silindiğinde / değiştiğinde auth sağlayıcıları bu olayı dinler. */
@@ -242,8 +246,8 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 function handleUnauthorized(kind: TokenKind): void {
   tokenStore.clear(kind)
   if (kind === 'customer') return // müşteri akışı kendi içinde yeniden doğrulama ister
-  const loginPath = LOGIN_PATHS[kind]
-  if (!window.location.pathname.startsWith(loginPath)) {
+  const loginPath = loginPathFor(kind)
+  if (!window.location.pathname.startsWith(loginPath) && !window.location.pathname.startsWith('/panel/g/')) {
     window.location.assign(loginPath)
   }
 }
@@ -284,7 +288,11 @@ export const customerApi = {
 /* ------------------------------------------------------------------ */
 
 export const authApi = {
-  login: (data: LoginRequest) => request<TokenResponse>('/auth/login', { method: 'POST', body: data }),
+  /** Gizli giriş adresinin anahtarını doğrular: 204 geçerli, 404 geçersiz, 429 çok fazla hata. */
+  verifyPanelKey: (panelKey: string) =>
+    request<void>('/auth/panel-key/verify', { method: 'POST', body: { panel_key: panelKey } }),
+  login: (data: LoginRequest) =>
+    request<TokenResponse>('/auth/login', { method: 'POST', body: { ...data, panel_key: getPanelKey() ?? '' } }),
   me: () => request<StaffMe>('/auth/me', { auth: 'staff' }),
   /** Destek girişi: platform panelinden alınan tek kullanımlık kodu personel token'ına çevirir. */
   impersonate: (code: string) => request<TokenResponse>('/auth/impersonate', { method: 'POST', body: { code } }),
@@ -293,9 +301,10 @@ export const authApi = {
   changePassword: (data: { current_password: string; new_password: string }) =>
     request<TokenResponse>('/auth/me/password', { method: 'POST', body: data, auth: 'staff' }),
   logoutAll: () => request<void>('/auth/me/logout-all', { method: 'POST', auth: 'staff' }),
-  forgotSendCode: (phone: string) => request<SendCodeResponse>('/auth/forgot/send-code', { method: 'POST', body: { phone } }),
+  forgotSendCode: (phone: string) =>
+    request<SendCodeResponse>('/auth/forgot/send-code', { method: 'POST', body: { phone, panel_key: getPanelKey() ?? '' } }),
   forgotReset: (data: { phone: string; code: string; new_password: string }) =>
-    request<void>('/auth/forgot/reset', { method: 'POST', body: data }),
+    request<void>('/auth/forgot/reset', { method: 'POST', body: { ...data, panel_key: getPanelKey() ?? '' } }),
 }
 
 /* ------------------------------------------------------------------ */
@@ -305,6 +314,7 @@ export const authApi = {
 const s = 'staff' as const
 
 export const adminApi = {
+  getLoginUrl: () => request<{ path: string }>('/admin/login-url', { auth: s }),
   listAnnouncements: () => request<PanelAnnouncement[]>('/admin/announcements', { auth: s }),
   getSetup: () => request<TenantSetup>('/admin/setup', { auth: s }),
 
@@ -397,6 +407,8 @@ export const platformApi = {
   getTenantWhatsapp: (id: number) => request<PlatformWhatsapp>(`/platform/tenants/${id}/whatsapp`, { auth: p }),
   setTenantWhatsappPaused: (id: number, paused: boolean, reason?: string) =>
     request<PlatformWhatsapp>(`/platform/tenants/${id}/whatsapp/pause`, { method: 'POST', body: { paused, ...(reason ? { reason } : {}) }, auth: p }),
+  regenerateLoginToken: (id: number) =>
+    request<PlatformTenant>(`/platform/tenants/${id}/login-token/regenerate`, { method: 'POST', auth: p }),
   updateTenant: (id: number, data: PlatformTenantUpdate) =>
     request<PlatformTenant>(`/platform/tenants/${id}`, { method: 'PATCH', body: data, auth: p }),
   /* Paketler */

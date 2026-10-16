@@ -44,7 +44,23 @@ class ApiClient:
     def __init__(self):
         self._c = httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
+    # Giriş uçları gizli panel anahtarını ister (tenants.login_token). Testlerde otomatik eklenir; bir testin
+    # anahtarsız/yanlış anahtarla denemesi için json'a "panel_key" (None dahil) açıkça yazılır.
+    _KEYED = ("/api/auth/login", "/api/auth/forgot/send-code", "/api/auth/forgot/reset", "/api/auth/panel-key/verify")
+
+    async def _inject_panel_key(self, path, slug, kw):
+        body = kw.get("json")
+        if path in self._KEYED and slug and isinstance(body, dict) and "panel_key" not in body:
+            from sqlalchemy import select
+            from app.core.database import SessionFactory
+            from app.models.tenant import Tenant
+            async with SessionFactory() as db:
+                key = (await db.execute(select(Tenant.login_token).where(Tenant.slug == slug))).scalar_one_or_none()
+            if key:
+                kw["json"] = {**body, "panel_key": key}
+
     async def request(self, method, path, *, slug=None, token=None, headers=None, **kw):
+        await self._inject_panel_key(path, slug, kw)
         h = dict(auth(token))
         if slug:
             h["Host"] = host_for(slug)

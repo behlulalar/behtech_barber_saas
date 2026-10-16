@@ -61,7 +61,6 @@ const LINKS = [
   { path: '/', label: 'Müşteri sitesi', hint: 'İşletmenin tanıtım sayfası' },
   { path: '/randevu', label: 'Randevu al', hint: 'Müşterilerle paylaşılacak randevu bağlantısı' },
   { path: '/randevularim', label: 'Randevularım', hint: 'Müşterinin randevularını görüp iptal ettiği sayfa' },
-  { path: '/panel/giris', label: 'Yönetim paneli', hint: 'İşletme sahibi ve personelin giriş adresi' },
 ] as const
 
 function productionBase(slug: string) {
@@ -138,6 +137,9 @@ function LinkRow({ url, label, hint }: { url: string; label: string; hint: strin
 
 function LinksModal({ tenant, onClose }: { tenant: PlatformTenant | null; onClose: () => void }) {
   const slug = tenant?.slug ?? ''
+  const links: readonly { path: string; label: string; hint: string }[] = tenant?.panel_login_path
+    ? [...LINKS, { path: tenant.panel_login_path, label: 'Yönetim paneli', hint: 'Gizli giriş adresi; yalnızca işletme ekibiyle paylaşın' }]
+    : LINKS
   return (
     <Modal
       open={!!tenant}
@@ -159,7 +161,7 @@ function LinksModal({ tenant, onClose }: { tenant: PlatformTenant | null; onClos
         <section>
           <h3 className="eyebrow mb-1">Canlı adresler</h3>
           <ul>
-            {LINKS.map((l) => (
+            {links.map((l) => (
               <LinkRow key={l.path} url={productionBase(slug) + l.path} label={l.label} hint={l.hint} />
             ))}
           </ul>
@@ -169,7 +171,7 @@ function LinksModal({ tenant, onClose }: { tenant: PlatformTenant | null; onClos
             <h3 className="eyebrow mb-1">Yerel geliştirme</h3>
             <p className="mb-1 text-xs text-muted">Chrome, Edge veya Firefox'ta açın; Safari *.localhost adreslerini çözmez.</p>
             <ul>
-              {LINKS.map((l) => (
+              {links.map((l) => (
                 <LinkRow key={l.path} url={localBase(slug) + l.path} label={l.label} hint={l.hint} />
               ))}
             </ul>

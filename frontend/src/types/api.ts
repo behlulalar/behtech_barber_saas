@@ -454,6 +454,8 @@ export interface PlatformTenant {
   setup: TenantSetup | null
   /** Self-servis kayıt başvurusu durumu; elle açılan işletmelerde null. */
   signup_status: SignupStatus | null
+  /** Gizli personel giriş adresi ("/panel/g/<key>"). */
+  panel_login_path: string | null
 }
 
 export type SignupStatus = 'pending' | 'approved' | 'rejected'

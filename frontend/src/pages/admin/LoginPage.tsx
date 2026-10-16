@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Checkbox } from '../../components/ui/Checkbox'
 import { RememberedAccount } from '../../components/RememberedAccount'
@@ -9,14 +10,16 @@ import { Input } from '../../components/ui/Input'
 import { PhoneInput } from '../../components/ui/PhoneInput'
 import { ThemeToggle } from '../../lib/theme'
 import AuthLayout from '../../layouts/AuthLayout'
-import { errorMessage } from '../../lib/api'
+import { ApiError, authApi, errorMessage } from '../../lib/api'
+import { clearPanelKey, setPanelKey } from '../../lib/panelKey'
+import NotFoundPage from '../NotFoundPage'
 import { useStaffAuth } from '../../lib/auth'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 import { useTenant } from '../../lib/queries'
 import { ForgotPasswordFlow } from './ForgotPasswordFlow'
 import { useDocumentTitle, useFavicon, useNoIndex } from '../../lib/head'
 
-export default function LoginPage() {
+function LoginForm() {
   useNoIndex()
   const { status, login, logout, me } = useStaffAuth()
   const tenant = useTenant()
@@ -110,4 +113,54 @@ export default function LoginPage() {
     </AuthLayout>
     </>
   )
+}
+
+/** Gizli giriş adresi: anahtar sunucuda doğrulanmadan form hiç görünmez (yanlışsa 404 sayfası). */
+export default function LoginPage() {
+  useNoIndex()
+  const { key = '' } = useParams()
+  const verify = useQuery({
+    queryKey: ['panel-key', key],
+    queryFn: async () => {
+      await authApi.verifyPanelKey(key)
+      return true
+    },
+    retry: false,
+    staleTime: Infinity,
+    gcTime: 0,
+  })
+  const status = verify.error instanceof ApiError ? verify.error.status : null
+  const valid = verify.isSuccess
+
+  useEffect(() => {
+    if (valid) setPanelKey(key)
+    else if (status === 404) clearPanelKey()
+  }, [valid, status, key])
+
+  if (verify.isPending) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-ink">
+        <Spinner size="lg" label="Yükleniyor" />
+      </div>
+    )
+  }
+  if (status === 404) return <NotFoundPage />
+  if (verify.isError) {
+    return (
+      <main className="pt-safe pb-safe flex min-h-dvh flex-col items-center justify-center bg-ink px-5 text-center">
+        <h1 className="font-display text-3xl font-medium text-cream">
+          {status === 429 ? 'Çok fazla deneme.' : 'Şu an bağlanılamıyor.'}
+        </h1>
+        <p role="alert" className="mt-3 max-w-sm text-muted">
+          {status === 429 ? 'Çok fazla deneme, daha sonra tekrar deneyin.' : errorMessage(verify.error)}
+        </p>
+        {status !== 429 && (
+          <Button size="lg" className="mt-8" onClick={() => void verify.refetch()}>
+            Tekrar dene
+          </Button>
+        )}
+      </main>
+    )
+  }
+  return <LoginForm />
 }

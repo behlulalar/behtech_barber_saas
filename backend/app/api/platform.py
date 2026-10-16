@@ -328,6 +328,15 @@ async def platform_create_tenant(
     return await platform_services.create_tenant(db, data, admin, request)
 
 
+@router.post("/tenants/{tenant_id}/login-token/regenerate", response_model=TenantOut)
+async def platform_regenerate_login_token(
+    tenant_id: int, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    """Gizli giriş adresini yeniler (eski adres anında geçersiz olur; kaybedilen/sızan adres için)."""
+    return await platform_services.regenerate_login_token(db, tenant_id, admin, request)
+
+
 @router.post("/tenants/{tenant_id}/signup/approve", response_model=TenantOut)
 async def platform_approve_signup(
     tenant_id: int, request: Request,

@@ -9,6 +9,7 @@ import { useStaffAuth } from '../lib/auth'
 import { fullName } from '../lib/format'
 import { useDocumentTitle, useFavicon, useRouteLabel, useNoIndex } from '../lib/head'
 import { useTenant } from '../lib/queries'
+import { useRegisterServiceWorker, useTenantPanelManifest } from '../lib/pwa'
 import { PanelShell, type NavItem } from './PanelShell'
 
 const NAV: NavItem[] = [
@@ -47,7 +48,7 @@ function SupportBanner({ who, readOnly }: { who: string; readOnly: boolean }) {
     logout()
     // window.open ile açıldıysa sekmeyi kapatmayı dene; kapanmazsa giriş sayfasına git.
     if (window.opener) window.close()
-    navigate('/panel/giris', { replace: true })
+    navigate('/panel', { replace: true })
   }
 
   return (
@@ -78,6 +79,8 @@ export default function AdminLayout() {
   const nav = isManager ? NAV : NAV.filter((n) => !n.managerOnly)
   useDocumentTitle(useRouteLabel(NAV), 'Panel', tenant.data?.business_name)
   useFavicon(tenant.data?.logo_image)
+  useTenantPanelManifest(!!tenant.data)
+  useRegisterServiceWorker()
   const imp = me?.impersonated_by
   return (
     <PanelShell
@@ -88,6 +91,7 @@ export default function AdminLayout() {
           <AnnouncementBanner />
         </>
       }
+      installable
       eyebrow="Yönetim"
       brand={tenant.data?.business_name ?? 'Randevu Paneli'}
       nav={nav}

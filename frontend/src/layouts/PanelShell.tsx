@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode }
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
+import { InstallButton } from '../components/InstallButton'
 import { Drawer } from '../components/ui/Drawer'
 import { cn } from '../lib/cn'
 import { ThemeToggle } from '../lib/theme'
@@ -33,6 +34,8 @@ interface PanelShellProps {
   banner?: ReactNode
   /** İçeriğin en üstünde (yapışık olmayan) duyuru alanı. */
   notice?: ReactNode
+  /** "Uygulamayı yükle" düğmesini göster (işletme paneli). */
+  installable?: boolean
   /** İçerik genişliği: tablolu sayfalar için 'wide'. */
   width?: 'default' | 'wide'
 }
@@ -72,7 +75,7 @@ function NavList({ nav, onNavigate, variant }: { nav: NavItem[]; onNavigate?: ()
   )
 }
 
-function UserBlock({ user, onLogout }: { user: PanelShellProps['user']; onLogout: () => void }) {
+function UserBlock({ user, onLogout, installable }: { user: PanelShellProps['user']; onLogout: () => void; installable?: boolean }) {
   return (
     <div className="border-t border-panel-line p-3">
       <div className="flex items-center gap-3 px-2 py-2">
@@ -82,6 +85,7 @@ function UserBlock({ user, onLogout }: { user: PanelShellProps['user']; onLogout
           <p className="truncate text-xs text-muted">{user.subtitle}</p>
         </div>
       </div>
+      {installable && <InstallButton />}
       <ThemeToggle withLabel className="mt-1 w-full hover:bg-panel-raised" />
       <button
         type="button"
@@ -96,7 +100,7 @@ function UserBlock({ user, onLogout }: { user: PanelShellProps['user']; onLogout
 }
 
 /** Admin ve Platform layout'larının ortak iskeleti: masaüstü kenar çubuğu, mobil üst çubuk + alt sekme çubuğu + çekmece. */
-export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner, notice, width = 'default' }: PanelShellProps) {
+export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner, notice, installable, width = 'default' }: PanelShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const bannerRef = useRef<HTMLDivElement>(null)
   const [bannerH, setBannerH] = useState(0)
@@ -135,7 +139,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner,
           <NavList nav={nav} variant="sidebar" />
           {extra && <div className="mt-4 px-3">{extra}</div>}
         </div>
-        <UserBlock user={user} onLogout={onLogout} />
+        <UserBlock user={user} onLogout={onLogout} installable={installable} />
       </aside>
 
       <div className="min-w-0">
@@ -213,7 +217,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner,
             <NavList nav={nav} variant="drawer" onNavigate={() => setDrawerOpen(false)} />
             {extra && <div className="mt-4 px-3">{extra}</div>}
           </div>
-          <UserBlock user={user} onLogout={onLogout} />
+          <UserBlock user={user} onLogout={onLogout} installable={installable} />
         </div>
       </Drawer>
       </div>

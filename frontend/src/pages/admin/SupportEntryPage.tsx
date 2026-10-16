@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { buttonStyles } from '../../components/ui/Button'
 import { Spinner } from '../../components/ui/Spinner'
 import { authApi, errorMessage, tokenStore } from '../../lib/api'
+import { getPanelKey, panelLoginPath } from '../../lib/panelKey'
 import { PRODUCT_NAME, useDocumentTitle } from '../../lib/head'
 
 /** Platform panelinden gelen tek kullanımlık destek kodunu oturuma çevirir (`/panel/destek?code=…`). */
@@ -33,6 +34,7 @@ export default function SupportEntryPage() {
       .catch((err) => setError(errorMessage(err, 'Destek bağlantısı geçersiz veya süresi dolmuş')))
   }, [params, navigate])
 
+  const panelKey = getPanelKey()
   if (!error) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-ink px-5 text-center">
@@ -46,8 +48,8 @@ export default function SupportEntryPage() {
       <p className="eyebrow">Destek girişi</p>
       <h1 className="mt-4 font-display text-3xl font-medium text-cream">Oturum açılamadı</h1>
       <p role="alert" className="mt-3 max-w-sm text-muted">{error}</p>
-      <Link to="/panel/giris" className={buttonStyles({ size: 'lg', className: 'mt-8' })}>
-        Giriş sayfasına git
+      <Link to={panelKey ? panelLoginPath(panelKey) : '/'} className={buttonStyles({ size: 'lg', className: 'mt-8' })}>
+        {panelKey ? 'Giriş sayfasına git' : 'Ana sayfaya git'}
       </Link>
     </div>
   )
