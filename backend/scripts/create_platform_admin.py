@@ -1,6 +1,6 @@
 """Create (or reset the password of) a platform admin.
 
-Usage: .venv/bin/python scripts/create_platform_admin.py --phone 5000000000 --password 'secret123'
+Usage: python scripts/create_platform_admin.py --name "Ad Soyad"   (telefon ve şifre sorulur; şifre gizli girilir)
 """
 import argparse
 import asyncio
@@ -40,14 +40,31 @@ async def main(phone: str, password: str, name: str | None) -> None:
     print(f"Platform admin {phone}: {status}")
 
 
+def _ask_interactive(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Telefon/şifre verilmemişse sorar (şifre GİZLİ girilir, komut satırında/işlem listesinde görünmez)."""
+    import getpass
+
+    if not args.phone:
+        args.phone = input("Telefon (5XXXXXXXXX): ").strip()
+    if not args.password:
+        first = getpass.getpass("Şifre (en az 8 karakter): ")
+        if first != getpass.getpass("Şifre (tekrar): "):
+            parser.error("şifreler aynı değil")
+        args.password = first
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--phone", required=True, help="10 digits, starts with 5 (e.g. 5000000000)")
-    parser.add_argument("--password", required=True)
-    parser.add_argument("--name", help="optional display name")
+    parser.add_argument("--phone", help="10 hane, 5 ile başlar (verilmezse sorulur)")
+    parser.add_argument("--password", help="verilmezse GİZLİ sorulur (önerilen: argüman olarak vermeyin)")
+    parser.add_argument("--name", help="görünen ad (isteğe bağlı)")
     args = parser.parse_args()
+    _ask_interactive(args, parser)
     if not re.fullmatch(r"5\d{9}", args.phone):
-        parser.error("phone must match ^5\\d{9}$")
-    if len(args.password) < 6:
-        parser.error("password must be at least 6 characters")
+        parser.error("telefon ^5\\d{9}$ biçiminde olmalı")
+    from app.core.password_policy import password_policy_error
+
+    problem = password_policy_error(args.password, args.phone)  # platform yöneticileri için aynı kural: >= 8, yaygın değil, telefona eşit değil
+    if problem:
+        parser.error(problem)
     asyncio.run(main(args.phone, args.password, args.name))

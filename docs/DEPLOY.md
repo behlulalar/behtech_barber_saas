@@ -51,7 +51,7 @@ cd /opt/berber/deploy/prod
 docker compose ps                         # durum
 docker compose logs -f --tail 100 backend # günlük
 docker compose restart backend
-docker compose exec backend python scripts/create_platform_admin.py --name "Ad Soyad"   # ilk platform yöneticisi (telefon/şifre sorar)
+docker compose exec backend python scripts/create_platform_admin.py --name "Ad Soyad"   # ilk platform yöneticisi (telefon ve şifre sorulur; şifre gizli girilir; -t ile çalıştırın: ssh -t ... docker compose exec ...)
 docker compose exec backend python scripts/reset_platform_2fa.py --phone <tel>          # 2FA kurtarma
 docker compose exec backend python scripts/run_billing_checks.py
 ```
