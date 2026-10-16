@@ -75,6 +75,7 @@ class PlatformAdminCreate(BaseModel):
 
 class PlatformAdminUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=100)
+    phone: Phone | None = None  # giriş telefonu; değişirse yöneticinin açık oturumları düşer (kendisininki hariç)
     is_active: bool | None = None
 
 

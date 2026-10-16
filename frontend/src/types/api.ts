@@ -710,6 +710,7 @@ export interface PlatformAdminCreate {
 
 export interface PlatformAdminUpdate {
   name?: string | null
+  phone?: string
   is_active?: boolean
 }
 

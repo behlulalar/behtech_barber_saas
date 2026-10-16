@@ -167,6 +167,69 @@ function AddAdminBody({ onClose }: { onClose: () => void }) {
   )
 }
 
+/* ------------------------------ Yönetici düzenle ------------------------------ */
+
+export function EditAdminModal({ admin, onClose }: { admin: PlatformAdmin | null; onClose: () => void }) {
+  return admin ? <EditAdminBody key={admin.id} admin={admin} onClose={onClose} /> : null
+}
+
+function EditAdminBody({ admin, onClose }: { admin: PlatformAdmin; onClose: () => void }) {
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [phone, setPhone] = useState(admin.phone)
+  const [name, setName] = useState(admin.name ?? '')
+  const [error, setError] = useState<string | null>(null)
+  const phoneOk = isValidPhone(phone)
+  const changed = phone !== admin.phone || name.trim() !== (admin.name ?? '')
+
+  const mut = useMutation({
+    mutationFn: () => platformApi.updateAdmin(admin.id, { name: name.trim() || null, phone }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['platform', 'admins'] })
+      toast.success('Yönetici güncellendi')
+      onClose()
+    },
+    onError: (err) => setError(errorMessage(err)),
+  })
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!phoneOk || !changed || mut.isPending) return
+    setError(null)
+    mut.mutate()
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Yöneticiyi düzenle"
+      description={admin.is_me ? 'Kendi bilgilerinizi düzenliyorsunuz.' : 'Telefon değişirse bu yöneticinin açık oturumları kapanır.'}
+      dismissible={!mut.isPending}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={mut.isPending}>
+            Vazgeç
+          </Button>
+          <Button type="submit" form="edit-admin-form" loading={mut.isPending} disabled={!phoneOk || !changed}>
+            Kaydet
+          </Button>
+        </>
+      }
+    >
+      <form id="edit-admin-form" onSubmit={submit} className="flex flex-col gap-4">
+        <Field label="Ad" hint="İsteğe bağlı">
+          <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoComplete="off" data-autofocus />
+        </Field>
+        <Field label="Cep telefonu (giriş adı)" required hint="5XXXXXXXXX" error={phone.length === 10 && !phoneOk ? 'Geçerli bir cep telefonu girin' : undefined}>
+          <PhoneInput value={phone} onValueChange={setPhone} autoComplete="off" />
+        </Field>
+        <ServerError message={error} />
+      </form>
+    </Modal>
+  )
+}
+
 /* ------------------------------ Şifre sıfırla ------------------------------ */
 
 export function ResetPasswordModal({ admin, onClose }: { admin: PlatformAdmin | null; onClose: () => void }) {

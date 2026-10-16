@@ -217,3 +217,17 @@ async def test_admin_routes_require_platform_token(api, shop):
                          ("GET", "/api/platform/system/status"), ("POST", "/api/platform/me/logout-all")):
         assert (await api.request(method, path)).status_code == 401, path
         assert (await api.request(method, path, token=shop.owner_token)).status_code == 401, path
+
+
+async def test_admin_phone_edit(api, platform_admin):
+    from tests.factories import make_platform_admin
+    tok = mint_platform_token(platform_admin)
+    other = await make_platform_admin(phone="5000000099", password="baska-sifre-9")
+    r = await api.patch(f"/api/platform/admins/{other.id}", token=tok, json={"phone": "5000000098", "name": "Yeni Ad"})
+    assert r.status_code == 200 and r.json()["phone"] == "5000000098" and r.json()["name"] == "Yeni Ad"
+    # Eski token düştü (telefon giriş adı), kendi telefonunu değiştirmek ise oturumu düşürmez
+    assert (await api.get("/api/platform/me", token=mint_platform_token(other))).status_code == 401
+    assert (await api.patch(f"/api/platform/admins/{other.id}", token=tok, json={"phone": platform_admin.phone})).status_code == 409
+    r = await api.patch(f"/api/platform/admins/{platform_admin.id}", token=tok, json={"phone": "5000000097"})
+    assert r.status_code == 200
+    assert (await api.get("/api/platform/me", token=tok)).status_code == 200

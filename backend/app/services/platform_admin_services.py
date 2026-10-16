@@ -74,6 +74,14 @@ async def update_admin(
         if new_name != target.name:
             target.name = new_name
             changed.append("name")
+    if fields.get("phone") is not None and fields["phone"] != target.phone:
+        taken = await db.execute(select(PlatformAdmin.id).where(PlatformAdmin.phone == fields["phone"], PlatformAdmin.id != target.id))
+        if taken.first() is not None:
+            raise HTTPException(status_code=409, detail=DUP_MSG)
+        target.phone = fields["phone"]
+        if target.id != me.id:
+            target.token_version += 1
+        changed.append("phone")
     if fields.get("is_active") is not None and fields["is_active"] != target.is_active:
         if not fields["is_active"]:
             if target.id == me.id:

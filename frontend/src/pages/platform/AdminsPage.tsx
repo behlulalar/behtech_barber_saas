@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CircleCheck, CircleSlash, KeyRound, LogOut, Power, Trash2, UserPlus } from 'lucide-react'
+import { CircleCheck, CircleSlash, KeyRound, LogOut, Pencil, Power, Trash2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '../../components/ui/Badge'
 import { Button, IconButton } from '../../components/ui/Button'
@@ -14,7 +14,7 @@ import { errorMessage, platformApi } from '../../lib/api'
 import { usePlatformAuth } from '../../lib/auth'
 import { formatPhone } from '../../lib/format'
 import type { PlatformAdmin } from '../../types/api'
-import { AddAdminModal, ChangePasswordModal, ResetPasswordModal } from './AdminModals'
+import { AddAdminModal, ChangePasswordModal, EditAdminModal, ResetPasswordModal } from './AdminModals'
 import { formatDateTimeDMY, ServerError } from './platformShared'
 
 function ActiveBadge({ active }: { active: boolean }) {
@@ -77,6 +77,7 @@ export default function AdminsPage() {
   const [loggingOutAll, setLoggingOutAll] = useState(false)
   const [adding, setAdding] = useState(false)
   const [resetting, setResetting] = useState<PlatformAdmin | null>(null)
+  const [editing, setEditing] = useState<PlatformAdmin | null>(null)
   const [toggling, setToggling] = useState<PlatformAdmin | null>(null)
   const [deleting, setDeleting] = useState<PlatformAdmin | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -129,6 +130,9 @@ export default function AdminsPage() {
   function actions(a: PlatformAdmin) {
     return (
       <div className="flex flex-wrap items-center justify-end gap-1.5">
+        <Button size="sm" variant="ghost" leftIcon={<Pencil className="size-4" />} onClick={() => setEditing(a)}>
+          Düzenle
+        </Button>
         <Button size="sm" variant="ghost" leftIcon={<Power className="size-4" />} onClick={() => onToggle(a)} disabled={toggle.isPending}>
           {a.is_active ? 'Pasife al' : 'Aktifleştir'}
         </Button>
@@ -145,6 +149,9 @@ export default function AdminsPage() {
   function mobileActions(a: PlatformAdmin) {
     return (
       <div className="-mr-2 -mt-2 flex shrink-0">
+        <IconButton label="Düzenle" onClick={() => setEditing(a)}>
+          <Pencil className="size-4" />
+        </IconButton>
         <IconButton label={a.is_active ? 'Pasife al' : 'Aktifleştir'} onClick={() => onToggle(a)} disabled={toggle.isPending}>
           <Power className="size-4" />
         </IconButton>
@@ -221,6 +228,7 @@ export default function AdminsPage() {
 
       <ChangePasswordModal open={changingPw} onClose={() => setChangingPw(false)} phone={me?.phone ?? ''} />
       <AddAdminModal open={adding} onClose={() => setAdding(false)} />
+      <EditAdminModal admin={editing} onClose={() => setEditing(null)} />
       <ResetPasswordModal admin={resetting} onClose={() => setResetting(null)} />
 
       <ConfirmDialog
