@@ -16,7 +16,7 @@ DUP_MSG = "Bu telefon numarası zaten kayıtlı"
 def admin_out(a: PlatformAdmin, me_id: int) -> PlatformAdminOut:
     return PlatformAdminOut(
         id=a.id, phone=a.phone, name=a.name, is_active=a.is_active, last_login_at=a.last_login_at,
-        created_at=a.created_at, is_me=a.id == me_id,
+        created_at=a.created_at, is_me=a.id == me_id, totp_enabled=a.totp_enabled,
     )
 
 

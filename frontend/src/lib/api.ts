@@ -58,6 +58,10 @@ import type {
   PaymentMethodCreate,
   PaymentMethodUpdate,
   PlatformMe,
+  PlatformLoginResponse,
+  TwoFactorStatus,
+  TwoFactorSetupOut,
+  TwoFactorConfirmOut,
   PlatformStats,
   MetricsOverview,
   PlatformTenant,
@@ -136,6 +140,10 @@ export const tokenStore = {
     window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { kind } }))
   },
 }
+
+/** Kısıtlı (2FA kurulumu bekleyen) platform oturumu başka uçlara 403 alınca bu olay yayılır. */
+export const MFA_SETUP_EVENT = 'beh:mfa-setup-required'
+const MFA_SETUP_DETAIL = 'İki aşamalı doğrulama kurulumu gerekli'
 
 /** JWT `exp` değerini (ms cinsinden) döndürür; çözülemezse null. */
 export function tokenExpiresAt(token: string): number | null {
@@ -235,7 +243,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (response.status === 401 && auth && sentToken) {
       handleUnauthorized(auth)
     }
-    throw new ApiError(response.status, parseDetail(parsed))
+    const detail = parseDetail(parsed)
+    if (response.status === 403 && auth === 'platform' && detail.includes(MFA_SETUP_DETAIL)) {
+      window.dispatchEvent(new CustomEvent(MFA_SETUP_EVENT))
+    }
+    throw new ApiError(response.status, detail)
   }
 
   if (response.status === 204) return undefined as T
@@ -380,7 +392,19 @@ export const adminApi = {
 const p = 'platform' as const
 
 export const platformApi = {
-  login: (data: LoginRequest) => request<TokenResponse>('/platform/login', { method: 'POST', body: data }),
+  login: (data: LoginRequest) => request<PlatformLoginResponse>('/platform/login', { method: 'POST', body: data }),
+  loginMfa: (mfa_token: string, code: string) =>
+    request<PlatformLoginResponse>('/platform/login/mfa', { method: 'POST', body: { mfa_token, code } }),
+  twoFactor: {
+    status: () => request<TwoFactorStatus>('/platform/2fa', { auth: p }),
+    setup: (password: string) => request<TwoFactorSetupOut>('/platform/2fa/setup', { method: 'POST', body: { password }, auth: p }),
+    confirm: (code: string) => request<TwoFactorConfirmOut>('/platform/2fa/confirm', { method: 'POST', body: { code }, auth: p }),
+    disable: (password: string, code: string) =>
+      request<void>('/platform/2fa/disable', { method: 'POST', body: { password, code }, auth: p }),
+    backupCodes: (password: string, code: string) =>
+      request<{ backup_codes: string[] }>('/platform/2fa/backup-codes', { method: 'POST', body: { password, code }, auth: p }),
+  },
+  resetAdminTwoFactor: (id: number) => request<void>(`/platform/admins/${id}/reset-2fa`, { method: 'POST', auth: p }),
   me: () => request<PlatformMe>('/platform/me', { auth: p }),
   getStats: () => request<PlatformStats>('/platform/stats', { auth: p }),
   getMetrics: () => request<MetricsOverview>('/platform/metrics/overview', { auth: p }),

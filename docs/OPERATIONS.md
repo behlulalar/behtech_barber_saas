@@ -38,6 +38,8 @@ Hazır örnek: [`deploy/crontab.example`](../deploy/crontab.example). Özet:
 | `BACKUP_RETENTION_DAYS` | - | Yedeklerin saklanma süresi (gün) |
 | `EVOLUTION_API_BASE_URL`, `EVOLUTION_API_KEY` | - | Evolution sunucusu (platform altyapısı) adresi ve anahtarı |
 | `EVOLUTION_WEBHOOK_URL`, `EVOLUTION_WEBHOOK_SECRET` | yok | Dükkân WhatsApp bağlantı olaylarının geleceği adres ve `?token=` anahtarı; yoksa durum yalnızca panel açıldığında yenilenir |
+| `PLATFORM_2FA_REQUIRED` | otomatik | `true`/`false`; boşsa production'da zorunlu, geliştirmede isteğe bağlı |
+| `TOTP_ENCRYPTION_KEY` | JWT_SECRET'tan türetilir | 2FA gizli anahtarlarını şifreleyen anahtar; değişirse mevcut 2FA'lar çözülemez (sıfırlama gerekir) |
 | `WHATSAPP_TENANT_HOURLY_LIMIT` / `WHATSAPP_TENANT_DAILY_LIMIT` | 300 / 2000 | Dükkân başına doğrulama kodu tavanı (son çare). Onay/hatırlatma gibi sistem mesajları SINIRSIZ, kuyrukta aralıklı gider |
 | `OTP_IP_HOURLY_LIMIT` / `OTP_IP_DAILY_LIMIT` | 10 / 30 | Aynı IP'den doğrulama kodu isteği |
 | `OTP_UNVERIFIED_BREAKER` | 25 | Son 1 saatte girilmeyen kod eşiği; aşılınca kod gönderimi durur, platforma bildirim gider |

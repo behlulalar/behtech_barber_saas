@@ -129,12 +129,21 @@ async def get_current_customer(
     return CustomerIdentity(phone=payload["phone"], tenant_id=tenant.id)
 
 
-async def get_current_platform_admin(
-    token: str = Depends(platform_oauth2_scheme), db: Session = Depends(get_db)
+async def get_platform_admin_any(
+    request: Request, token: str = Depends(platform_oauth2_scheme), db: Session = Depends(get_db)
 ) -> PlatformAdmin:
+    """Geçerli platform oturumu; 2FA kurulum-oturumu (mfa_setup) da kabul edilir. Yalnızca /platform/me ve /platform/2fa/*."""
     payload = _decode(token, "platform_admin")
     result = await db.execute(select(PlatformAdmin).where(PlatformAdmin.id == int(payload["sub"])))
     admin = result.scalar_one_or_none()
     if admin is None or not admin.is_active or payload.get("tv", 0) != admin.token_version:
         raise _INVALID
+    request.state.mfa_setup_only = bool(payload.get("mfa_setup"))
+    return admin
+
+
+async def get_current_platform_admin(admin: PlatformAdmin = Depends(get_platform_admin_any), request: Request = None) -> PlatformAdmin:
+    """Tam yetkili oturum. 2FA zorunluyken kurulumunu tamamlamamış yöneticinin kısıtlı oturumu burada reddedilir (403)."""
+    if getattr(request.state, "mfa_setup_only", False):
+        raise HTTPException(status_code=403, detail="İki aşamalı doğrulama kurulumu gerekli")
     return admin

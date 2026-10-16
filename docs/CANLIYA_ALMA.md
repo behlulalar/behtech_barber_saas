@@ -81,6 +81,7 @@ tanınır: `<slug>.behtechlabs.com`. Ürünün tanıtım sitesi `randevu.behtech
 - [ ] **VAPID** (web push): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:…`. Geliştirme anahtarları `backend/.env` içinde;
   üretim için **yeniden üretin** (`py-vapid` ile) — özel anahtar paylaşılmamalı. Yenileyince eski push abonelikleri geçersiz olur (sorun değil).
 - [ ] **Evolution API:** `EVOLUTION_API_BASE_URL`, `EVOLUTION_API_KEY` (yeni, güçlü), `EVOLUTION_INSTANCE_NAME`.
+- [ ] **Platform 2FA:** production'da zorunludur (`ENVIRONMENT=production` iken kendiliğinden). `TOTP_ENCRYPTION_KEY` (uzun rastgele, JWT_SECRET'tan ayrı) ayarlayın. **İlk girişte yöneticiler kurulum ekranına yönlenir** (telefonda Authenticator uygulaması gerekir; yedek kodları güvenli saklayın). Kilitlenmeye karşı **en az 2 yönetici** oluşturun; son çare: sunucuda `scripts/reset_platform_2fa.py --phone <tel>`.
 - [ ] **Platform yöneticisi parolası:** geliştirme hesabı `5000000000 / 123456` — **kullanmayın.** Üretimde yeni yönetici oluşturun:
   `cd backend && .venv/bin/python scripts/create_platform_admin.py --name "Ad Soyad"` (telefon/parola ister), girişten sonra geliştirme hesabını
   Platform → Yöneticiler'den silin/pasife alın. Parola politikası: ≥ 8 karakter, telefona eşit değil, yaygın parola değil.

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CircleCheck, CircleSlash, KeyRound, LogOut, Pencil, Power, Trash2, UserPlus } from 'lucide-react'
+import { CircleCheck, CircleSlash, KeyRound, LogOut, Pencil, Power, ShieldOff, Trash2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '../../components/ui/Badge'
 import { Button, IconButton } from '../../components/ui/Button'
@@ -16,6 +16,7 @@ import { formatPhone } from '../../lib/format'
 import type { PlatformAdmin } from '../../types/api'
 import { AddAdminModal, ChangePasswordModal, EditAdminModal, ResetPasswordModal } from './AdminModals'
 import { formatDateTimeDMY, ServerError } from './platformShared'
+import { TwoFactorSection } from './TwoFactor'
 
 function ActiveBadge({ active }: { active: boolean }) {
   return active ? (
@@ -63,6 +64,7 @@ function MyAccount({ onChangePassword, onLogoutAll }: { onChangePassword: () => 
       ) : (
         <Skeleton className="h-12 w-full" />
       )}
+      <TwoFactorSection />
     </Card>
   )
 }
@@ -80,6 +82,7 @@ export default function AdminsPage() {
   const [editing, setEditing] = useState<PlatformAdmin | null>(null)
   const [toggling, setToggling] = useState<PlatformAdmin | null>(null)
   const [deleting, setDeleting] = useState<PlatformAdmin | null>(null)
+  const [resetting2fa, setResetting2fa] = useState<PlatformAdmin | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const logoutAll = useMutation({
@@ -117,6 +120,19 @@ export default function AdminsPage() {
     },
   })
 
+  const reset2fa = useMutation({
+    mutationFn: (a: PlatformAdmin) => platformApi.resetAdminTwoFactor(a.id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['platform', 'admins'] })
+      toast.success('2FA sıfırlandı')
+      setResetting2fa(null)
+    },
+    onError: (err) => {
+      setResetting2fa(null)
+      setActionError(errorMessage(err))
+    },
+  })
+
   function onToggle(a: PlatformAdmin) {
     setActionError(null)
     if (a.is_active) setToggling(a)
@@ -139,6 +155,11 @@ export default function AdminsPage() {
         <Button size="sm" variant="ghost" leftIcon={<KeyRound className="size-4" />} onClick={() => setResetting(a)}>
           Şifre sıfırla
         </Button>
+        {!a.is_me && (
+          <Button size="sm" variant="ghost" leftIcon={<ShieldOff className="size-4" />} onClick={() => { setActionError(null); setResetting2fa(a) }}>
+            2FA&apos;yı sıfırla
+          </Button>
+        )}
         <Button size="sm" variant="ghost" className="text-danger hover:text-danger" leftIcon={<Trash2 className="size-4" />} onClick={() => onDelete(a)}>
           Sil
         </Button>
@@ -158,6 +179,11 @@ export default function AdminsPage() {
         <IconButton label="Şifre sıfırla" onClick={() => setResetting(a)}>
           <KeyRound className="size-4" />
         </IconButton>
+        {!a.is_me && (
+          <IconButton label="2FA'yı sıfırla" onClick={() => { setActionError(null); setResetting2fa(a) }}>
+            <ShieldOff className="size-4" />
+          </IconButton>
+        )}
         <IconButton label="Sil" className="text-danger" onClick={() => onDelete(a)}>
           <Trash2 className="size-4" />
         </IconButton>
@@ -250,6 +276,16 @@ export default function AdminsPage() {
         title="Yönetici pasife alınsın mı?"
         description={`${toggling?.name || (toggling ? formatPhone(toggling.phone) : '')} artık giriş yapamaz ve açık oturumları kapanır. Dilediğiniz zaman yeniden aktifleştirebilirsiniz.`}
         confirmLabel="Pasife al"
+      />
+      <ConfirmDialog
+        open={!!resetting2fa}
+        onClose={() => setResetting2fa(null)}
+        onConfirm={() => resetting2fa && reset2fa.mutate(resetting2fa)}
+        loading={reset2fa.isPending}
+        destructive
+        title="2FA sıfırlansın mı?"
+        description="Telefonunu kaybeden yönetici yeniden kurmak zorunda kalır, açık oturumları kapanır."
+        confirmLabel="Sıfırla"
       />
       <ConfirmDialog
         open={!!deleting}

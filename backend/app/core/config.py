@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     whatsapp_queue_gap_max: float = 8.0
     # Kuyruk ve sağlık kontrolü uygulama içinde çalışsın mı (testlerde kapalı).
     whatsapp_worker_enabled: bool = True
+    # Platform yöneticileri için iki aşamalı doğrulama (TOTP). None = otomatik: production'da ZORUNLU, geliştirmede isteğe bağlı.
+    # Zorunluyken 2FA'sı olmayan yönetici girişte yalnızca kurulum ekranına erişebilen kısıtlı bir oturum alır.
+    platform_2fa_required: bool | None = None
+    # 2FA gizli anahtarlarını veritabanında şifreleyen anahtar (yoksa JWT_SECRET'tan türetilir; değişirse 2FA'lar sıfırlanmalı).
+    totp_encryption_key: str | None = None
     login_max_failures: int = 5
     login_lock_minutes: int = 15
     # Reverse proxy (nginx) arkasında True yapın: IP, X-Forwarded-For'un ilk değerinden alınır.

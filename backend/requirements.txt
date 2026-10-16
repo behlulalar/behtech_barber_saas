@@ -12,3 +12,7 @@ python-dotenv
 httpx
 pywebpush==2.5.0
 py-vapid==1.9.4
+
+# 2FA (TOTP): QR kodu SVG üretimi ve gizli anahtarı veritabanında şifreleme
+segno
+cryptography

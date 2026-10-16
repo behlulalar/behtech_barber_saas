@@ -142,7 +142,7 @@ async def test_list_admins_has_is_me(api, platform_admin):
     rows = (await api.get("/api/platform/admins", token=await tok(platform_admin))).json()
     assert [r["id"] for r in rows] == [platform_admin.id, other.id]
     assert [r["is_me"] for r in rows] == [True, False]
-    assert set(rows[0]) == {"id", "phone", "name", "is_active", "last_login_at", "created_at", "is_me"}
+    assert set(rows[0]) == {"id", "phone", "name", "is_active", "last_login_at", "created_at", "is_me", "totp_enabled"}
     assert "password" not in rows[0]
     rows2 = (await api.get("/api/platform/admins", token=await tok(other))).json()
     assert [r["is_me"] for r in rows2] == [False, True]

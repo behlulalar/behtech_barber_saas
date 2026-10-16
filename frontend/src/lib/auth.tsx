@@ -12,7 +12,7 @@ import {
 } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AUTH_EVENT, authApi, platformApi, tokenExpiresAt, tokenStore, type TokenKind } from './api'
-import type { CustomerName, PlatformMe, StaffMe, VerifyCodeResponse } from '../types/api'
+import type { CustomerName, PlatformLoginResponse, PlatformMe, StaffMe, VerifyCodeResponse } from '../types/api'
 import { Spinner } from '../components/ui/Spinner'
 import { getPanelKey, panelLoginPath } from './panelKey'
 
@@ -149,7 +149,11 @@ interface PlatformAuthValue {
   status: AuthStatus
   token: string | null
   me: PlatformMe | null
-  login: (phone: string, password: string, remember?: boolean) => Promise<void>
+  /** Şifre adımı. mfa_required ise oturum açılmaz; dönen mfa_token ile verifyMfa çağrılır. */
+  login: (phone: string, password: string, remember?: boolean) => Promise<PlatformLoginResponse>
+  verifyMfa: (mfaToken: string, code: string) => Promise<PlatformLoginResponse>
+  /** Oturum token'ını değiştirir (ör. 2FA kurulumu sonrası tam yetkili token). */
+  replaceToken: (token: string) => void
   logout: () => void
 }
 
@@ -177,10 +181,28 @@ function PlatformAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token])
 
-  const login = useCallback(async (phone: string, password: string, remember = false) => {
-    const res = await platformApi.login({ phone, password, remember })
-    setLoaded(false)
-    tokenStore.set('platform', res.access_token)
+  const applyLogin = useCallback((res: PlatformLoginResponse) => {
+    if (!res.mfa_required && res.access_token) {
+      setLoaded(false)
+      tokenStore.set('platform', res.access_token)
+    }
+    return res
+  }, [])
+
+  const login = useCallback(
+    async (phone: string, password: string, remember = false) =>
+      applyLogin(await platformApi.login({ phone, password, remember })),
+    [applyLogin],
+  )
+
+  const verifyMfa = useCallback(
+    async (mfaToken: string, code: string) => applyLogin(await platformApi.loginMfa(mfaToken, code)),
+    [applyLogin],
+  )
+
+  // Yükleniyor durumuna düşmeden token'ı değiştirir; me yeniden çekilir.
+  const replaceToken = useCallback((next: string) => {
+    tokenStore.set('platform', next)
   }, [])
 
   const logout = useCallback(() => {
@@ -191,8 +213,8 @@ function PlatformAuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<PlatformAuthValue>(() => {
     const status: AuthStatus = !token ? 'unauthenticated' : me && loaded ? 'authenticated' : loaded ? 'unauthenticated' : 'loading'
-    return { status, token, me: token ? me : null, login, logout }
-  }, [token, me, loaded, login, logout])
+    return { status, token, me: token ? me : null, login, verifyMfa, replaceToken, logout }
+  }, [token, me, loaded, login, verifyMfa, replaceToken, logout])
 
   return <PlatformAuthContext.Provider value={value}>{children}</PlatformAuthContext.Provider>
 }

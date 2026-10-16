@@ -406,6 +406,34 @@ export interface PlatformMe {
   id: number
   phone: string
   name?: string | null
+  totp_enabled?: boolean
+  mfa_setup_required?: boolean
+}
+
+export interface PlatformLoginResponse {
+  access_token: string | null
+  token_type: string
+  mfa_required: boolean
+  mfa_token: string | null
+  mfa_setup_required: boolean
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean
+  required: boolean
+  backup_codes_remaining: number
+}
+
+export interface TwoFactorSetupOut {
+  secret: string
+  otpauth_uri: string
+  /** data:image/svg+xml;base64,... */
+  qr: string
+}
+
+export interface TwoFactorConfirmOut {
+  backup_codes: string[]
+  access_token: string
 }
 
 export interface MetricsOverview {
@@ -744,6 +772,7 @@ export interface PlatformAdmin {
   last_login_at: string | null
   created_at: string
   is_me: boolean
+  totp_enabled: boolean
 }
 
 export interface PlatformAdminCreate {

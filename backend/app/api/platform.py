@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.password_policy import enforce_password_policy
 
 from app.core.database import get_db
-from app.core.deps import get_current_platform_admin
+from app.core.deps import get_current_platform_admin, get_platform_admin_any
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.appointment import Appointment
 from app.models.platform_admin import PlatformAdmin
@@ -37,11 +37,21 @@ from app.schemas.platform import (
     SystemStatus,
     TenantCreate,
     TenantUpdate,
+    BackupCodesOut,
+    MfaLoginIn,
+    PlatformLoginOut,
+    TwoFactorConfirmIn,
+    TwoFactorConfirmOut,
+    TwoFactorGuardedIn,
+    TwoFactorSetupIn,
+    TwoFactorSetupOut,
+    TwoFactorStatus,
 )
 from app.schemas.announcement import AnnouncementIn, AnnouncementOut, AnnouncementUpdate
 from app.schemas.whatsapp import PlatformWhatsappOut, WhatsappPauseIn
 from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantPage
 from app.services import whatsapp_admin_services as whatsapp_admin
+from app.services import platform_2fa_services as twofa
 from app.services import (
     announcement_services,
     audit_services,
@@ -59,7 +69,7 @@ from app.services.audit_services import audit
 router = APIRouter(prefix="/platform")
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=PlatformLoginOut)
 async def platform_login(data: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
     key = login_throttle.make_key(data.phone)
     await login_throttle.ensure_not_locked(db, "platform", key, request)
@@ -75,20 +85,74 @@ async def platform_login(data: LoginRequest, request: Request, db: AsyncSession 
             raise login_throttle.locked_now_error()
         raise HTTPException(status_code=401, detail="Telefon veya şifre hatalı")
     await login_throttle.clear_failures(db, "platform", key)
+    if admin.totp_enabled:
+        # Şifre doğru ama oturum VERİLMEZ: ikinci adım (6 haneli kod ya da yedek kod) gerekir.
+        await db.commit()
+        return PlatformLoginOut(mfa_required=True, mfa_token=twofa.make_mfa_token(admin, data.remember))
+    if twofa.required():
+        # 2FA zorunlu ama kurulu değil: yalnızca kurulum ekranına izin veren kısa ömürlü oturum.
+        await audit(db, actor=admin, request=request, action="platform.login", entity_type="platform_admin",
+                    entity_id=admin.id, summary="Platform girişi (2FA kurulumu bekleniyor)")
+        await db.commit()
+        return PlatformLoginOut(access_token=twofa.make_access_token(admin, data.remember, setup_only=True), mfa_setup_required=True)
+    return await _finish_login(db, admin, request, data.remember, "password")
+
+
+async def _finish_login(db: AsyncSession, admin: PlatformAdmin, request: Request, remember: bool, method: str) -> PlatformLoginOut:
     admin.last_login_at = datetime.now()
     await audit(db, actor=admin, request=request, action="platform.login", entity_type="platform_admin",
-                entity_id=admin.id, summary="Platform girişi yapıldı")
+                entity_id=admin.id, summary="Platform girişi yapıldı" + (" (2FA yedek kodu kullanıldı)" if method == "backup" else ""),
+                details={"method": method})
     await db.commit()
-    token = create_access_token(
-        {"sub": str(admin.id), "type": "platform_admin", "tv": admin.token_version},
-        expires_minutes=settings.remember_token_expire_minutes if data.remember else None,
-    )
-    return TokenResponse(access_token=token, token_type="bearer")
+    return PlatformLoginOut(access_token=twofa.make_access_token(admin, remember))
+
+
+@router.post("/login/mfa", response_model=PlatformLoginOut)
+async def platform_login_mfa(data: MfaLoginIn, request: Request, db: AsyncSession = Depends(get_db)):
+    admin, method, remember = await twofa.login_second_step(db, data.mfa_token, data.code, request)
+    return await _finish_login(db, admin, request, remember, method)
+
+
+@router.get("/2fa", response_model=TwoFactorStatus)
+async def twofa_status(admin: PlatformAdmin = Depends(get_platform_admin_any), db: AsyncSession = Depends(get_db)):
+    return await twofa.status(db, admin)
+
+
+@router.post("/2fa/setup", response_model=TwoFactorSetupOut)
+async def twofa_setup(data: TwoFactorSetupIn, admin: PlatformAdmin = Depends(get_platform_admin_any), db: AsyncSession = Depends(get_db)):
+    return await twofa.begin_setup(db, admin, data.password)
+
+
+@router.post("/2fa/confirm", response_model=TwoFactorConfirmOut)
+async def twofa_confirm(
+    data: TwoFactorConfirmIn, request: Request,
+    admin: PlatformAdmin = Depends(get_platform_admin_any), db: AsyncSession = Depends(get_db),
+):
+    codes = await twofa.confirm_setup(db, admin, data.code, request)
+    return TwoFactorConfirmOut(backup_codes=codes, access_token=twofa.make_access_token(admin, False))
+
+
+@router.post("/2fa/disable", status_code=204)
+async def twofa_disable(
+    data: TwoFactorGuardedIn, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db),
+):
+    await twofa.disable(db, admin, data.password, data.code, request)
+    return Response(status_code=204)
+
+
+@router.post("/2fa/backup-codes", response_model=BackupCodesOut)
+async def twofa_backup_codes(
+    data: TwoFactorGuardedIn, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db),
+):
+    return BackupCodesOut(backup_codes=await twofa.regenerate_backup_codes(db, admin, data.password, data.code, request))
 
 
 @router.get("/me", response_model=PlatformMe)
-async def platform_me(admin: PlatformAdmin = Depends(get_current_platform_admin)):
-    return PlatformMe(id=admin.id, phone=admin.phone, name=admin.name)
+async def platform_me(request: Request, admin: PlatformAdmin = Depends(get_platform_admin_any)):
+    return PlatformMe(id=admin.id, phone=admin.phone, name=admin.name, totp_enabled=admin.totp_enabled,
+                      mfa_setup_required=bool(getattr(request.state, "mfa_setup_only", False)))
 
 
 @router.post("/me/password", response_model=TokenResponse)
@@ -159,6 +223,19 @@ async def reset_admin_password(
     db: AsyncSession = Depends(get_db),
 ):
     await admin_svc.reset_password(db, admin, admin_id, data.password, request)
+    return Response(status_code=204)
+
+
+@router.post("/admins/{admin_id}/reset-2fa", status_code=204)
+async def reset_admin_2fa(
+    admin_id: int, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db),
+):
+    """Telefonunu kaybeden yöneticinin 2FA'sını BAŞKA bir yönetici sıfırlar (denetim kaydı, oturumları düşer)."""
+    target = (await db.execute(select(PlatformAdmin).where(PlatformAdmin.id == admin_id))).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=404, detail="Yönetici bulunamadı")
+    await twofa.reset_for(db, admin, target, request)
     return Response(status_code=204)
 
 

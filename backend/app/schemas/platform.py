@@ -44,6 +44,8 @@ class OwnerPasswordOut(BaseModel):
 
 
 class PlatformMe(BaseModel):
+    totp_enabled: bool = False
+    mfa_setup_required: bool = False  # true: oturum yalnızca 2FA kurulumu için geçerli (kurulum bitmeden başka uç açılmaz)
     id: int
     phone: str
     name: str | None = None
@@ -57,6 +59,7 @@ class PlatformStats(BaseModel):
 
 
 class PlatformAdminOut(BaseModel):
+    totp_enabled: bool = False
     id: int
     phone: str
     name: str | None
@@ -272,3 +275,51 @@ class MetricsOverview(BaseModel):
     churned_last_30: list[ChurnItem]
     at_risk: list[AtRiskItem]
     top_usage: list[UsageItem]
+
+
+class PlatformLoginOut(BaseModel):
+    """Giriş sonucu: ya doğrudan oturum, ya da ikinci adım (mfa_required + mfa_token), ya da kısıtlı kurulum oturumu."""
+    access_token: str | None = None
+    token_type: str = "bearer"
+    mfa_required: bool = False
+    mfa_token: str | None = None  # 5 dk geçerli; /platform/login/mfa ile kullanılır
+    mfa_setup_required: bool = False  # access_token yalnızca 2FA kurulumuna izin verir
+
+
+class MfaLoginIn(BaseModel):
+    mfa_token: str = Field(max_length=1000)
+    code: str = Field(max_length=32)  # 6 haneli kod ya da yedek kod
+
+
+class TwoFactorStatus(BaseModel):
+    enabled: bool
+    required: bool
+    backup_codes_remaining: int
+
+
+class TwoFactorSetupIn(BaseModel):
+    password: str = Field(max_length=128)
+
+
+class TwoFactorSetupOut(BaseModel):
+    secret: str  # elle girmek için
+    otpauth_uri: str
+    qr: str  # data:image/svg+xml;base64,...
+
+
+class TwoFactorConfirmIn(BaseModel):
+    code: str = Field(max_length=32)
+
+
+class TwoFactorConfirmOut(BaseModel):
+    backup_codes: list[str]  # yalnızca BİR KEZ gösterilir
+    access_token: str  # kurulum oturumu yerine tam yetkili oturum
+
+
+class TwoFactorGuardedIn(BaseModel):
+    password: str = Field(max_length=128)
+    code: str = Field(max_length=32)
+
+
+class BackupCodesOut(BaseModel):
+    backup_codes: list[str]
