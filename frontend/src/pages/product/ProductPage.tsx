@@ -88,9 +88,6 @@ function Header() {
               {n.label}
             </a>
           ))}
-          <a href="#iletisim" className="inline-flex min-h-11 items-center text-sm text-muted-strong transition-colors hover:text-cream">
-            Demo talep et
-          </a>
           <Link to="/kayit" className="inline-flex min-h-11 items-center rounded-sm bg-copper px-5 text-sm font-semibold text-ink hover:bg-copper-bright">
             Ücretsiz dene
           </Link>
@@ -121,9 +118,6 @@ function Header() {
           <Link to="/kayit" onClick={() => setOpen(false)} className={`${btnPrimary} mt-5 w-full`}>
             Ücretsiz dene
           </Link>
-          <a href="#iletisim" onClick={() => setOpen(false)} className={`${btnGhost} mt-3 w-full`}>
-            Demo talep et
-          </a>
         </nav>
       )}
     </header>
@@ -161,9 +155,6 @@ function Hero() {
             <Link to="/kayit" className={btnPrimary}>
               Ücretsiz dene
             </Link>
-            <a href="#iletisim" className={btnGhost}>
-              Demo talep et
-            </a>
             <a href={DEMO_SITE_URL} target="_blank" rel="noopener noreferrer" className={btnGhost}>
               Canlı demoyu gör <ArrowUpRight size={18} aria-hidden />
             </a>
@@ -448,37 +439,37 @@ function Faq() {
 function Contact() {
   const wa = CONTACT.whatsapp.replace(/\D/g, '')
   const email = CONTACT.email.trim()
-  const hasAny = Boolean(wa || email)
-  const msg = encodeURIComponent('Merhaba, BehTech Randevu için demo talep etmek istiyorum.')
+  const msg = encodeURIComponent('Merhaba, BehTech Randevu hakkında bilgi almak istiyorum.')
   return (
     <section id="iletisim" className="relative overflow-hidden border-t border-line bg-surface">
       <Pole className="absolute inset-x-0 top-0 h-1.5 opacity-80" />
       <div className="mx-auto max-w-6xl px-5 py-20 md:py-28">
         <Rv>
-          <p className="eyebrow">İletişim</p>
+          <p className="eyebrow">Başlayın</p>
           <h2 className="mt-4 max-w-3xl font-display text-5xl font-light leading-[1.04] tracking-tight md:text-7xl">
-            Dükkânınız için <span className="italic text-copper-bright">demo</span> isteyin.
+            Dükkânınız için <span className="italic text-copper-bright">14 gün</span> ücretsiz deneyin.
           </h2>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-strong">
-            {hasAny
-              ? 'Bize yazın; dükkânınıza uygun kurulumu birlikte konuşalım, fiyatı büyüklüğünüze göre netleştirelim.'
-              : 'Önce canlı demoda bir müşterinin gözüyle randevu almayı deneyin. İletişim bilgilerimiz çok yakında burada olacak.'}
+            Kaydolun, başvurunuzu inceleyip hesabınızı açalım. Önce canlı demoda bir müşterinin gözüyle randevu almayı da deneyebilirsiniz.
           </p>
         </Rv>
         <Rv delay={120} className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link to="/kayit" className={btnPrimary}>
+            Ücretsiz dene
+          </Link>
+          <a href={DEMO_SITE_URL} target="_blank" rel="noopener noreferrer" className={btnGhost}>
+            Canlı demoyu gör <ArrowUpRight size={18} aria-hidden />
+          </a>
           {wa && (
-            <a href={`https://wa.me/${wa}?text=${msg}`} target="_blank" rel="noopener noreferrer" className={btnPrimary}>
+            <a href={`https://wa.me/${wa}?text=${msg}`} target="_blank" rel="noopener noreferrer" className={btnGhost}>
               WhatsApp ile yazın
             </a>
           )}
           {email && (
-            <a href={`mailto:${email}?subject=${encodeURIComponent('Demo talebi')}`} className={wa ? btnGhost : btnPrimary}>
+            <a href={`mailto:${email}`} className={btnGhost}>
               E-posta gönderin
             </a>
           )}
-          <a href={DEMO_SITE_URL} target="_blank" rel="noopener noreferrer" className={hasAny ? btnGhost : btnPrimary}>
-            Canlı demoyu gör <ArrowUpRight size={18} aria-hidden />
-          </a>
         </Rv>
       </div>
     </section>

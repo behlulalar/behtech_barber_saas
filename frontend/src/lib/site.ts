@@ -10,6 +10,15 @@ export function isProductHost(hostname: string = window.location.hostname): bool
   return host === `${PRODUCT_SUBDOMAIN}.${BASE_DOMAIN}` || host === `${PRODUCT_SUBDOMAIN}.localhost`
 }
 
+/** Ürünün tanıtım sitesi adresi (demo dükkândan "geri dön" bağlantısı için). */
+export function productSiteUrl(): string {
+  if (import.meta.env.DEV) return `http://${PRODUCT_SUBDOMAIN}.localhost:${window.location.port || '80'}/`
+  return `https://${PRODUCT_SUBDOMAIN}.${BASE_DOMAIN}/`
+}
+
+/** Demo dükkânın slug'ı: bu sitede "tanıtım sayfasına dön" bandı gösterilir. */
+export const DEMO_SLUG = 'demo'
+
 /** Bir dükkânın canlı site adresi. */
 export function tenantSiteUrl(slug: string): string {
   return `https://${slug}.${BASE_DOMAIN}`

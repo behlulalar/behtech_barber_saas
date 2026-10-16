@@ -1,4 +1,4 @@
-import { CalendarCheck, LogIn, LogOut, Menu, X } from 'lucide-react'
+import { ArrowLeft, CalendarCheck, LogIn, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ContactLinks } from '../components/ContactLinks'
@@ -9,6 +9,7 @@ import { cn } from '../lib/cn'
 import { formatPhone } from '../lib/format'
 import { PRODUCT_NAME, useDocumentTitle, useFavicon, useRouteLabel } from '../lib/head'
 import { useTenant } from '../lib/queries'
+import { DEMO_SLUG, productSiteUrl } from '../lib/site'
 
 const LINKS = [
   { to: '/#hizmetler', label: 'Hizmetler' },
@@ -50,6 +51,16 @@ export default function PublicLayout() {
 
   return (
     <div className="flex min-h-svh flex-col bg-ink">
+      {tenant.data?.slug === DEMO_SLUG && (
+        <div className="border-b border-copper/40 bg-copper/10">
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 px-5 md:px-10">
+            <p className="py-2 text-sm text-muted-strong">Bu bir demo sitesidir.</p>
+            <a href={productSiteUrl()} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-copper-bright hover:underline">
+              <ArrowLeft className="size-4" aria-hidden="true" /> BehTech Randevu'ya geri dön
+            </a>
+          </div>
+        </div>
+      )}
       <header className="pt-safe sticky top-0 z-40 border-b border-line bg-ink/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 md:h-[72px] md:px-10">
           <Link to="/" className="flex min-h-11 min-w-0 items-center leading-none">
