@@ -63,7 +63,8 @@ async def on_created(db: AsyncSession, tenant: Tenant, appt: Appointment, actor:
         v = _common(tenant, appt, customer, staff, service)
         walk_in = actor is not None and _start(appt) - datetime.now() < WALKIN_SKIP
         if not walk_in:
-            await queue.enqueue(db, tenant.id, "confirm", customer.phone, texts.render("confirm", tenant.id, **v), appointment_id=appt.id)
+            kind = "confirm" if actor is None else "confirm_manual"  # panelden girilen randevu ayrı metinle bildirilir
+            await queue.enqueue(db, tenant.id, kind, customer.phone, texts.render(kind, tenant.id, **v), appointment_id=appt.id)
         if staff.is_active and (actor is None or actor.id != staff.id):
             await queue.enqueue(db, tenant.id, "staff_new", staff.phone, texts.render("staff_new", tenant.id, **v), appointment_id=appt.id)
         await db.commit()

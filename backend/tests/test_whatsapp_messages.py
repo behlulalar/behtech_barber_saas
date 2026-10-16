@@ -30,7 +30,7 @@ async def queued(kind=None):
 
 # ------------------------------------------------------------------ metinler
 @pytest.mark.parametrize("kind", ["otp", "password_reset", "confirm", "cancel_customer", "cancel_shop",
-                                  "reminder", "staff_new", "staff_cancel", "welcome"])
+                                  "reminder", "staff_new", "staff_cancel", "welcome", "confirm_manual"])
 def test_every_kind_has_at_least_three_variants_and_renders_cleanly(kind):
     variants = texts._VARIANTS[kind]
     assert len(variants) >= 3 and len(set(variants)) == len(variants)
@@ -90,12 +90,14 @@ async def test_panel_created_appointment_notifies_customer_but_not_the_creating_
         "staff_id": shop.staff.id, "service_id": shop.cut.id, "name": "Mehmet", "surname": "Kaya", "phone": "5550002222",
         "appointment_date": TOMORROW.isoformat(), "appointment_time": "11:00", "status": "confirmed"})
     assert r.status_code == 201, r.text
-    assert [m.kind for m in await queued()] == ["confirm"]  # berber kendisi girdi: kendine bildirim yok
+    msgs = await queued()
+    assert [m.kind for m in msgs] == ["confirm_manual"]  # berber kendisi girdi: kendine bildirim yok; metin "işletme oluşturdu" der
+    assert "oluştur" in msgs[0].body or "kaydet" in msgs[0].body
     # sahip, berber adına girerse berbere bilgi gider
     await api.post("/api/admin/appointments", slug="alfa", token=shop.owner_token, json={
         "staff_id": shop.staff.id, "service_id": shop.cut.id, "name": "Veli", "surname": "Can", "phone": "5550003333",
         "appointment_date": TOMORROW.isoformat(), "appointment_time": "12:00", "status": "confirmed"})
-    assert [m.kind for m in await queued()] == ["confirm", "confirm", "staff_new"]
+    assert [m.kind for m in await queued()] == ["confirm_manual", "confirm_manual", "staff_new"]
 
 
 async def test_walk_in_starting_within_an_hour_gets_no_confirmation():

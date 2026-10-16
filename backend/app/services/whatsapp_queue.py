@@ -43,10 +43,10 @@ def _after_quiet(now: datetime) -> datetime:
 
 
 # Bayat mesaj gitmesin: hat bir süre kopuk kalıp dönünce eski onay/hatırlatmalar toplu yağmasın.
-TTL = {"confirm": timedelta(hours=2), "cancel_customer": timedelta(hours=2), "cancel_shop": timedelta(hours=2),
+TTL = {"confirm": timedelta(hours=2), "confirm_manual": timedelta(hours=2), "cancel_customer": timedelta(hours=2), "cancel_shop": timedelta(hours=2),
        "staff_new": timedelta(hours=2), "staff_cancel": timedelta(hours=2), "reminder": timedelta(minutes=30),
        "welcome": timedelta(minutes=10)}
-APPOINTMENT_KINDS = {"confirm", "reminder", "staff_new"}  # randevu iptal edildiyse gönderilmez
+APPOINTMENT_KINDS = {"confirm", "confirm_manual", "reminder", "staff_new"}  # randevu iptal edildiyse gönderilmez
 
 
 async def enqueue(db: AsyncSession, tenant_id: int, kind: str, phone: str | None, body: str,

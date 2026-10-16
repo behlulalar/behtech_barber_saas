@@ -25,6 +25,13 @@ CONFIRM = (
     "Merhaba {first}, randevunuz hazır ✅\n{day} {date} · {time}\n{service} · {staff}\n{shop}",
     "{shop} randevunuz onaylandı ✅\n📅 {day} {date}, {time}\n✂️ {service} ({staff})\nSizi bekliyoruz!",
 )
+# Randevuyu işletme/personel panelden (telefonla, yüz yüze) oluşturduğunda: müşteri kendisi almadı, bu belli olmalı.
+CONFIRM_MANUAL = (
+    "{shop} sizin için randevu oluşturdu ✅\n📅 {day} {date}, {time}\n✂️ {service} ({staff})\nGörüşmek üzere!",
+    "Merhaba {first}, {shop} randevunuzu oluşturdu ✅\n{day} {date} · {time}\n{service} · {staff}",
+    "Randevunuz {shop} tarafından oluşturuldu ✅\n📅 {day} {date}, saat {time}\n{service} · {staff}\nSizi bekliyoruz!",
+    "{shop} randevunuzu kaydetti ✅\n📅 {day} {date}, {time}\n{service} · {staff}",
+)
 CANCEL_CUSTOMER = (
     "Randevunuz iptal edildi.\n{day} {date} {time} · {service}\nYeniden randevu için: {link}",
     "İptal işleminiz tamam ✔️\n{day} {date}, {time} randevusu iptal edildi.\nYeni randevu: {link}",
@@ -58,7 +65,7 @@ WELCOME = (
 )
 
 _VARIANTS: dict[str, tuple[str, ...]] = {
-    "otp": OTP, "password_reset": RESET, "confirm": CONFIRM, "cancel_customer": CANCEL_CUSTOMER,
+    "otp": OTP, "password_reset": RESET, "confirm": CONFIRM, "confirm_manual": CONFIRM_MANUAL, "cancel_customer": CANCEL_CUSTOMER,
     "cancel_shop": CANCEL_SHOP, "reminder": REMINDER, "staff_new": STAFF_NEW, "staff_cancel": STAFF_CANCEL, "welcome": WELCOME,
 }
 _last: dict[tuple[int | None, str], int] = {}
