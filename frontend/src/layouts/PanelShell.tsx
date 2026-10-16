@@ -58,7 +58,7 @@ function NavList({ nav, onNavigate, variant }: { nav: NavItem[]; onNavigate?: ()
               <item.icon className={cn('size-[18px] shrink-0', isActive ? 'text-copper-bright' : 'text-muted group-hover:text-muted-strong')} aria-hidden="true" />
               <span className="min-w-0 truncate">{item.label}</span>
               {!!item.badge && (
-                <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-copper px-1.5 text-xs font-semibold leading-5 text-ink tabular-nums">
+                <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-copper px-1.5 text-xs font-semibold leading-5 text-on-accent tabular-nums">
                   <span className="sr-only">Bekleyen: </span>
                   {item.badge}
                 </span>
@@ -181,7 +181,7 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner,
                 <span className="relative">
                   <item.icon className="size-5" aria-hidden="true" />
                   {!!item.badge && (
-                    <span className="absolute -right-2.5 -top-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-copper px-1 text-[0.65rem] font-semibold leading-4 text-ink tabular-nums">
+                    <span className="absolute -right-2.5 -top-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-copper px-1 text-[0.65rem] font-semibold leading-4 text-on-accent tabular-nums">
                       {item.badge}
                     </span>
                   )}

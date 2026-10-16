@@ -311,13 +311,13 @@ export default function AppointmentsPage() {
                 aria-label={`${formatDateLong(d)}, ${count} randevu`}
                 className={cn(
                   'flex min-h-14 min-w-0 flex-col items-center justify-center rounded-sm border py-1.5 transition-colors',
-                  selected ? 'border-copper bg-copper text-ink' : 'border-panel-line bg-panel text-cream hover:border-copper/60',
+                  selected ? 'border-copper bg-copper text-on-accent' : 'border-panel-line bg-panel text-cream hover:border-copper/60',
                   !selected && d === today && 'border-copper/60',
                 )}
               >
-                <span className={cn('text-xs font-medium uppercase', selected ? 'text-ink/70' : 'text-muted')}>{formatWeekdayShort(d)}</span>
+                <span className={cn('text-xs font-medium uppercase', selected ? 'text-on-accent/70' : 'text-muted')}>{formatWeekdayShort(d)}</span>
                 <span className="font-display text-lg leading-tight tabular-nums">{parseISODateLocal(d).getDate()}</span>
-                <span className={cn('text-xs tabular-nums', selected ? 'text-ink/70' : count ? 'text-copper-bright' : 'text-transparent')}>{count || 0}</span>
+                <span className={cn('text-xs tabular-nums', selected ? 'text-on-accent/70' : count ? 'text-copper-bright' : 'text-transparent')}>{count || 0}</span>
               </button>
             )
           })}

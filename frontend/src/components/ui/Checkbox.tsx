@@ -15,7 +15,7 @@ export function Checkbox({ label, description, className, id, ...rest }: Checkbo
     <label htmlFor={inputId} className={cn('flex min-h-11 cursor-pointer items-start gap-3 py-2', className)}>
       <span className="relative mt-0.5 flex size-5 shrink-0">
         <input id={inputId} type="checkbox" className="peer absolute inset-0 size-5 cursor-pointer opacity-0" {...rest} />
-        <span className="flex size-5 items-center justify-center rounded-xs border border-line-strong bg-surface text-ink transition-colors peer-checked:border-copper peer-checked:bg-copper peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-copper-bright peer-disabled:opacity-50 [&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100">
+        <span className="flex size-5 items-center justify-center rounded-xs border border-line-strong bg-surface text-on-accent transition-colors peer-checked:border-copper peer-checked:bg-copper peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-copper-bright peer-disabled:opacity-50 [&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100">
           <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
         </span>
       </span>

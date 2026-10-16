@@ -210,7 +210,7 @@ function SlotCell({
         CELL,
         'flex flex-col items-center justify-center border px-1 transition-colors',
         isStart
-          ? 'border-copper bg-copper text-ink'
+          ? 'border-copper bg-copper text-on-accent'
           : inRange
             ? 'border-copper/60 bg-copper/20 text-copper-bright'
             : inPreview
@@ -219,7 +219,7 @@ function SlotCell({
       )}
     >
       {time}
-      <span className={cn('text-xs', isStart ? 'text-ink/80' : inRange ? 'text-copper-bright/80' : 'text-muted')}>
+      <span className={cn('text-xs', isStart ? 'text-on-accent/80' : inRange ? 'text-copper-bright/80' : 'text-muted')}>
         {isStart ? 'Seçili' : inRange ? 'Süre içinde' : 'Müsait'}
       </span>
     </button>

@@ -21,7 +21,7 @@ export function Drawer({ open, onClose, label, children, className }: DrawerProp
   if (!open) return null
   return createPortal(
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 animate-fade-in bg-black/70" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 animate-fade-in bg-scrim" onClick={onClose} aria-hidden="true" />
       <div
         ref={panelRef}
         role="dialog"

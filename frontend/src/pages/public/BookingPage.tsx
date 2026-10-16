@@ -443,7 +443,7 @@ function StepIndicator({ index }: { index: number }) {
                 <span
                   className={cn(
                     'flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
-                    done && 'border-copper bg-copper text-ink',
+                    done && 'border-copper bg-copper text-on-accent',
                     active && 'border-copper text-copper-bright',
                     !done && !active && 'border-line-strong text-muted',
                   )}
@@ -536,7 +536,7 @@ function RadioMark({ selected }: { selected: boolean }) {
     <span
       className={cn(
         'flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors',
-        selected ? 'border-copper bg-copper text-ink' : 'border-line-strong text-transparent',
+        selected ? 'border-copper bg-copper text-on-accent' : 'border-line-strong text-transparent',
       )}
       aria-hidden="true"
     >
@@ -704,11 +704,11 @@ function TimeStep({
               className={cn(
                 'flex min-h-[76px] w-16 shrink-0 flex-col items-center justify-center rounded-md border transition-colors',
                 selected
-                  ? 'border-copper bg-copper text-ink'
+                  ? 'border-copper bg-copper text-on-accent'
                   : 'border-line bg-surface text-cream hover:border-line-strong active:bg-surface-raised',
               )}
             >
-              <span className={cn('text-xs font-medium uppercase tracking-wider', selected ? 'text-ink/80' : 'text-muted')}>
+              <span className={cn('text-xs font-medium uppercase tracking-wider', selected ? 'text-on-accent/80' : 'text-muted')}>
                 {i === 0 ? 'Bugün' : formatWeekdayShort(d)}
               </span>
               <span className="font-display text-2xl leading-none">{dt.getDate()}</span>

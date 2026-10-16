@@ -4,41 +4,50 @@
   --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
   --font-sans: "Work Sans", ui-sans-serif, system-ui, sans-serif;
 
-  /* Zemin ve yüzeyler (müşteri tarafı) */
-  --color-ink: #15110e;
-  --color-surface: #1b1512;
-  --color-surface-raised: #221b16;
-  --color-line: #3a2e26;
-  --color-line-strong: #4a3c32;
+  /* VARSAYILAN: AÇIK TEMA. Koyu tema değerleri aşağıda :root[data-theme="dark"] içinde.
+     Token adları tarihsel: ink = sayfa zemini, cream = ana metin, copper = vurgu (temaya göre değişir). */
 
-  /* Panel (admin/platform) yüzey skalası: biraz daha açık, uzun süre bakmaya uygun */
-  --color-panel: #1a1613;
-  --color-panel-raised: #231d18;
-  --color-panel-hover: #2b231d;
-  --color-panel-line: #342a23;
+  /* Zemin ve yüzeyler (müşteri tarafı) */
+  --color-ink: #f6f1e9;
+  --color-surface: #fdfaf5;
+  --color-surface-raised: #ffffff;
+  --color-line: #e3d8c8;
+  --color-line-strong: #cfc0ab;
+
+  /* Panel (admin/platform) yüzey skalası */
+  --color-panel: #fdfaf5;
+  --color-panel-raised: #ffffff;
+  --color-panel-hover: #f1e9dc;
+  --color-panel-line: #e6dccd;
 
   /* Metin */
-  --color-cream: #f2e9dd;
-  --color-muted: #9c8c7c;
-  --color-muted-strong: #b5a795;
+  --color-cream: #241a13;
+  --color-muted: #7b6b5c;
+  --color-muted-strong: #5a4b3e;
 
-  /* Vurgu */
-  --color-copper: #c9793f;
-  --color-copper-bright: #e0945a;
-  --color-copper-deep: #a95f2c;
+  /* Vurgu: açık zeminde okunur olsun diye koyu temadan daha derin bakır.
+     copper-bright = vurgulu metin/bağlantı ve hover tonu (açık temada daha koyu). */
+  --color-copper: #b4652c;
+  --color-copper-bright: #934d1b;
+  --color-copper-deep: #7e4115;
+  /* Bakır zemin üstündeki metin */
+  --color-on-accent: #ffffff;
 
-  /* Anlamsal renkler: sıcak, düşük kroma */
-  --color-success: #9bb26e;
-  --color-warning: #dcaa55;
-  --color-danger: #d1695a;
-  --color-info: #86aaa6;
+  /* Anlamsal renkler */
+  --color-success: #4d7a2a;
+  --color-warning: #9a6512;
+  --color-danger: #b4432f;
+  --color-info: #3b7671;
+
+  /* Modal/çekmece arka perdesi */
+  --color-scrim: rgb(36 26 19 / 0.45);
 
   --radius-xs: 2px;
   --radius-sm: 3px;
   --radius-md: 5px;
   --radius-lg: 7px;
 
-  --shadow-pop: 0 18px 50px -12px rgb(0 0 0 / 0.65), 0 2px 8px rgb(0 0 0 / 0.4);
+  --shadow-pop: 0 18px 50px -12px rgb(60 40 20 / 0.22), 0 2px 8px rgb(60 40 20 / 0.10);
 
   --animate-fade-in: fade-in 160ms ease-out both;
   --animate-sheet-up: sheet-up 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -73,11 +82,40 @@
   }
 }
 
+/* KOYU TEMA: <html data-theme="dark"> (index.html'deki erken script ve lib/theme.tsx ayarlar). */
+@layer base {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-ink: #15110e;
+    --color-surface: #1b1512;
+    --color-surface-raised: #221b16;
+    --color-line: #3a2e26;
+    --color-line-strong: #4a3c32;
+    --color-panel: #1a1613;
+    --color-panel-raised: #231d18;
+    --color-panel-hover: #2b231d;
+    --color-panel-line: #342a23;
+    --color-cream: #f2e9dd;
+    --color-muted: #9c8c7c;
+    --color-muted-strong: #b5a795;
+    --color-copper: #c9793f;
+    --color-copper-bright: #e0945a;
+    --color-copper-deep: #a95f2c;
+    --color-on-accent: #15110e;
+    --color-success: #9bb26e;
+    --color-warning: #dcaa55;
+    --color-danger: #d1695a;
+    --color-info: #86aaa6;
+    --color-scrim: rgb(0 0 0 / 0.7);
+    --shadow-pop: 0 18px 50px -12px rgb(0 0 0 / 0.65), 0 2px 8px rgb(0 0 0 / 0.4);
+  }
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    color-scheme: dark;
+    color-scheme: light;
     background: var(--color-ink);
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
@@ -152,7 +190,7 @@
     color: var(--color-cream);
   }
 
-  /* Sade, koyu kaydırma çubukları */
+  /* Sade kaydırma çubukları (tema renginden) */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-line-strong) transparent;

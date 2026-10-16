@@ -62,7 +62,7 @@ function Rv({
 
 const btnBase =
   'inline-flex min-h-12 items-center justify-center gap-2 rounded-sm px-6 text-[0.95rem] font-semibold transition-colors'
-const btnPrimary = `${btnBase} bg-copper text-ink hover:bg-copper-bright`
+const btnPrimary = `${btnBase} bg-copper text-on-accent hover:bg-copper-bright`
 const btnGhost = `${btnBase} border border-line-strong text-cream hover:border-copper hover:text-copper-bright`
 
 function Pole({ className = '', anim = false }: { className?: string; anim?: boolean }) {
@@ -90,7 +90,7 @@ function Header() {
               {n.label}
             </a>
           ))}
-          <Link to="/kayit" className="inline-flex min-h-11 items-center rounded-sm bg-copper px-5 text-sm font-semibold text-ink hover:bg-copper-bright">
+          <Link to="/kayit" className="inline-flex min-h-11 items-center rounded-sm bg-copper px-5 text-sm font-semibold text-on-accent hover:bg-copper-bright">
             Ücretsiz dene
           </Link>
         </nav>

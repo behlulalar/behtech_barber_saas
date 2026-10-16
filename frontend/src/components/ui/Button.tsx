@@ -14,12 +14,12 @@ interface StyleOptions {
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-copper text-ink font-semibold hover:bg-copper-bright active:bg-copper-deep disabled:hover:bg-copper',
+    'bg-copper text-on-accent font-semibold hover:bg-copper-bright active:bg-copper-deep disabled:hover:bg-copper',
   secondary:
     'border border-line-strong bg-transparent text-cream hover:border-copper hover:text-copper-bright active:bg-copper/10',
   ghost: 'text-muted-strong hover:bg-cream/5 hover:text-cream active:bg-cream/10',
   danger:
-    'border border-danger/50 bg-danger/10 text-danger hover:bg-danger hover:text-ink active:bg-danger/80',
+    'border border-danger/50 bg-danger/10 text-danger hover:bg-danger hover:text-on-accent active:bg-danger/80',
 }
 
 // Dokunmatik hedef: mobilde en az 44px, masaüstünde sm daha kompakt olabilir.

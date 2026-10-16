@@ -232,7 +232,7 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={signup.isPending}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm bg-copper px-6 text-[0.95rem] font-semibold text-ink transition-colors hover:bg-copper-bright disabled:opacity-60"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-sm bg-copper px-6 text-[0.95rem] font-semibold text-on-accent transition-colors hover:bg-copper-bright disabled:opacity-60"
               >
                 {signup.isPending && <Spinner size="sm" className="text-current" />}
                 Başvuruyu gönder
