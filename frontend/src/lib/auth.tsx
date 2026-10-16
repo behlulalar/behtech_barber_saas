@@ -281,6 +281,8 @@ interface CustomerAuthValue {
   expired: boolean
   /** verifyCode yanıtını kaydeder. */
   login: (res: VerifyCodeResponse) => void
+  /** Kayıtlı müşteri adını günceller (randevu alınınca ya da sunucudan okununca) ki sonraki formlar dolu gelsin. */
+  setCustomer: (c: CustomerName) => void
   logout: () => void
   clearExpired: () => void
 }
@@ -334,6 +336,19 @@ function CustomerAuthProvider({ children }: { children: ReactNode }) {
     tokenStore.set('customer', res.access_token)
   }, [])
 
+  const setCustomer = useCallback((c: CustomerName) => {
+    setProfile((prev) => {
+      if (prev.customer && prev.customer.name === c.name && prev.customer.surname === c.surname) return prev
+      const next: CustomerProfile = { ...prev, customer: { name: c.name, surname: c.surname } }
+      try {
+        localStorage.setItem(CUSTOMER_PROFILE_KEY, JSON.stringify(next))
+      } catch {
+        /* yoksay */
+      }
+      return next
+    })
+  }, [])
+
   const logout = useCallback(() => {
     try {
       localStorage.removeItem(CUSTOMER_PROFILE_KEY)
@@ -355,10 +370,11 @@ function CustomerAuthProvider({ children }: { children: ReactNode }) {
       expiresAt,
       expired,
       login,
+      setCustomer,
       logout,
       clearExpired,
     }),
-    [valid, rawToken, profile, expiresAt, expired, login, logout, clearExpired],
+    [valid, rawToken, profile, expiresAt, expired, login, setCustomer, logout, clearExpired],
   )
 
   return <CustomerAuthContext.Provider value={value}>{children}</CustomerAuthContext.Provider>

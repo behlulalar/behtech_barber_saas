@@ -286,3 +286,16 @@ async def test_admin_created_appointment_respects_grid_and_conflicts(api, shop):
     # iptali geri açmak, saat başkasına verilmişse 409
     r = await api.patch(f"/api/admin/appointments/{aid}", slug="alfa", token=t, json={"status": "confirmed"})
     assert r.status_code == 409
+
+
+async def test_customer_me_returns_registered_name_or_null(api, shop):
+    tok = mint_customer_token(shop.tenant.id, "5550007777")
+    assert (await api.get("/api/customer/me", slug="alfa", token=tok)).json() is None  # henüz kayıt yok
+    r = await api.post("/api/appointments", slug="alfa", token=tok, json=body(shop, at="10:00", name="Ayşe", surname="Kaya"))
+    assert r.status_code == 200
+    assert (await api.get("/api/customer/me", slug="alfa", token=tok)).json() == {"name": "Ayşe", "surname": "Kaya"}
+    # başka dükkânda aynı telefon: o dükkânın kaydı yoksa null (izolasyon)
+    other = await make_shop("beta", phone_offset=60)
+    tok2 = mint_customer_token(other.tenant.id, "5550007777")
+    assert (await api.get("/api/customer/me", slug="beta", token=tok2)).json() is None
+    assert (await api.get("/api/customer/me", slug="alfa")).status_code == 401

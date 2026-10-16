@@ -112,16 +112,21 @@ export default function BookingPage() {
     }
   }, [step, offeringStaff, staffId])
 
-  // Oturum varsa telefonu ve kayıtlı adı bir kez önceden doldur.
+  // Oturum varsa telefonu ve kayıtlı adı önceden doldur. Ad yalnızca doğrulama anında değil, sunucudan da okunur:
+  // ilk randevusunu aynı oturumda alan müşterinin kaydı doğrulama sırasında henüz yoktu.
+  const me = useQuery({ queryKey: ['customer', 'me'], queryFn: customerApi.me, enabled: auth.isAuthenticated, staleTime: 60_000 })
   useEffect(() => {
-    if (prefilled.current || !auth.isAuthenticated) return
-    prefilled.current = true
-    if (auth.phone) setPhone(auth.phone)
-    if (auth.customer) {
-      setName((n) => n || auth.customer!.name)
-      setSurname((n) => n || auth.customer!.surname)
+    if (!auth.isAuthenticated) return
+    if (!prefilled.current) {
+      prefilled.current = true
+      if (auth.phone) setPhone(auth.phone)
     }
-  }, [auth.isAuthenticated, auth.phone, auth.customer])
+    const known = me.data ?? auth.customer
+    if (known) {
+      setName((n) => n || known.name)
+      setSurname((n) => n || known.surname)
+    }
+  }, [auth.isAuthenticated, auth.phone, auth.customer, me.data])
 
   const availability = useQuery({
     queryKey: ['availability', 'slots', staffId, serviceId, date],
@@ -167,6 +172,8 @@ export default function BookingPage() {
         appointment_time: time!.slice(0, 5),
       }),
     onSuccess: (res) => {
+      auth.setCustomer({ name: name.trim(), surname: surname.trim() }) // sonraki "yeni randevu"da ad/soyad dolu gelsin
+      queryClient.invalidateQueries({ queryKey: ['customer', 'me'] })
       setResult(res)
       setStep('done')
       queryClient.invalidateQueries({ queryKey: ['customer', 'appointments'] })

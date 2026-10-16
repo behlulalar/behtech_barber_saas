@@ -1,6 +1,7 @@
 // Tek tip güvenli API istemcisi. Sayfa ajanları bu dosyayı DEĞİŞTİRMEZ.
 // Gruplar: publicApi, customerApi, authApi, adminApi, platformApi.
 import type {
+  CustomerName,
   AnnouncementIn,
   AnnouncementOut,
   AnnouncementUpdate,
@@ -290,6 +291,7 @@ export const publicApi = {
 export const customerApi = {
   createAppointment: (data: CreateAppointmentRequest) =>
     request<AppointmentPublicOut>('/appointments', { method: 'POST', body: data, auth: 'customer' }),
+  me: () => request<CustomerName | null>('/customer/me', { auth: 'customer' }),
   listAppointments: () => request<AppointmentPublicOut[]>('/customer/appointments', { auth: 'customer' }),
   cancelAppointment: (id: number) =>
     request<AppointmentPublicOut>(`/customer/appointments/${id}/cancel`, { method: 'POST', auth: 'customer' }),

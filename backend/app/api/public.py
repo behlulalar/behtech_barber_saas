@@ -21,7 +21,7 @@ from app.models.tenant import Tenant
 from app.models.tenant_settings import TenantSettings
 from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut, SlotOut, SlotsResponse
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
-from app.schemas.public import SendCodeResponse, StaffPublicOut, TenantPublicOut, VerifyCodeResponse
+from app.schemas.public import CustomerBrief, SendCodeResponse, StaffPublicOut, TenantPublicOut, VerifyCodeResponse
 from app.schemas.service import ServiceOut
 from app.schemas.signup import SignupRequest, SignupResponse
 from app.services.admin_services import service_ids_by_staff
@@ -273,6 +273,19 @@ async def appointment_create(
     await db.refresh(appointment)
     await appointment_notifications.on_created(db, tenant, appointment)
     return _to_public(appointment, service, staff)
+
+
+@router.get("/customer/me", response_model=CustomerBrief | None)
+async def customer_me(
+    identity: CustomerIdentity = Depends(get_current_customer),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+):
+    """Oturumdaki (OTP ile doğrulanmış) telefonun bu dükkândaki kayıtlı adı/soyadı; kayıt yoksa null.
+    Yeni randevu formunu önceden doldurmak için (ad yalnızca doğrulama anında değil, her zaman güncel okunur)."""
+    return (await db.execute(
+        select(Customers).where(Customers.tenant_id == tenant.id, Customers.phone == identity.phone)
+    )).scalar_one_or_none()
 
 
 @router.get("/customer/appointments", response_model=list[AppointmentPublicOut])
