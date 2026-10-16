@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Menu, X, Plus, Minus } from 'lucide-react'
+import { LegalLink } from '../../components/LegalModal'
+import type { LegalSlug } from '../../lib/legal'
 import { CONTACT, DEMO_SITE_URL, PRODUCT_NAME } from './content'
 import { PanelMockup, PhoneBookingMockup, PhonePanelMockup, TenantSiteMockup } from './mockups'
 import './product.css'
@@ -490,9 +492,9 @@ function Footer() {
             ['veri-isleme', 'Veri İşleme Sözleşmesi'],
             ['aydinlatma', 'Aydınlatma'],
           ].map(([slug, label]) => (
-            <Link key={slug} to={`/yasal/${slug}`} className="inline-flex min-h-11 items-center hover:text-cream">
+            <LegalLink key={slug} slug={slug as LegalSlug} className="inline-flex min-h-11 items-center hover:text-cream">
               {label}
-            </Link>
+            </LegalLink>
           ))}
         </nav>
       </div>

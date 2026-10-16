@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { CheckCircle2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { LegalLink } from '../../components/LegalModal'
 import { Checkbox } from '../../components/ui/Checkbox'
 import { Field } from '../../components/ui/Field'
 import { Input } from '../../components/ui/Input'
@@ -204,13 +205,13 @@ export default function SignupPage() {
                   aria-invalid={show('terms') ? true : undefined}
                   label={
                     <>
-                      <a href="/yasal/sartlar" target="_blank" rel="noopener noreferrer" className={LINK_CLS}>
+                      <LegalLink slug="sartlar" className={LINK_CLS}>
                         Kullanım Şartları
-                      </a>
+                      </LegalLink>
                       'nı ve{' '}
-                      <a href="/yasal/veri-isleme" target="_blank" rel="noopener noreferrer" className={LINK_CLS}>
+                      <LegalLink slug="veri-isleme" className={LINK_CLS}>
                         Veri İşleme Sözleşmesi
-                      </a>
+                      </LegalLink>
                       'ni okudum, kabul ediyorum.
                     </>
                   }

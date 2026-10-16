@@ -2,6 +2,7 @@ import { ArrowLeft, CalendarCheck, LogIn, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ContactLinks } from '../components/ContactLinks'
+import { LegalLink } from '../components/LegalModal'
 import { buttonStyles } from '../components/ui/Button'
 import { useScrollLock } from '../components/ui/useDialog'
 import { useCustomerAuth } from '../lib/auth'
@@ -145,9 +146,9 @@ export default function PublicLayout() {
             <ContactLinks info={tenant.data} className="mt-4" />
           </div>
           <div className="flex flex-col gap-2 text-sm text-muted md:items-end">
-            <Link to="/yasal/aydinlatma" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">
+            <LegalLink slug="aydinlatma" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">
               Aydınlatma Metni
-            </Link>
+            </LegalLink>
             <Link to="/panel/giris" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">
               Personel girişi
             </Link>

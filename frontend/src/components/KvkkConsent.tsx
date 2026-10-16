@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { LEGAL_VERSIONS } from '../lib/legal'
+import { LegalLink } from './LegalModal'
 import { Checkbox } from './ui/Checkbox'
 
 const KEY = `kvkk:${LEGAL_VERSIONS.customerPrivacy}`
@@ -42,15 +43,9 @@ export function KvkkCheckbox({ checked, onChange, error }: { checked: boolean; o
         aria-invalid={error ? true : undefined}
         label={
           <>
-            <a
-              href="/yasal/aydinlatma"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-copper-bright underline underline-offset-4"
-            >
+            <LegalLink slug="aydinlatma" className="text-copper-bright underline underline-offset-4">
               Aydınlatma Metni
-            </a>
+            </LegalLink>
             'ni okudum, kişisel verilerimin işlenmesini anladım.
           </>
         }
