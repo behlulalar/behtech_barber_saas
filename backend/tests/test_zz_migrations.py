@@ -9,7 +9,7 @@ import psycopg2
 import pytest
 
 BACKEND = Path(__file__).resolve().parent.parent
-LATEST = "f8a9b0c1d2e3"
+LATEST = "a9b0c1d2e3f4"
 
 
 def alembic(url, *args):

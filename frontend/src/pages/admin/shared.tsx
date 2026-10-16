@@ -27,6 +27,7 @@ export const qk = {
   workingHours: ['admin', 'working-hours'] as const,
   timeOff: ['admin', 'time-off'] as const,
   settings: ['admin', 'settings'] as const,
+  whatsapp: ['admin', 'whatsapp'] as const,
   reports: ['admin', 'reports'] as const,
 }
 

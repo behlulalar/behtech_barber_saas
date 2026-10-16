@@ -15,7 +15,7 @@
   (LinkedIn "build in public" yazılarında dürüstçe belirtilmeli; bkz. `CLAUDE.md`).
 - **Token tasarrufu:** kullanıcı kullanım limitini yakından izliyor → az ajan (en fazla backend + frontend), az ekran görüntüsü, işleri topla. (Bellek notu: `token-economy`.)
 - **Ödeme:** ilk aşamada IBAN/havale, sistem tahsilat yapmaz; resmileşince altyapı eklenecek.
-- **WhatsApp:** Evolution API (kendi sunucumuz). Platform sahibi için WhatsApp API değil; **`wa.me` bağlantısı + hazır şablon** (tek tıkla WhatsApp'ta mesaj hazır açılır).
+- **WhatsApp — KARAR (2026-10-16):** Platform ortak WhatsApp hattı VERMEZ. **Her dükkân sahibi kendi WhatsApp hesabını panelden bağlar** (Ayarlar → WhatsApp: QR ya da "telefon numarasıyla bağla" eşleştirme kodu); o dükkânın müşteri doğrulama kodları ve personel şifre sıfırlama kodları dükkânın KENDİ numarasından gider. Evolution sunucusu (altyapı) platformdadır, numaralar dükkânlarındır. Bağlı değilse müşteri online kod alamaz (müşteri sitesi "işletmeyi arayın" der; kurulum rehberinde engelleyici adım). Platform sahibinin işletmelerle iletişimi ise WhatsApp API değil **`wa.me` bağlantısı + hazır şablon**.
 - **Randevu onayı yok:** randevu doğrudan `confirmed` oluşur (akış: confirmed → completed / no_show / cancelled). `pending` DB enum'unda duruyor ama üretilmiyor.
 - **Slotlar:** 30 dakika, yalnızca :00/:30; hizmet süresi 30'un katı; berberin kendi hizmet listesi (`staff_services`) zorunlu.
 - **Personel yetkisi:** personel yalnızca Genel Bakış (cirosuz), Randevular (kendi), Müşteriler (yalnızca kendi randevusu olanlar) ve Ekip (salt okunur, meslektaş telefonları gizli) görür.
@@ -156,7 +156,7 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 
 - [x] **Personel "işten ayrıldı" (pasife alma) YAPILDI:** pasif personel giriş yapamaz, müşteri sitesinde/slotlarda görünmez, geçmiş randevu + gelir kayıtları ve gelir raporundaki personel dağılımı korunur;
   gelecek randevusu olan personel pasife alınamaz (409); silme, randevusu olan personelde hâlâ engelli. Veritabanında `appointments.staff_id` artık `ON DELETE NO ACTION` (eskiden CASCADE'di: personel satırı SQL ile silinirse randevuları/geliri de silinirdi).
-- [ ] **P1 WhatsApp teslimat kodu yazıldı ama CANLI Evolution'a karşı HİÇ denenmedi.** `whatsapp_services.send_whatsapp_message` aynı yükte hem v1 (`textMessage.text`) hem v2 (`text`) biçimini gönderiyor (tahmin); numara `90…` (+ olmadan) gidiyor.
+- [ ] **P1 (2026-10-16 güncellendi) Dükkân başına WhatsApp YAZILDI ve yerel Evolution v2.3.7'ye karşı doğrulandı:** instance oluşturma, QR, eşleştirme kodu, connectionState, fetchInstances alanları, logout, webhook kurulumu ve container→backend erişimi gerçek API ile denendi. **Henüz denenmeyen:** gerçek telefonla okutup `open` olması, CONNECTION_UPDATE webhook gövdesi, gerçek `sendText` teslimi. Eski not: WhatsApp teslimat kodu yazıldı ama CANLI Evolution'a karşı HİÇ denenmedi. `whatsapp_services.send_whatsapp_message` aynı yükte hem v1 (`textMessage.text`) hem v2 (`text`) biçimini gönderiyor (tahmin); numara `90…` (+ olmadan) gidiyor.
   Üretimde Evolution bağlanana kadar müşteri `send-code` ve "şifremi unuttum" **503 verir**. QR okutulunca gerçek mesajla doğrulayın; gerekirse yük biçimini düzeltin.
   Küçük sızıntı: Evolution kapalıyken "şifremi unuttum" 503'ü numaranın kayıtlı olduğunu ele verir (yalnızca kayıtlı numaraya gönderim denendiği için).
 - [ ] **P2** Churn tespiti yalnızca otomatik askıyı görür (elle pasife alma zaman damgası yok). `trial_conversion_rate` oranı 0..1; arayüz yüzde gösterir.

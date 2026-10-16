@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { OtpUnavailable } from '../../components/OtpUnavailable'
+import { useTenant } from '../../lib/queries'
 import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { SlotGrid, SlotGridSkeleton } from '../../components/booking/SlotGrid'
 import { Avatar } from '../../components/ui/Avatar'
@@ -150,7 +152,9 @@ export default function BookingPage() {
     }
   }, [step])
 
+  const tenant = useTenant()
   const sessionPhoneMatches = auth.isAuthenticated && auth.phone === normalizePhone(phone)
+  const otpBlocked = tenant.data?.otp_available === false && !sessionPhoneMatches
 
   const create = useMutation({
     mutationFn: () =>
@@ -359,7 +363,8 @@ export default function BookingPage() {
                 onValueChange={setPhone}
               />
             </Field>
-            {!sessionPhoneMatches && (
+            {otpBlocked && <OtpUnavailable info={tenant.data} />}
+            {!sessionPhoneMatches && !otpBlocked && (
               <KvkkCheckbox
                 checked={kvkk}
                 error={errors.kvkk}
@@ -401,6 +406,7 @@ export default function BookingPage() {
                 size="lg"
                 fullWidth
                 loading={create.isPending || sendCode.isPending}
+                disabled={otpBlocked}
               >
                 {sessionPhoneMatches ? 'Randevuyu onayla' : 'Kod gönder'}
               </Button>

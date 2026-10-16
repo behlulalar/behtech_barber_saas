@@ -18,6 +18,7 @@ from app.models.subscription import Subscription
 from app.models.staff_service import StaffService
 from app.models.tenant_settings import TenantSettings
 from app.models.working_hours import WorkingHours
+from app.models.whatsapp_connection import WhatsappConnection
 from app.schemas.platform import OwnerUpdate, TenantCreate
 from app.schemas.tenant import (
     OwnerOut, SetupCheck, SetupOut, TenantDetailOut, TenantOption, TenantOut, TenantPage,
@@ -91,10 +92,11 @@ SETUP_CHECKS = (
     ("staff", "En az bir berber", "İşletme panelinde Personel'den berber ekleyin"),
     ("working_hours", "Her berberin çalışma saati var", "Personel'de her berber için çalışma saati tanımlayın"),
     ("staff_services", "Her berber en az bir hizmet veriyor", "Personel'de her berbere en az bir hizmet atayın"),
+    ("whatsapp", "WhatsApp bağlı", "Ayarlar'dan işletmenin kendi WhatsApp hesabını bağlayın (doğrulama kodları buradan gider)"),
     ("address", "Adres girilmiş", "Ayarlar'dan işletme adresini girin"),
     ("first_appointment", "İlk randevu alınmış", "Henüz randevu alınmadı"),
 )
-_BLOCKING = {"services", "staff", "working_hours", "staff_services"}  # müşterinin randevu alabilmesini belirler
+_BLOCKING = {"services", "staff", "working_hours", "staff_services", "whatsapp"}  # müşterinin randevu alabilmesini belirler
 
 
 async def _setup_for(db: Session, tenant_ids: list[int]) -> dict[int, SetupOut]:
@@ -136,6 +138,11 @@ async def _setup_for(db: Session, tenant_ids: list[int]) -> dict[int, SetupOut]:
             .where(in_t(TenantSettings.tenant_id), func.length(func.trim(TenantSettings.business_adress)) > 0)
         )).scalars()
     )
+    wa_open = set(
+        (await db.execute(
+            select(WhatsappConnection.tenant_id).where(in_t(WhatsappConnection.tenant_id), WhatsappConnection.state == "open")
+        )).scalars()
+    )
     with_appt = set(
         (await db.execute(select(Appointment.tenant_id).where(in_t(Appointment.tenant_id)).distinct())).scalars()
     )
@@ -147,6 +154,7 @@ async def _setup_for(db: Session, tenant_ids: list[int]) -> dict[int, SetupOut]:
             "staff": barbers.get(tid, 0) > 0,
             "working_hours": barbers.get(tid, 0) > 0 and no_hours.get(tid, 0) == 0,
             "staff_services": barbers.get(tid, 0) > 0 and no_services.get(tid, 0) == 0,
+            "whatsapp": tid in wa_open,
             "address": tid in addressed,
             "first_appointment": tid in with_appt,
         }

@@ -509,6 +509,9 @@ iyi bir çalışma malzemesi.
       Aşama D kararı: paket limiti/özel alan adı/çoklu şube yok; sırada WhatsApp durum paneli+hız sınırı, duyuru (panel banner), elle indirim.
       2026-10-16: Aşama D — WhatsApp mesaj kaydı + işletme başına saatlik sınır + Sistem sayfası kartı; duyurular (platform -> işletme paneli banner);
       abonelikte elle indirim yüzdesi. Detaylar docs/EKSIKLER.md.
+      2026-10-16: WhatsApp dükkân başına — her dükkân kendi numarasını panelden bağlar (QR / eşleştirme kodu), kodlar dükkânın
+      kendi instance'ından gider; platform ortak hat vermez. Yerel Evolution v2.1.1 -> v2.3.7 yükseltildi (eski sürüm QR üretemiyordu).
+      Ayrıca: açık tema varsayılan + koyu tema seçimi; tanıtım sayfası görsel ağırlıklı sadeleştirildi.
       **Açık kalanlar:** (giriş sınırı artık var;)
       "fark etmez, herhangi bir berber" seçeneği yok; randevu silme yok (sadece
       iptal); Evolution API QR bağlantısı + webhook işleme bekliyor.

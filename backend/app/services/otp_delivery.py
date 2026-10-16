@@ -1,20 +1,21 @@
 """Doğrulama kodunu kullanıcıya iletir. Geliştirmede kod arayüze döndüğü için hiçbir şey göndermez;
 üretimde WhatsApp (Evolution API) kullanılır, başarısızlıkta kullanıcıya 503 döner (kod sessizce yutulmaz).
+Mesaj dükkânın kendi WhatsApp instance'ından gider.
 Her deneme `message_logs`'a yazılır (içerik/telefon yok) ve işletme başına saatlik sınır uygulanır."""
 import logging
 
-import httpx
 from fastapi import HTTPException
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.message_log import MessageLog
-from app.services import whatsapp_services
+from app.services import whatsapp_connection_services, whatsapp_services
 
 logger = logging.getLogger(__name__)
 
 DELIVERY_FAILED = "Doğrulama kodu şu an gönderilemiyor, lütfen tekrar deneyin"
+NOT_CONNECTED = "Bu işletmenin WhatsApp bağlantısı kurulu değil, doğrulama kodu gönderilemiyor. Lütfen işletmeyi arayın"
 TENANT_LIMITED = "Bu işletme için çok fazla doğrulama kodu istendi, lütfen bir süre sonra tekrar deneyin"
 
 
@@ -39,17 +40,20 @@ async def _check_tenant_limit(db: AsyncSession, tenant_id: int) -> None:
         raise HTTPException(status_code=429, detail=TENANT_LIMITED)
 
 
-async def _send(phone: str, text_: str) -> None:
-    if settings.environment == "development":
-        return  # geliştirme: kod yanıtla (dev_code) arayüze döner, mesaj gönderilmez
-    if not (settings.evolution_api_base_url and settings.evolution_api_key and settings.evolution_instance_name):
-        logger.error("OTP gönderilemedi: Evolution ayarları eksik")
-        raise HTTPException(status_code=503, detail=DELIVERY_FAILED)
+async def _send(db: AsyncSession, tenant_id: int | None, phone: str, text_: str) -> None:
+    """Mesaj DÜKKÂNIN KENDİ WhatsApp'ından gider. Platform ortak hat sağlamaz.
+    Geliştirmede dükkân bağlı değilse gönderilmez (kod yanıtla döner); bağlıysa gerçekten gönderilir (uçtan uca deneme için)."""
+    row = await whatsapp_connection_services.get_row(db, tenant_id) if tenant_id is not None else None
+    connected = row is not None and row.state == "open"
+    if not connected:
+        if settings.environment == "development":
+            return
+        raise HTTPException(status_code=503, detail=NOT_CONNECTED)
     try:
-        await whatsapp_services.send_whatsapp_message(to_whatsapp_number(phone), text_)
-    except (httpx.HTTPError, OSError) as exc:  # HTTPStatusError, bağlantı/zaman aşımı hataları
+        await whatsapp_services.send_text(row.instance_name, to_whatsapp_number(phone), text_)
+    except whatsapp_services.EvolutionError as exc:
         # Mesajı (kod içerir) ve telefonu loglama; yalnızca hata türü.
-        logger.error("OTP WhatsApp ile gönderilemedi: %s", type(exc).__name__)
+        logger.error("OTP WhatsApp ile gönderilemedi (tenant %s): %s", tenant_id, exc)
         raise HTTPException(status_code=503, detail=DELIVERY_FAILED)
 
 
@@ -57,7 +61,7 @@ async def deliver_code(db: AsyncSession, tenant_id: int, kind: str, phone: str, 
     """kind: 'otp' | 'password_reset'. İşletme saatlik sınırı aşmışsa 429; başarısızlık da kaydedilir."""
     await _check_tenant_limit(db, tenant_id)
     try:
-        await _send(phone, text_)
+        await _send(db, tenant_id, phone, text_)
     except HTTPException:
         db.add(MessageLog(tenant_id=tenant_id, kind=kind, ok=False))
         await db.commit()

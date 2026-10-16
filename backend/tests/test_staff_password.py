@@ -150,13 +150,26 @@ async def test_forgot_is_tenant_scoped(api, shop, shop2):
     assert (await reset(api, shop.staff.phone, code, slug="beta")).status_code == 400
 
 
-# ------------------------------------------------------------------ kod iletimi
-async def test_deliver_noop_in_development(monkeypatch):
+# ------------------------------------------------------------------ kod iletimi (dükkânın kendi WhatsApp'ı)
+async def test_deliver_noop_in_development_when_not_connected(monkeypatch, shop):
     calls = []
-    monkeypatch.setattr(whatsapp_services, "send_whatsapp_message", lambda *a: calls.append(a))
+
+    async def fake(*a):
+        calls.append(a)
+
+    monkeypatch.setattr(whatsapp_services, "send_text", fake)
     async with SessionFactory() as db:
-        await otp_delivery.deliver_code(db, None, "otp", "5551234567", "x")
+        await otp_delivery.deliver_code(db, shop.tenant.id, "otp", "5551234567", "x")
     assert calls == []
+
+
+async def test_deliver_503_in_production_when_shop_not_connected(monkeypatch, shop):
+    from fastapi import HTTPException
+    monkeypatch.setattr(settings, "environment", "production")
+    with pytest.raises(HTTPException) as e:
+        async with SessionFactory() as db:
+            await otp_delivery.deliver_code(db, shop.tenant.id, "otp", "5551234567", "x")
+    assert e.value.status_code == 503 and e.value.detail == otp_delivery.NOT_CONNECTED
 
 
 def _mock_client(monkeypatch, handler):
@@ -164,24 +177,28 @@ def _mock_client(monkeypatch, handler):
     monkeypatch.setattr(whatsapp_services, "_client", lambda: httpx.AsyncClient(transport=transport))
 
 
-async def test_deliver_posts_to_evolution_in_production(monkeypatch):
-    seen = {}
+async def test_deliver_uses_the_shops_own_instance(monkeypatch, shop, shop2):
+    seen = []
 
     def handler(request: httpx.Request):
-        seen["url"], seen["key"], seen["body"] = str(request.url), request.headers["apikey"], request.content.decode()
+        seen.append((str(request.url), request.headers["apikey"], request.content.decode()))
         return httpx.Response(201, json={"ok": True})
 
     _mock_client(monkeypatch, handler)
     monkeypatch.setattr(settings, "environment", "production")
+    await connect_whatsapp(shop.tenant.id)
+    await connect_whatsapp(shop2.tenant.id)
     async with SessionFactory() as db:
-        await otp_delivery.deliver_code(db, None, "otp", "5551234567", "kod 123456")
-    assert seen["url"].endswith(f"/message/sendText/{settings.evolution_instance_name}")
-    assert seen["key"] == settings.evolution_api_key
-    assert '"number":"905551234567"' in seen["body"].replace(" ", "") and "kod 123456" in seen["body"]
+        await otp_delivery.deliver_code(db, shop.tenant.id, "otp", "5551234567", "kod 123456")
+        await otp_delivery.deliver_code(db, shop2.tenant.id, "otp", "5551234567", "kod 654321")
+    assert seen[0][0].endswith(f"/message/sendText/bt{shop.tenant.id}-test")
+    assert seen[1][0].endswith(f"/message/sendText/bt{shop2.tenant.id}-test")  # her dükkân kendi hesabından
+    assert seen[0][1] == settings.evolution_api_key
+    assert '"number":"905551234567"' in seen[0][2].replace(" ", "") and "kod 123456" in seen[0][2]
 
 
 @pytest.mark.parametrize("failure", ["status", "network"])
-async def test_deliver_failure_is_503(monkeypatch, failure):
+async def test_deliver_failure_is_503(monkeypatch, shop, failure):
     def handler(request):
         if failure == "network":
             raise httpx.ConnectError("down")
@@ -189,10 +206,11 @@ async def test_deliver_failure_is_503(monkeypatch, failure):
 
     _mock_client(monkeypatch, handler)
     monkeypatch.setattr(settings, "environment", "production")
+    await connect_whatsapp(shop.tenant.id)
     from fastapi import HTTPException
     with pytest.raises(HTTPException) as e:
         async with SessionFactory() as db:
-            await otp_delivery.deliver_code(db, None, "otp", "5551234567", "x")
+            await otp_delivery.deliver_code(db, shop.tenant.id, "otp", "5551234567", "x")
     assert e.value.status_code == 503 and e.value.detail == otp_delivery.DELIVERY_FAILED
 
 

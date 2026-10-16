@@ -36,6 +36,8 @@ Hazır örnek: [`deploy/crontab.example`](../deploy/crontab.example). Özet:
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_STARTTLS` | yok | Ödeme takibi e-postaları; yoksa e-posta kanalı kapalı |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | yok | Web push bildirimleri; yoksa push kapalı |
 | `BACKUP_RETENTION_DAYS` | - | Yedeklerin saklanma süresi (gün) |
+| `EVOLUTION_API_BASE_URL`, `EVOLUTION_API_KEY` | - | Evolution sunucusu (platform altyapısı) adresi ve anahtarı |
+| `EVOLUTION_WEBHOOK_URL`, `EVOLUTION_WEBHOOK_SECRET` | yok | Dükkân WhatsApp bağlantı olaylarının geleceği adres ve `?token=` anahtarı; yoksa durum yalnızca panel açıldığında yenilenir |
 | `WHATSAPP_TENANT_HOURLY_LIMIT` | 60 | Bir işletmenin saatte gönderebileceği en çok doğrulama/şifre sıfırlama mesajı (aşılırsa 429); ortak WhatsApp hattını spam'den korur |
 
 **Giriş kilidi:** aynı telefon (personelde telefon + işletme) için pencere içinde `LOGIN_MAX_FAILURES` hatalı

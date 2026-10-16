@@ -6,12 +6,13 @@ import { Card, CardHeader } from '../../components/ui/Card'
 import { adminApi } from '../../lib/api'
 import { cn } from '../../lib/cn'
 
-// Adım sırası kurulum sırasıdır: hizmet -> ekip -> saat -> hizmet ataması -> adres.
+// Adım sırası kurulum sırasıdır: hizmet -> ekip -> saat -> hizmet ataması -> WhatsApp -> adres.
 const STEPS: { key: string; title: string; hint: string; to: string }[] = [
   { key: 'services', title: 'Hizmetlerinizi ekleyin', hint: 'Saç kesimi, sakal gibi hizmetler; süre 30 dakikanın katı olmalı.', to: '/panel/hizmetler' },
   { key: 'staff', title: 'Berberlerinizi ekleyin', hint: 'Randevu verecek kişiler. Siz de kendinizi berber olarak ekleyebilirsiniz.', to: '/panel/ekip' },
   { key: 'working_hours', title: 'Çalışma saatlerini girin', hint: 'Her berberin hangi gün hangi saatlerde çalıştığı.', to: '/panel/calisma-saatleri' },
   { key: 'staff_services', title: 'Berberlere hizmet atayın', hint: 'Hangi berber hangi hizmeti veriyor? Atama yoksa müşteri o berberi göremez.', to: '/panel/ekip' },
+  { key: 'whatsapp', title: "WhatsApp'ınızı bağlayın", hint: 'Müşterilere giden doğrulama kodları kendi numaranızdan gider.', to: '/panel/ayarlar' },
   { key: 'address', title: 'İşletme adresinizi yazın', hint: 'Müşteri sitenizde görünür. Logo ve iletişim bilgilerini de buradan ekleyebilirsiniz.', to: '/panel/ayarlar' },
 ]
 

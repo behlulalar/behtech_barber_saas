@@ -41,6 +41,8 @@ export interface PublicTenant {
   contact_phone: string | null
   whatsapp_phone: string | null
   instagram: string | null
+  /** false: işletmenin WhatsApp'ı bağlı değil, müşteri online kod alamaz. */
+  otp_available: boolean
 }
 
 export interface PublicStaff extends StaffBrief {
@@ -346,6 +348,21 @@ export interface TenantSettings {
   contact_phone: string | null
   whatsapp_phone: string | null
   instagram: string | null
+}
+
+export interface WhatsappStatus {
+  state: 'open' | 'connecting' | 'close'
+  /** 90... biçimi */
+  phone: string | null
+  profile_name: string | null
+  connected_at: string | null
+  server_reachable: boolean
+}
+
+export interface WhatsappConnectOut extends WhatsappStatus {
+  /** data URL; <img src> olarak kullanılır. ~40 sn geçerli. */
+  qr_base64: string | null
+  pairing_code: string | null
 }
 
 export interface AdminCustomer {
@@ -798,7 +815,9 @@ export interface SystemStatus {
     whatsapp_configured: boolean
     whatsapp_reachable: boolean | null
     /** 'open' = bağlı, 'connecting', 'close' ... */
+    /** Artık hep null (ortak hat kaldırıldı). */
     whatsapp_state: string | null
+    whatsapp_connected_tenants: number
   }
   whatsapp: {
     sent_24h: number

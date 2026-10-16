@@ -14,13 +14,9 @@ tanınır: `<slug>.behtechlabs.com`. Ürünün tanıtım sitesi `randevu.behtech
 
 ## 0. DURDURUCU ENGELLER (bunlar olmadan canlıya çıkılamaz)
 
-- [ ] **WhatsApp ile doğrulama kodu (OTP) gönderimi bağlı DEĞİL.** Müşteri randevu alırken telefonunu OTP ile doğruluyor.
-  Canlıda (`ENVIRONMENT=production`) kod artık ekranda gösterilmez (`dev_code` null); WhatsApp bağlı değilse müşteri koda ulaşamaz →
-  **kimse randevu alamaz** ve başka cihazdan "Giriş yap" çalışmaz.
-  - Kod yeri: `backend/app/api/public.py` → `send_code_route` içindeki `TODO: WhatsApp (Evolution API) gönderimi`.
-  - **Kod tarafı (2026-10-15) HAZIR:** `app/services/otp_delivery.py` (`deliver_code`) hem müşteri OTP'sinde hem "şifremi unuttum"da kullanılıyor; `development` dışında `whatsapp_services.send_whatsapp_message` ile gönderir, başarısızsa 503. **Canlı Evolution'a karşı hiç denenmedi** (QR okutulmadı, yük biçimi tahmin) — QR sonrası gerçek mesajla doğrulayın.
-  - Altyapı: Evolution API Docker'da kurulu (`../evolution-api/`, instance `behtech`), **QR okutulmadı**. Adımlar §6.
-  - Alternatif/yedek: SMS sağlayıcısı (Netgsm vb.) — karar verilmedi.
+- [ ] **WhatsApp: her dükkân kendi numarasını bağlar** (platform ortak hat vermez). Canlıda bağlı olmayan dükkânın müşterisi doğrulama kodu alamaz → online randevu alamaz.
+  - Kod HAZIR (2026-10-16): `whatsapp_connections` tablosu, panel Ayarlar → WhatsApp kartı (QR / eşleştirme kodu), `otp_delivery` dükkânın instance'ından gönderir, webhook `?token=` ile durum günceller. Yerel Evolution v2.3.7'ye karşı QR/eşleştirme kodu/webhook kurulumu doğrulandı.
+  - Kalan: gerçek bir telefonla bağlayıp kod gönderimini uçtan uca denemek (bkz. §6).
 - [ ] **Migration zinciri BOŞ veritabanında çalışmıyor.** İlk migration (`7efb0e9dab46`) `tenant_settings` tablosunu var sayıyor (tablolar
   `backend/schema.sql` ile kurulmuştu). Yeni sunucuda sırayla: `psql -f backend/schema.sql` → `alembic upgrade head`.
   (Test altyapısı da böyle yapıyor: `backend/tests/bootstrap_db.py`.) Kalıcı çözüm: baseline migration (bkz. `EKSIKLER.md` §Teknik).
@@ -121,19 +117,16 @@ Geliştirme veritabanında SADECE demo/sahte veri var (kullanıcı kararı, 2026
 - [ ] Platform PWA: HTTPS altında telefona kur (iPhone: Safari → Paylaş → Ana Ekrana Ekle, iOS 16.4+), Ayarlar'dan bildirimi aç, "Test bildirimi" gönder.
   **Gerçek bir cihazda hiç denenmedi.**
 
-## 6. WhatsApp (Evolution API) bağlantısı
+## 6. WhatsApp (Evolution API) altyapısı
 
-Evolution API, repo dışında `../evolution-api/` klasöründe ayrı bir `docker-compose.yml` ile çalışıyor (kendi Postgres'i ile; `CACHE_LOCAL_ENABLED=true`).
-Geliştirmede `behtech` instance'ı oluşturuldu (`status: connecting`), **QR kod okutulmadı**.
+Evolution sunucusu platformun altyapısıdır (repo dışında `../evolution-api/`, kendi Postgres'iyle). **WhatsApp hesapları dükkânlarındır:** her dükkânın ayrı instance'ı (`bt<tenant_id>-<slug>`) vardır, sahip panelden bağlar.
 
-- [ ] Evolution'ı sunucuya kur (Docker), güçlü `AUTHENTICATION_API_KEY`; dışarıya KAPALI tut (yalnızca backend erişsin: `127.0.0.1:8080`).
-- [ ] Platform sahibi WhatsApp numarasıyla QR okut (`/manager` arayüzü); instance durumu `open` olmalı. **Ayrı bir hat önerilir** (ban riski; bkz. EKSIKLER.md).
-- [ ] Webhook: `POST /webhook/set/behtech` → backend'in `POST /api/webhooks/evolution` rotası. (Şu an gelen JSON'u **sadece loglayan iskelet**; gerçek payload
-  yapısı doğrulanmadı.) Docker içinden host'a `host.docker.internal` kullanılır.
-- [ ] **OTP gönderimini bağla** (§0): `send_code_route` içinde kodu `send_whatsapp_message(phone, "...")` ile gönder; hata olursa 502/503 Türkçe mesaj.
-  Telefon numarası biçimi: Evolution `90` + 10 hane bekler (`wa.me` bağlantılarında da `90` öneki kullanılıyor).
-- [ ] Platform → Sistem sayfasında WhatsApp "Erişilemiyor" → "Erişilebilir" olmalı.
-- [ ] Mesaj şablonları (OTP, randevu onayı/hatırlatma/iptal) Türkçe ve kısa; spam algısı için hız sınırı (hat başına dakikada birkaç mesaj).
+- [ ] Evolution **v2.3.7+** kullanın (v2.1.1 güncel WhatsApp Web sürümüyle QR üretemiyordu; 2026-10-16'da yükseltildi). Docker, güçlü `AUTHENTICATION_API_KEY`, dışarıya KAPALI (`127.0.0.1:8080`, yalnızca backend erişir).
+- [ ] Backend `.env`: `EVOLUTION_API_BASE_URL`, `EVOLUTION_API_KEY` (= Evolution'ın `AUTHENTICATION_API_KEY`), `EVOLUTION_WEBHOOK_URL` (canlıda Evolution'ın backend'e ulaştığı iç adres, ör. `http://127.0.0.1:8001/api/webhooks/evolution`), `EVOLUTION_WEBHOOK_SECRET` (uzun rastgele). `EVOLUTION_INSTANCE_NAME` artık kullanılmıyor.
+- [ ] Webhook yolu Nginx'te dışarı AÇILMAMALI ya da yalnızca token ile çalıştığından emin olun (token yoksa 401).
+- [ ] İlk dükkânda uçtan uca deneme: Ayarlar → WhatsApp'ı bağla → telefondan okut → durum "Bağlı" → "Test mesajı gönder" → müşteri sitesinden kod iste.
+- [ ] Platform → Sistem: "Evolution sunucusu: Erişilebilir", "WhatsApp'ı bağlı işletme: N".
+- [ ] Ban riski artık dükkân başına (her biri kendi numarası); işletme başına saatlik sınır (`WHATSAPP_TENANT_HOURLY_LIMIT`) yine geçerli.
 
 ## 7. Yasal ve operasyonel
 

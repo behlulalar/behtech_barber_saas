@@ -11,6 +11,8 @@ class TenantPublicOut(BaseModel):
     contact_phone: str | None = None
     whatsapp_phone: str | None = None
     instagram: str | None = None
+    # Doğrulama kodu gönderilebilir mi (dükkânın WhatsApp'ı bağlı ya da geliştirme ortamı). false ise online randevu alınamaz.
+    otp_available: bool = True
 
 
 class StaffPublicOut(BaseModel):

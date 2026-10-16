@@ -102,7 +102,7 @@ async def test_message_logged_and_tenant_hourly_limit(api, shop, shop2, monkeypa
 async def test_failed_delivery_is_logged(api, shop, monkeypatch):
     from app.services import otp_delivery
 
-    async def down(phone, text):
+    async def down(db, tenant_id, phone, text):
         from fastapi import HTTPException
         raise HTTPException(status_code=503, detail=otp_delivery.DELIVERY_FAILED)
 
@@ -129,7 +129,7 @@ async def test_admin_setup_guide(api, shop):
     r = await api.get("/api/admin/setup", slug="alfa", token=shop.owner_token)
     assert r.status_code == 200
     keys = [c["key"] for c in r.json()["checks"]]
-    assert keys == ["services", "staff", "working_hours", "staff_services", "address", "first_appointment"]
+    assert keys == ["services", "staff", "working_hours", "staff_services", "whatsapp", "address", "first_appointment"]
     assert (await api.get("/api/admin/setup", slug="alfa", token=shop.staff_token)).status_code == 403
     assert (await api.get("/api/admin/setup", slug="alfa")).status_code == 401
 

@@ -12,6 +12,7 @@ from app.models.audit_log import AuditLog
 from app.models.job_run import JobRun
 from app.models.login_attempt import LoginAttempt
 from app.models.message_log import MessageLog
+from app.models.whatsapp_connection import WhatsappConnection
 from app.models.platform_admin import PlatformAdmin
 from app.models.push_subscription import PushSubscription
 from app.models.tenant import Tenant
@@ -41,7 +42,7 @@ def _parse(ts: str | None) -> datetime | None:
 
 
 def whatsapp_configured() -> bool:
-    return bool(settings.evolution_api_base_url and settings.evolution_api_key and settings.evolution_instance_name)
+    return bool(settings.evolution_api_base_url and settings.evolution_api_key)
 
 
 async def _whatsapp_reachable() -> bool | None:
@@ -53,20 +54,6 @@ async def _whatsapp_reachable() -> bool | None:
         return True  # herhangi bir HTTP yanıtı: sunucu ayakta
     except Exception:
         return False
-
-
-async def _whatsapp_state() -> str | None:
-    """Evolution instance bağlantı durumu (open = QR okutulmuş ve bağlı). Alınamazsa None."""
-    if not whatsapp_configured():
-        return None
-    try:
-        url = f"{settings.evolution_api_base_url.rstrip('/')}/instance/connectionState/{settings.evolution_instance_name}"
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            r = await client.get(url, headers={"apikey": settings.evolution_api_key})
-        j = r.json()
-        return (j.get("instance") or {}).get("state") or j.get("state")
-    except Exception:
-        return None
 
 
 async def _whatsapp_stats(db: AsyncSession, since: datetime) -> WhatsappStats:
@@ -124,7 +111,8 @@ async def get_status(db: AsyncSession) -> SystemStatus:
     channels = ChannelsStatus(
         email_configured=notify_services.email_configured(), push_configured=notify_services.push_configured(),
         push_subscribers=subscribers, whatsapp_configured=whatsapp_configured(),
-        whatsapp_reachable=await _whatsapp_reachable(), whatsapp_state=await _whatsapp_state(),
+        whatsapp_reachable=await _whatsapp_reachable(),
+        whatsapp_connected_tenants=(await db.execute(select(func.count()).select_from(WhatsappConnection).where(WhatsappConnection.state == "open"))).scalar_one(),
     )
 
     async def count(q) -> int:

@@ -13,7 +13,13 @@ class Settings(BaseSettings):
     backup_retention_days: int
     evolution_api_base_url: str
     evolution_api_key: str
-    evolution_instance_name: str
+    # ESKİ (tek platform hattı) — artık kullanılmıyor; her dükkânın kendi instance'ı var (whatsapp_connections).
+    evolution_instance_name: str | None = None
+    # Evolution'ın olayları (bağlantı durumu) göndereceği adres: backend'in /api/webhooks/evolution'ı.
+    # Yerelde Docker'dan host'a: http://host.docker.internal:8001/api/webhooks/evolution
+    evolution_webhook_url: str | None = None
+    # Webhook'u doğrulamak için gizli anahtar (URL'ye ?token= olarak eklenir). Boşsa webhook reddedilir.
+    evolution_webhook_secret: str | None = None
     # Sadece geliştirmede: WhatsApp bağlanana kadar her OTP bu kod olur. environment
     # "development" değilse yok sayılır. WhatsApp testine geçince .env'den silin.
     otp_fixed_code: str | None = None

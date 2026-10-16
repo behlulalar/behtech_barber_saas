@@ -113,23 +113,7 @@ function BackupCard({ b }: { b: SystemStatus['backup'] }) {
   )
 }
 
-function waState(c: SystemStatus['channels']): { state: MarkState; label: string } {
-  if (!c.whatsapp_configured) return { state: 'off', label: 'Yapılandırılmadı' }
-  if (c.whatsapp_reachable === false) return { state: 'error', label: 'Erişilemiyor' }
-  switch (c.whatsapp_state) {
-    case 'open':
-      return { state: 'ok', label: 'Bağlı' }
-    case 'connecting':
-      return { state: 'unknown', label: 'Bağlanıyor — QR bekliyor' }
-    case 'close':
-      return { state: 'error', label: 'Bağlı değil' }
-    default:
-      return c.whatsapp_reachable ? { state: 'ok', label: 'Erişilebilir' } : { state: 'unknown', label: 'Bilinmiyor' }
-  }
-}
-
 function WhatsappCard({ c, w }: { c: SystemStatus['channels']; w: SystemStatus['whatsapp'] }) {
-  const st = waState(c)
   const cols: Column<SystemStatus['whatsapp']['top_tenants'][number]>[] = [
     { key: 'name', header: 'İşletme', primary: true, cell: (t) => <span className="break-words">{t.name}</span> },
     { key: 'sent', header: 'Gönderilen', align: 'right', cell: (t) => <span className="tabular-nums">{formatNumber(t.sent)}</span> },
@@ -142,11 +126,19 @@ function WhatsappCard({ c, w }: { c: SystemStatus['channels']; w: SystemStatus['
   ]
   return (
     <Card>
-      <CardHeader title="WhatsApp" description="Randevu bildirimleri için bağlantı ve gönderim durumu." />
+      <CardHeader title="WhatsApp" description="Her işletme kendi WhatsApp hesabını bağlar; sunucu durumu ve gönderim istatistikleri." />
       <Rows>
-        <Row label="Bağlantı">
-          <StatusMark state={st.state} label={st.label} />
+        <Row label="Evolution sunucusu">
+          {c.whatsapp_configured ? (
+            <StatusMark
+              state={c.whatsapp_reachable === false ? 'error' : c.whatsapp_reachable ? 'ok' : 'unknown'}
+              label={c.whatsapp_reachable === false ? 'Erişilemiyor' : c.whatsapp_reachable ? 'Erişilebilir' : 'Bilinmiyor'}
+            />
+          ) : (
+            <StatusMark state="off" label="Yapılandırılmadı" />
+          )}
         </Row>
+        <Row label="WhatsApp'ı bağlı işletme">{formatNumber(c.whatsapp_connected_tenants)}</Row>
         <Row label="Gönderilen (24 sa)">{formatNumber(w.sent_24h)}</Row>
         <Row label="Başarısız (24 sa)">
           <span className={w.failed_24h > 0 ? 'font-medium text-danger' : undefined}>{formatNumber(w.failed_24h)}</span>

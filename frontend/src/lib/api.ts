@@ -76,6 +76,8 @@ import type {
   SlotsResponse,
   StaffMe,
   TenantSettings,
+  WhatsappConnectOut,
+  WhatsappStatus,
   TimeOff,
   TimeOffCreate,
   TokenResponse,
@@ -352,6 +354,12 @@ export const adminApi = {
     request<TenantSettings>('/admin/settings', { method: 'PUT', body: data, auth: s }),
 
   listCustomers: (q?: string) => request<AdminCustomer[]>('/admin/customers', { auth: s, query: { q } }),
+
+  getWhatsapp: () => request<WhatsappStatus>('/admin/whatsapp', { auth: s }),
+  connectWhatsapp: (phone?: string) =>
+    request<WhatsappConnectOut>('/admin/whatsapp/connect', { method: 'POST', body: phone ? { phone } : {}, auth: s }),
+  disconnectWhatsapp: () => request<WhatsappStatus>('/admin/whatsapp/disconnect', { method: 'POST', auth: s }),
+  testWhatsapp: (phone: string) => request<void>('/admin/whatsapp/test', { method: 'POST', body: { phone }, auth: s }),
 }
 
 /* ------------------------------------------------------------------ */

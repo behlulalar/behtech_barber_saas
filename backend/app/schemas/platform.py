@@ -157,8 +157,9 @@ class ChannelsStatus(BaseModel):
     push_configured: bool
     push_subscribers: int
     whatsapp_configured: bool
-    whatsapp_reachable: bool | None
-    whatsapp_state: str | None = None  # Evolution bağlantı durumu: open | connecting | close ...
+    whatsapp_reachable: bool | None  # Evolution sunucusu (platform altyapısı) ayakta mı
+    whatsapp_state: str | None = None  # ESKİ (tek hat); artık hep None. Dükkân bağlantıları: whatsapp_connected_tenants
+    whatsapp_connected_tenants: int = 0  # kendi WhatsApp'ı bağlı dükkân sayısı
 
 
 class WhatsappTenantUsage(BaseModel):

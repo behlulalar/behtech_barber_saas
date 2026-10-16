@@ -127,7 +127,11 @@ async def setup_of(api, platform_admin, tenant_id):
 async def test_setup_ready_shop(api, platform_admin, shop):
     s, ok = await setup_of(api, platform_admin, shop.tenant.id)
     assert ok == {"services": True, "staff": True, "working_hours": True, "staff_services": True,
-                  "address": True, "first_appointment": False}
+                  "whatsapp": False, "address": True, "first_appointment": False}
+    # WhatsApp bağlı değilse müşteri kod alamaz -> hazır değil
+    assert s["ready"] is False and s["missing_count"] == 2
+    await connect_whatsapp(shop.tenant.id)
+    s, ok = await setup_of(api, platform_admin, shop.tenant.id)
     assert s["ready"] is True and s["missing_count"] == 1
     assert all(c["label"] and c["hint"] for c in s["checks"])
     # liste de aynı bilgiyi taşır
@@ -173,6 +177,7 @@ async def test_setup_each_missing_case(api, platform_admin):
 
     sh = await make_shop("tech", phone_offset=30)
     await make_staff(sh.tenant.id, "Teknik", "Destek", "5558880000", RoleType.TECHNICAL_SUPPORT)
+    await connect_whatsapp(sh.tenant.id)
     s, ok = await setup_of(api, platform_admin, sh.tenant.id)
     assert ok["working_hours"] and ok["staff_services"] and s["ready"] is True
 
@@ -182,6 +187,7 @@ async def test_setup_each_missing_case(api, platform_admin):
         ts = (await db.execute(select(TenantSettings).where(TenantSettings.tenant_id == sh.tenant.id))).scalar_one()
         ts.business_adress = "  "
         await db.commit()
+    await connect_whatsapp(sh.tenant.id)
     s, ok = await setup_of(api, platform_admin, sh.tenant.id)
     assert ok["address"] is False and s["ready"] is True
 

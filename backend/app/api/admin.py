@@ -49,7 +49,11 @@ from app.services import impersonation_services
 from app.services import login_throttle, otp_services
 from app.services.otp_delivery import deliver_code
 from app.services import report_services
-from app.services import announcement_services, platform_services
+from app.services import announcement_services, platform_services, whatsapp_connection_services as wa_svc
+from app.services import whatsapp_services
+from app.services.otp_delivery import to_whatsapp_number
+from app.schemas.whatsapp import WhatsappConnectIn, WhatsappConnectOut, WhatsappStatusOut, WhatsappTestIn
+from app.models.message_log import MessageLog
 from app.schemas.tenant import SetupOut
 from app.schemas.announcement import AnnouncementPublic
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
@@ -788,3 +792,59 @@ async def admin_announcements(staff: Staff = Depends(get_current_staff), db: Asy
 async def admin_setup(current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)):
     """Kurulum rehberi: işletmenin müşteri randevusu alabilmesi için eksikler (platformdaki kontrol listesiyle aynı mantık)."""
     return (await platform_services._setup_for(db, [current.tenant_id]))[current.tenant_id]
+
+
+# ---------------------------------------------------------------- WhatsApp (dükkânın kendi hesabı)
+
+def _wa_out(row, reachable: bool) -> WhatsappStatusOut:
+    if row is None:
+        return WhatsappStatusOut(state="close", server_reachable=reachable)
+    return WhatsappStatusOut(state=row.state, phone=row.phone, profile_name=row.profile_name,
+                             connected_at=row.connected_at, server_reachable=reachable)
+
+
+@router.get("/admin/whatsapp", response_model=WhatsappStatusOut)
+async def admin_whatsapp_status(
+    current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db)
+):
+    row, reachable = await wa_svc.refresh(db, tenant)
+    return _wa_out(row, reachable)
+
+
+@router.post("/admin/whatsapp/connect", response_model=WhatsappConnectOut)
+async def admin_whatsapp_connect(
+    data: WhatsappConnectIn,
+    current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db),
+):
+    """QR (ve telefon verildiyse eşleştirme kodu) üretir. QR ~40 sn geçerli; arayüz süresi dolunca yeniden ister."""
+    row, qr, code = await wa_svc.start_connect(db, tenant, to_whatsapp_number(data.phone) if data.phone else None)
+    return WhatsappConnectOut(**_wa_out(row, True).model_dump(), qr_base64=qr, pairing_code=code)
+
+
+@router.post("/admin/whatsapp/disconnect", response_model=WhatsappStatusOut)
+async def admin_whatsapp_disconnect(
+    current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db)
+):
+    row = await wa_svc.disconnect(db, tenant)
+    return _wa_out(row, True)
+
+
+@router.post("/admin/whatsapp/test", status_code=204)
+async def admin_whatsapp_test(
+    data: WhatsappTestIn,
+    current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db),
+):
+    row = await wa_svc.get_row(db, tenant.id)
+    if row is None or row.state != "open":
+        raise HTTPException(status_code=409, detail="Önce WhatsApp hesabınızı bağlayın")
+    try:
+        await whatsapp_services.send_text(row.instance_name, to_whatsapp_number(data.phone),
+                                          f"{tenant.name}: WhatsApp bağlantınız çalışıyor. Doğrulama kodları bu numaradan gidecek.")
+        ok = True
+    except whatsapp_services.EvolutionError:
+        ok = False
+    db.add(MessageLog(tenant_id=tenant.id, kind="test", ok=ok))
+    await db.commit()
+    if not ok:
+        raise HTTPException(status_code=503, detail="Test mesajı gönderilemedi, bağlantıyı kontrol edin")
+    return Response(status_code=204)

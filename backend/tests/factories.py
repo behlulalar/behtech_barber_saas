@@ -117,6 +117,14 @@ async def make_platform_admin(phone=PLATFORM_PHONE, password=PLATFORM_PASSWORD) 
         return a
 
 
+async def connect_whatsapp(tenant_id: int, state: str = "open", phone: str = "905550000000"):
+    """Dükkânın kendi WhatsApp'ını 'bağlı' yapar (Evolution'a gitmeden). Not: bağlı dükkânda geliştirmede de gerçek gönderim denenir."""
+    from app.models.whatsapp_connection import WhatsappConnection
+    async with SessionFactory() as db:
+        db.add(WhatsappConnection(tenant_id=tenant_id, instance_name=f"bt{tenant_id}-test", state=state, phone=phone))
+        await db.commit()
+
+
 async def make_shop(slug: str, hours=True, phone_offset: int = 0) -> Shop:
     """Tenant + ayarlar + sahip + 2 personel + 2 hizmet (30/60 dk) + staff_services + her gün 09-18 çalışma saati."""
     from tests.helpers import mint_staff_token

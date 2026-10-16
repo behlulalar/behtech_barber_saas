@@ -1,3 +1,5 @@
+import { OtpUnavailable } from '../../components/OtpUnavailable'
+import { useTenant } from '../../lib/queries'
 import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarPlus, LogOut, Phone, TriangleAlert } from 'lucide-react'
@@ -47,6 +49,8 @@ function LoginPanel() {
   const [phone, setPhone] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState<{ phone: string; devCode: string | null } | null>(null)
+  const tenant = useTenant()
+  const otpBlocked = tenant.data?.otp_available === false
   const [kvkk, setKvkk] = useKvkkConsent()
   const [kvkkError, setKvkkError] = useState<string | null>(null)
 
@@ -111,15 +115,16 @@ function LoginPanel() {
                 onValueChange={setPhone}
               />
             </Field>
-            <KvkkCheckbox
+            {otpBlocked && <OtpUnavailable info={tenant.data} />}
+            {!otpBlocked && <KvkkCheckbox
               checked={kvkk}
               error={kvkkError}
               onChange={(v) => {
                 setKvkk(v)
                 if (v) setKvkkError(null)
               }}
-            />
-            <Button type="submit" size="lg" fullWidth loading={send.isPending}>
+            />}
+            <Button type="submit" size="lg" fullWidth loading={send.isPending} disabled={otpBlocked}>
               Kod gönder
             </Button>
           </form>

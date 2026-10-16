@@ -1,5 +1,6 @@
 """Herkese açık (müşteri tarafı) ve müşteri (OTP token'lı) route'ları. Tenant, Host header'ından çözülür."""
 import logging
+import secrets
 from datetime import date, datetime, time, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -30,7 +31,7 @@ from app.services.appointment_services import (
     get_available_slots,
     lock_staff_schedule,
 )
-from app.services import signup_services
+from app.services import signup_services, whatsapp_connection_services
 from app.services.consent_services import require_customer_consent
 from app.services.customer_services import get_or_create_customer
 from app.services.otp_delivery import deliver_code
@@ -69,6 +70,7 @@ async def public_tenant_route(tenant: Tenant = Depends(get_current_tenant), db: 
         contact_phone=tenant_settings.contact_phone if tenant_settings else None,
         whatsapp_phone=tenant_settings.whatsapp_phone if tenant_settings else None,
         instagram=tenant_settings.instagram if tenant_settings else None,
+        otp_available=settings.environment == "development" or await whatsapp_connection_services.is_open(db, tenant.id),
     )
 
 
@@ -303,8 +305,16 @@ async def customer_cancel_appointment(
 
 
 @router.post("/webhooks/evolution")
-async def evolution_webhook(request: Request):
-    # Evolution API'nin gerçek payload yapısı henüz doğrulanmadı (bkz. CLAUDE.md).
-    payload = await request.json()
-    logger.info("Evolution webhook payload: %s", payload)
+async def evolution_webhook(request: Request, token: str = "", db: Session = Depends(get_db)):
+    """Evolution olayları (dükkân instance'larının bağlantı durumu). ?token= gizli anahtarla doğrulanır."""
+    secret = settings.evolution_webhook_secret
+    if not secret or not secrets.compare_digest(token, secret):
+        raise HTTPException(status_code=401, detail="Geçersiz webhook anahtarı")
+    try:
+        payload = await request.json()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Geçersiz gövde")
+    if isinstance(payload, dict):
+        logger.info("Evolution webhook: event=%s instance=%s", payload.get("event"), payload.get("instance"))
+        await whatsapp_connection_services.handle_webhook(db, payload)
     return {"status": "received"}
