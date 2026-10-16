@@ -26,3 +26,8 @@ build/
 
 # Database backups (may contain real customer data)
 backend/backups/
+
+# Üretim sırları (sunucuda üretilir, repoya girmez)
+deploy/prod/.env
+deploy/prod/backend.env
+deploy/prod/backups/

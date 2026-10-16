@@ -1,0 +1,22 @@
+# /etc/nginx/sites-available/{{DOMAIN}}.conf — BehTech Randevu (YALNIZCA bu alan adı ve alt alan adları).
+# Şablon: deploy/prod/render-nginx.sh doldurur. Diğer sistemlerin (aurora, behtech-crm) sitelerine dokunmaz.
+
+# NOT: real_ip yönergeleri YALNIZCA aşağıdaki server bloklarının içindedir (http düzeyine konulursa sunucudaki diğer siteleri etkiler).
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{SERVER_NAMES}};
+
+{{REAL_IP}}
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/berber-acme;
+        allow all;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+{{HTTPS_BLOCK}}

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { BASE_DOMAIN } from '../../lib/site'
 import { ArrowRight, Store, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -248,7 +249,7 @@ export default function DashboardPage() {
                 <div className="min-w-0">
                   <p className="truncate font-medium text-cream">{t.name}</p>
                   <p className="truncate text-xs text-muted">
-                    {t.slug}.behtechlabs.com · {formatTimestamp(t.created_at)}
+                    {t.slug}.{BASE_DOMAIN} · {formatTimestamp(t.created_at)}
                   </p>
                 </div>
                 <Badge tone={t.is_active ? 'success' : 'neutral'}>{t.is_active ? 'Aktif' : 'Pasif'}</Badge>

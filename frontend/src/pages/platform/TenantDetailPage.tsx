@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { BASE_DOMAIN } from '../../lib/site'
 import { ArrowLeft, ExternalLink, FlaskConical, Pencil, Receipt, RefreshCw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -99,7 +100,7 @@ export default function TenantDetailPage() {
   }
 
   const ref = { id: tenant.id, name: tenant.name }
-  const siteUrl = `https://${tenant.slug}.behtechlabs.com`
+  const siteUrl = `https://${tenant.slug}.${BASE_DOMAIN}`
 
   const subColumns: Column<Subscription>[] = [
     {
@@ -225,7 +226,7 @@ export default function TenantDetailPage() {
             )}
           </p>
           <a href={siteUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex min-h-11 items-center gap-1.5 break-all text-sm text-muted hover:text-copper-bright">
-            {tenant.slug}.behtechlabs.com <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
+            {tenant.slug}.{BASE_DOMAIN} <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
           </a>
         </div>
         <div className="flex flex-wrap items-center gap-2 md:justify-end">

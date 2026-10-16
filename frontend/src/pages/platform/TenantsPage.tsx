@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { BASE_DOMAIN } from '../../lib/site'
 import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Link2, Pencil, Plus, Power, Receipt, Search, Store } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -64,7 +65,7 @@ const LINKS = [
 ] as const
 
 function productionBase(slug: string) {
-  return `https://${slug}.behtechlabs.com`
+  return `https://${slug}.${BASE_DOMAIN}`
 }
 
 // Geliştirmede Vite proxy'si tenant'ı `<slug>.localhost` adresinden çözer (bkz. vite.config.ts).
@@ -279,7 +280,7 @@ function CreateModal({
           error={show('slug')}
           hint={
             <>
-              Yayın adresi: <span className="break-all text-cream">{form.slug || 'adres'}.behtechlabs.com</span>
+              Yayın adresi: <span className="break-all text-cream">{form.slug || 'adres'}.{BASE_DOMAIN}</span>
             </>
           }
         >
@@ -372,7 +373,7 @@ function EditModal({ tenant, onClose }: { tenant: PlatformTenant | null; onClose
           <Input data-autofocus value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <p className="text-xs text-muted">
-          Adres <span className="text-cream">{tenant?.slug}.behtechlabs.com</span> değiştirilemez.
+          Adres <span className="text-cream">{tenant?.slug}.{BASE_DOMAIN}</span> değiştirilemez.
         </p>
       </form>
     </Modal>
@@ -464,7 +465,7 @@ export default function TenantsPage() {
             }}
             className="inline-flex min-h-11 items-center gap-1 break-all text-left text-xs font-normal text-muted hover:text-copper-bright md:pointer-fine:min-h-0"
           >
-            {t.slug}.behtechlabs.com <Link2 className="size-3 shrink-0" aria-hidden="true" />
+            {t.slug}.{BASE_DOMAIN} <Link2 className="size-3 shrink-0" aria-hidden="true" />
           </button>
         </div>
       ),

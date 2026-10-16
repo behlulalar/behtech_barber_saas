@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { BASE_DOMAIN } from '../../lib/site'
 import { ArrowRight, Banknote, CalendarClock, CircleCheck, FlaskConical, Hourglass, Percent, Receipt, RefreshCw, Search, Settings2, Wallet } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -103,7 +104,7 @@ export default function PaymentsPage() {
       cell: (t) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-cream">{t.tenant_name}</p>
-          <p className="truncate text-xs font-normal text-muted">{t.slug}.behtechlabs.com</p>
+          <p className="truncate text-xs font-normal text-muted">{t.slug}.{BASE_DOMAIN}</p>
         </div>
       ),
     },

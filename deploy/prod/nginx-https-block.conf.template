@@ -1,0 +1,76 @@
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name {{SERVER_NAMES}};
+
+{{REAL_IP}}
+
+    ssl_certificate     /etc/letsencrypt/live/{{CERT_NAME}}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{CERT_NAME}}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:berber_ssl:10m;
+    ssl_session_timeout 1d;
+
+    root /opt/berber/frontend/dist;
+    index index.html;
+    client_max_body_size 4m;  # logo/kapak/personel fotoğrafı data URL (en çok ~1,5 MB)
+    limit_conn berber_conn 40;
+
+    # --- Güvenlik başlıkları: nginx'te bir location'da add_header kullanılırsa üst düzeydekiler KAYBOLUR; bu yüzden her yerde include ---
+    include /etc/nginx/snippets/berber-security.conf;
+
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml application/manifest+json;
+
+    # --- API (backend 127.0.0.1:19001). Host başlığı AYNEN iletilir: dükkân alt alan adından çözülür. ---
+    location /api/ {
+        limit_req zone=berber_api burst=40 nodelay;
+        proxy_pass http://127.0.0.1:19001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        # İstemci sahte X-Forwarded-For gönderemesin: yalnızca nginx'in gördüğü (real_ip ile düzeltilmiş) adres.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+        proxy_connect_timeout 5s;
+    }
+    # Giriş / kod / kayıt uçları: sıkı hız sınırı (uygulama içi sınırların ÖNÜNDEKİ ilk savunma hattı)
+    location ~ ^/api/(auth/(login|send-code|verify-code|forgot/|panel-key/)|platform/login|public/signup) {
+        limit_req zone=berber_auth burst=10 nodelay;
+        proxy_pass http://127.0.0.1:19001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+    # Evolution webhook'u yalnızca konteyner ağından (backend'e doğrudan) gelir; dışarıdan ASLA.
+    location /api/webhooks/ { return 404; }
+
+    # --- Önbellek: hash'li dosyalar kalıcı; index.html ve service worker asla ---
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        include /etc/nginx/snippets/berber-security.conf;
+        try_files $uri =404;
+    }
+    location = /sw.js {
+        add_header Cache-Control "no-cache";
+        include /etc/nginx/snippets/berber-security.conf;
+    }
+    location = /index.html {
+        include /etc/nginx/snippets/berber-security.conf;
+        add_header Cache-Control "no-cache";
+    }
+    # SPA: bilinmeyen yollar index.html'e (rota React'ta). Her uzantılı bulunmayan dosya 404 olsun.
+    location / {
+        add_header Cache-Control "no-cache";
+        include /etc/nginx/snippets/berber-security.conf;
+        try_files $uri $uri/ /index.html;
+    }
+    # Gizli/derleme dosyaları
+    location ~ /\.(?!well-known) { deny all; }
+}

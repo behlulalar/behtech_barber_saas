@@ -1,5 +1,6 @@
 // Kayıt başvuruları: yeni kayıt olan işletmelerin onay bekleme listesi (kart görünümü).
 import { useQuery } from '@tanstack/react-query'
+import { BASE_DOMAIN } from '../../lib/site'
 import { Clock, ExternalLink, Inbox, Phone, User } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -26,7 +27,7 @@ function ApplicationCard({ t, filter }: { t: PlatformTenant; filter: Filter }) {
             </Link>
             {filter === 'pending' ? <Badge tone="warning">Onay bekliyor</Badge> : <Badge tone="danger">Reddedildi</Badge>}
           </div>
-          <p className="mt-1 break-all text-sm text-muted">{t.slug}.behtechlabs.com</p>
+          <p className="mt-1 break-all text-sm text-muted">{t.slug}.{BASE_DOMAIN}</p>
 
           <dl className="mt-4 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-3">
             <div className="flex items-center gap-2 text-muted-strong">

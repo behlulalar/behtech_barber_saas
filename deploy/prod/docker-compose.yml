@@ -1,0 +1,78 @@
+# BehTech Randevu — üretim (sunucuda /opt/berber). Compose PROJE ADI "berber": ağ, hacim ve konteyner adları
+# `berber_*` ile başlar; sunucudaki diğer sistemlerden (aurora, behtech-crm) tamamen ayrıdır.
+# Hiçbir servis dışarıya açılmaz: yalnızca backend 127.0.0.1:19001'e bağlanır (host nginx buradan proxy yapar).
+name: berber
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: berber_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: berber
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: behtech_saas
+      EVOLUTION_DB_PASSWORD: ${EVOLUTION_DB_PASSWORD}
+      TZ: Europe/Istanbul
+    # Uygulama saat dilimsiz yerel saat kullanır: veritabanı da İstanbul saatinde olmalı.
+    command: ["postgres", "-c", "timezone=Europe/Istanbul", "-c", "max_connections=60", "-c", "shared_buffers=128MB"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/10-evolution.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U berber -d behtech_saas"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 512m
+    cpus: 1.0
+
+  backend:
+    build:
+      context: ../../backend
+    image: berber-backend:latest
+    container_name: berber_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: ./backend.env
+    environment:
+      TZ: Europe/Istanbul
+    ports:
+      - "127.0.0.1:19001:8001"
+    volumes:
+      - ./backups:/app/backups
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: 700m
+    cpus: 1.5
+
+  evolution:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: berber_evolution
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_PASSWORD}@db:5432/evolution?schema=public
+      CACHE_REDIS_ENABLED: "false"
+      CACHE_LOCAL_ENABLED: "true"
+      LOG_LEVEL: ERROR,WARN
+      TZ: Europe/Istanbul
+    volumes:
+      - evolution_instances:/evolution/instances
+    mem_limit: 900m
+    cpus: 1.0
+
+volumes:
+  pgdata:
+  evolution_instances:

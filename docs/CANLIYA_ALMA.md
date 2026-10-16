@@ -12,6 +12,9 @@ tanınır: `<slug>.behtechlabs.com`. Ürünün tanıtım sitesi `randevu.behtech
 
 ---
 
+> **DURUM (2026-10-16):** Sistem `45.141.150.48` sunucusunda, diğer sistemlerden izole kuruldu: `https://berberpanelim.behlulalar.online` (tanıtım + platform paneli) çalışıyor. Kurulum/işletim: **`docs/DEPLOY.md`**.
+> Kalanlar: joker DNS + joker sertifika (dükkân alt alan adları), ilk platform yöneticisi + 2FA, WhatsApp uçtan uca deneme, KVKK şirket bilgileri, SMTP, sunucu dışı yedek.
+
 ## 0. DURDURUCU ENGELLER (bunlar olmadan canlıya çıkılamaz)
 
 - [ ] **WhatsApp: her dükkân kendi numarasını bağlar** (platform ortak hat vermez). Canlıda bağlı olmayan dükkânın müşterisi doğrulama kodu alamaz → online randevu alamaz.

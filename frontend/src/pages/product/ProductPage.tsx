@@ -7,6 +7,7 @@ import {
 import { ThemeToggle } from '../../lib/theme'
 import { BrandCredit } from '../../components/BrandCredit'
 import { LegalLink } from '../../components/LegalModal'
+import { BASE_DOMAIN } from '../../lib/site'
 import type { LegalSlug } from '../../lib/legal'
 import { CONTACT, DEMO_SITE_URL, PRODUCT_NAME } from './content'
 import { PanelMockup, PhoneBookingMockup, PhonePanelMockup, TenantSiteMockup } from './mockups'
@@ -298,7 +299,7 @@ function Features() {
 
       <div className="mt-14 grid gap-5 lg:grid-cols-2">
         {[
-          { m: <TenantSiteMockup className="w-full" />, k: 'Müşteri tarafı', t: 'Size ait randevu sitesi', d: 'isletmeadi.behtechlabs.com' },
+          { m: <TenantSiteMockup className="w-full" />, k: 'Müşteri tarafı', t: 'Size ait randevu sitesi', d: `isletmeadi.${BASE_DOMAIN}` },
           { m: <PanelMockup className="w-full" />, k: 'İşletme tarafı', t: 'Tüm işler tek panelde', d: 'Ajanda, müşteriler, ekip, gelir' },
         ].map((x, i) => (
           <Rv key={x.t} delay={i * 120} className="flex flex-col overflow-hidden rounded-lg border border-line bg-surface">
@@ -360,7 +361,7 @@ function HowItWorks() {
         <Rv delay={200} className="mx-auto mt-14 flex max-w-md items-center gap-3 rounded-full border border-line-strong bg-surface-raised px-5 py-3 shadow-pop">
           <Link2 className="size-5 shrink-0 text-copper" aria-hidden="true" />
           <span className="min-w-0 truncate text-cream">
-            <span className="text-copper-bright">dukkaniniz</span>.behtechlabs.com
+            <span className="text-copper-bright">dukkaniniz</span>.{BASE_DOMAIN}
           </span>
           <span className="ml-auto shrink-0 rounded-full bg-copper px-3 py-1 text-xs font-semibold text-on-accent">Randevu al</span>
         </Rv>

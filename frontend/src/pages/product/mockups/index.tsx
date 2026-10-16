@@ -1,4 +1,5 @@
 import './mockups.css'
+import { BASE_DOMAIN } from '../../../lib/site'
 
 interface MockupProps {
   className?: string
@@ -93,7 +94,7 @@ export function PanelMockup({ className }: MockupProps) {
   return (
     <div className={cx('mk-root mk-browser', className)} aria-hidden="true">
       <div className="mk-s">
-        <Browser url="ustaberber.behtechlabs.com/panel">
+        <Browser url={`ustaberber.${BASE_DOMAIN}/panel`}>
           <aside className="mk-side">
             <div className="mk-brand"><span className="mk-mark">U</span><span className="mk-disp">Usta Berber</span></div>
             {nav.map((n, i) => <div key={n} className={cx('mk-nav mk-nowrap', i === 0 ? 'on' : undefined)}>{n}</div>)}
@@ -130,7 +131,7 @@ export function TenantSiteMockup({ className }: MockupProps) {
   return (
     <div className={cx('mk-root mk-browser', className)} aria-hidden="true">
       <div className="mk-s">
-        <Browser url="ustaberber.behtechlabs.com">
+        <Browser url={`ustaberber.${BASE_DOMAIN}`}>
           <div className="mk-site">
             <div className="mk-snav">
               <div className="l"><span className="mk-mark">U</span><span className="mk-disp">Usta Berber</span></div>
