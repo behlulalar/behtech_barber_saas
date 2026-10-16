@@ -33,3 +33,14 @@ export function useFavicon(href: string | null | undefined) {
     }
   }, [href])
 }
+
+/** Arama motorlarından gizle (panel/giriş sayfaları): <meta name="robots" content="noindex, nofollow">. */
+export function useNoIndex() {
+  useEffect(() => {
+    const meta = document.createElement('meta')
+    meta.name = 'robots'
+    meta.content = 'noindex, nofollow'
+    document.head.appendChild(meta)
+    return () => meta.remove()
+  }, [])
+}

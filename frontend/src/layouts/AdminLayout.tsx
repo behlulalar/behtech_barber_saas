@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button'
 import { authApi } from '../lib/api'
 import { useStaffAuth } from '../lib/auth'
 import { fullName } from '../lib/format'
-import { useDocumentTitle, useFavicon, useRouteLabel } from '../lib/head'
+import { useDocumentTitle, useFavicon, useRouteLabel, useNoIndex } from '../lib/head'
 import { useTenant } from '../lib/queries'
 import { PanelShell, type NavItem } from './PanelShell'
 
@@ -72,6 +72,7 @@ function SupportBanner({ who, readOnly }: { who: string; readOnly: boolean }) {
 
 /** Staff panel iskeleti. <RequireStaff> altında kullanılır. Sayfalar <Outlet/> içinde render edilir. */
 export default function AdminLayout() {
+  useNoIndex()
   const { me, logout, isManager } = useStaffAuth()
   const tenant = useTenant()
   const nav = isManager ? NAV : NAV.filter((n) => !n.managerOnly)

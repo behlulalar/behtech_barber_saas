@@ -58,6 +58,7 @@ Aşama A (giriş kilidi, yöneticiler, denetim kaydı, sistem sayfası, testler)
 - [ ] **P2 İşletmeyi arşivleme/silme:** soft delete + 30 gün geri alma; müşteri verisini dışa aktarma (CSV/JSON) — KVKK silme/taşıma talebi için.
 - [ ] **P2 Yalnızca-okuma platform yöneticisi rolü** (takip elemanı için).
 - [ ] **P2 Platform girişi için 2FA** (TOTP) — platform hesabı tüm dükkânlara hükmediyor.
+- [x] (2026-10-16) **Giriş adreslerinin gizlenmesi:** dükkân sitesindeki "Personel girişi" bağlantısı kaldırıldı; `/panel/giris` ve `/platform/giris` hiçbir yerden bağlanmıyor, `robots.txt` (`/panel`, `/platform`, `/api`, `/randevularim` yasak) + giriş/panel sayfalarında `noindex`. **Not:** adres gizliliği güvenlik değil, görünürlüğü azaltır; asıl koruma giriş kilidi (5 hatalı deneme -> 15 dk), `tv` ile oturum iptali ve nginx hız sınırı. Daha ileri: **P1 panel girişi için 2FA (TOTP) ya da dükkân başına tahmin edilemez giriş adresi** (ör. `/panel/g/<rastgele>`; sahip adresi saklamalı, kaybederse platformdan yeniden üretilir) — karar bekliyor.
 - [ ] **P3 Tüm "platform yöneticisi" eylemlerinin dışarı bildirimi** (kritik eylemde e-posta).
 
 ### Aşama C — Gelir, deneme ve metrikler

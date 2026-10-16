@@ -5,7 +5,7 @@ import { useMatch } from 'react-router-dom'
 import { platformApi } from '../lib/api'
 import { usePlatformAuth } from '../lib/auth'
 import { formatPhone } from '../lib/format'
-import { PRODUCT_NAME, useDocumentTitle, useRouteLabel } from '../lib/head'
+import { PRODUCT_NAME, useDocumentTitle, useRouteLabel, useNoIndex } from '../lib/head'
 import { usePlatformManifest } from '../lib/push'
 import { PanelShell, type NavItem } from './PanelShell'
 
@@ -24,6 +24,7 @@ const BASE_NAV: NavItem[] = [
 
 /** Platform (SaaS sahibi) paneli iskeleti. <RequirePlatform> altında kullanılır. */
 export default function PlatformLayout() {
+  useNoIndex()
   const { me, logout } = usePlatformAuth()
   // Onay bekleyen kayıt başvurusu sayısı (limit=1 ile yalnızca total okunur).
   const pendingQ = useQuery({

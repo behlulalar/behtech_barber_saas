@@ -1,6 +1,7 @@
 import { ArrowLeft, CalendarCheck, LogIn, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { BrandCredit } from '../components/BrandCredit'
 import { ContactLinks } from '../components/ContactLinks'
 import { LegalLink } from '../components/LegalModal'
 import { buttonStyles } from '../components/ui/Button'
@@ -152,10 +153,7 @@ export default function PublicLayout() {
             <LegalLink slug="aydinlatma" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">
               Aydınlatma Metni
             </LegalLink>
-            <Link to="/panel/giris" className="inline-flex min-h-11 items-center hover:text-cream md:pointer-fine:min-h-0">
-              Personel girişi
-            </Link>
-            <p>© {new Date().getFullYear()} · behtechlabs.com altyapısıyla</p>
+            <BrandCredit />
           </div>
         </div>
       </footer>

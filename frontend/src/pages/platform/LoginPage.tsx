@@ -9,13 +9,14 @@ import { Input } from '../../components/ui/Input'
 import { PhoneInput } from '../../components/ui/PhoneInput'
 import { ThemeToggle } from '../../lib/theme'
 import AuthLayout from '../../layouts/AuthLayout'
-import { PRODUCT_NAME, useDocumentTitle } from '../../lib/head'
+import { PRODUCT_NAME, useDocumentTitle, useNoIndex } from '../../lib/head'
 import { errorMessage } from '../../lib/api'
 import { usePlatformAuth } from '../../lib/auth'
 import { usePlatformManifest } from '../../lib/push'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 
 export default function LoginPage() {
+  useNoIndex()
   useDocumentTitle('Platform girişi', PRODUCT_NAME)
   usePlatformManifest()
   const { status, login, logout, me } = usePlatformAuth()

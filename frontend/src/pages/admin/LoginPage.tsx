@@ -14,9 +14,10 @@ import { useStaffAuth } from '../../lib/auth'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 import { useTenant } from '../../lib/queries'
 import { ForgotPasswordFlow } from './ForgotPasswordFlow'
-import { useDocumentTitle, useFavicon } from '../../lib/head'
+import { useDocumentTitle, useFavicon, useNoIndex } from '../../lib/head'
 
 export default function LoginPage() {
+  useNoIndex()
   const { status, login, logout, me } = useStaffAuth()
   const tenant = useTenant()
   useDocumentTitle('Personel girişi', tenant.data?.business_name)

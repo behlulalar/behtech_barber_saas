@@ -5,6 +5,7 @@ import {
   MousePointerClick, PhoneMissed, Plus, RotateCcw, Scissors, Share2, ShieldCheck, Smartphone, UserPlus, Users, Wallet, X,
 } from 'lucide-react'
 import { ThemeToggle } from '../../lib/theme'
+import { BrandCredit } from '../../components/BrandCredit'
 import { LegalLink } from '../../components/LegalModal'
 import type { LegalSlug } from '../../lib/legal'
 import { CONTACT, DEMO_SITE_URL, PRODUCT_NAME } from './content'
@@ -493,9 +494,7 @@ function Footer() {
   return (
     <footer className="border-t border-line pb-safe">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-        <p>
-          © {new Date().getFullYear()} BehTech Labs · {PRODUCT_NAME}
-        </p>
+        <BrandCredit />
         <nav aria-label="Yasal" className="flex flex-wrap gap-x-5">
           {[
             ['gizlilik', 'Gizlilik'],
