@@ -294,7 +294,6 @@ function ConnectModal({ open, state, onClose, onConnected }: { open: boolean; st
             </Button>
           )}
           <Steps />
-          <RiskTips />
         </div>
       ) : (
         <div className="flex flex-col gap-4 pb-2">
@@ -314,7 +313,6 @@ function ConnectModal({ open, state, onClose, onConnected }: { open: boolean; st
             </div>
           )}
           <Steps pairing />
-          <RiskTips />
         </div>
       )}
     </Modal>
@@ -335,18 +333,5 @@ function Steps({ pairing }: { pairing?: boolean }) {
         <li key={t}>{t}</li>
       ))}
     </ol>
-  )
-}
-
-function RiskTips() {
-  return (
-    <div className="w-full rounded-sm border border-line bg-panel px-3.5 py-3">
-      <p className="text-sm font-medium text-cream">Ban riskini azaltmak için</p>
-      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-muted-strong">
-        <li>Yeni alınmış hat yerine müşterilerinizin kayıtlı olduğu işletme numaranızı kullanın.</li>
-        <li>Mümkünse WhatsApp Business uygulamasını kullanın.</li>
-        <li>Bu numaradan toplu reklam mesajı göndermeyin.</li>
-      </ul>
-    </div>
   )
 }
