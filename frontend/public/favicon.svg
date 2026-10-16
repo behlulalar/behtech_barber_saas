@@ -1,13 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <title>BehTech Randevu</title>
-  <rect width="64" height="64" rx="14" fill="#C9793F"/>
-  <defs><clipPath id="pole"><rect x="22" y="8" width="20" height="48" rx="10"/></clipPath></defs>
-  <g clip-path="url(#pole)">
-    <rect x="22" y="8" width="20" height="48" fill="#15110E"/>
-    <g fill="#F2E9DD">
-      <path d="M10 24 L54 0 L54 8 L10 32 Z"/>
-      <path d="M10 42 L54 18 L54 26 L10 50 Z"/>
-      <path d="M10 60 L54 36 L54 44 L10 68 Z"/>
-    </g>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#1D1713"/><g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12 L44 40 M44 12 L20 40" stroke="#F2E9DD" stroke-width="5.5"/><circle cx="18.5" cy="47" r="7" stroke="#E0945A" stroke-width="5.5"/><circle cx="45.5" cy="47" r="7" stroke="#E0945A" stroke-width="5.5"/></g></svg>
