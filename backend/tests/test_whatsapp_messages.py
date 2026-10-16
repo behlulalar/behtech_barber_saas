@@ -36,7 +36,7 @@ def test_every_kind_has_at_least_three_variants_and_renders_cleanly(kind):
     assert len(variants) >= 3 and len(set(variants)) == len(variants)
     for v in variants:
         out = v.format(**SAMPLE)
-        assert not re.search(r"[{}]", out) and len(out) < 220  # kısa, doldurulmamış alan yok
+        assert not re.search(r"[{}]", out) and len(out) < 300  # kısa, doldurulmamış alan yok
 
 
 def test_no_link_in_otp_confirm_reminder_staff_messages():
@@ -92,7 +92,7 @@ async def test_panel_created_appointment_notifies_customer_but_not_the_creating_
     assert r.status_code == 201, r.text
     msgs = await queued()
     assert [m.kind for m in msgs] == ["confirm_manual"]  # berber kendisi girdi: kendine bildirim yok; metin "işletme oluşturdu" der
-    assert "oluştur" in msgs[0].body or "kaydet" in msgs[0].body
+    assert re.search(r"oluşturul|oluşturmuş|kaydedil|alınmıştır", msgs[0].body)
     # sahip, berber adına girerse berbere bilgi gider
     await api.post("/api/admin/appointments", slug="alfa", token=shop.owner_token, json={
         "staff_id": shop.staff.id, "service_id": shop.cut.id, "name": "Veli", "surname": "Can", "phone": "5550003333",
@@ -296,3 +296,26 @@ async def test_welcome_lid_contacts_are_replied_by_jid(api, shop, monkeypatch):
     await connect_whatsapp(shop.tenant.id)
     await post_inbound(api, shop, monkeypatch, jid="123456789012345@lid")
     assert (await queued("welcome"))[0].to_phone == "123456789012345@lid"
+
+
+INFORMAL = ("isterseniz", "isterseniz", "görüşmek üzere", "selam", "üzgünüz", "merhaba", "hoşça", "🙏", "👋", "✂️", "⏰")
+
+
+@pytest.mark.parametrize("kind", sorted(texts._VARIANTS))
+def test_tone_is_formal_no_casual_phrases_or_emoji(kind):
+    for v in texts._VARIANTS[kind]:
+        low = v.lower()
+        assert not any(w in low for w in INFORMAL), v
+        assert not re.search(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", v), v  # emoji yok
+
+
+def test_customer_facing_messages_address_formally():
+    for kind in ("cancel_customer", "cancel_shop", "confirm", "reminder"):
+        assert any(v.startswith("Sayın {customer}") for v in texts._VARIANTS[kind])
+
+
+def test_shop_name_never_gets_a_turkish_suffix_attached():
+    """İşletme adının sonuna ek ('Kuaför'e', 'Berber'in') getirmek ünlü uyumunu bozar: {shop}'e/{shop}'in/{shop}'i gibi kalıplar yasak."""
+    for variants in texts._VARIANTS.values():
+        for v in variants:
+            assert not re.search(r"\{shop\}['’]", v), v

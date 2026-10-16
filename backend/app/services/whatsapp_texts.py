@@ -1,4 +1,4 @@
-"""WhatsApp mesaj metinleri. KISA ve öz. Her türde EN AZ 3 eşdeğer kalıp vardır; kalıplar dönüşümlü seçilir
+"""WhatsApp mesaj metinleri. KISA, resmi ve mesafeli ("Sayın …", siz dili, emojisiz). Her türde EN AZ 3 eşdeğer kalıp vardır; kalıplar dönüşümlü seçilir
 (aynı dükkân + tür için art arda aynı kalıp seçilmez), böylece mesajlar birebir aynı görünmez (spam/ban riski azalır).
 Bağlantı yalnızca gerektiğinde: karşılama ve iptal sonrası yeniden randevu. OTP, onay ve hatırlatmada link YOK."""
 import random
@@ -10,58 +10,59 @@ DAYS = ("Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "P
 MONTHS = ("Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık")
 
 OTP = (
-    "{shop} randevu doğrulama kodunuz: {code}. Kodu kimseyle paylaşmayın.",
-    "{shop} için doğrulama kodunuz {code}. Bu kodu kimseyle paylaşmayın.",
-    "Merhaba, {shop} randevunuz için kodunuz: {code}. Kodu başkasıyla paylaşmayın.",
+    "{shop} randevu doğrulama kodunuz: {code}. Bu kodu kimseyle paylaşmayınız.",
+    "{shop} için doğrulama kodunuz: {code}. Güvenliğiniz için kodu kimseyle paylaşmayınız.",
+    "Sayın müşterimiz, {shop} randevunuz için doğrulama kodunuz: {code}. Lütfen kodu başkasıyla paylaşmayınız.",
 )
 RESET = (
-    "{shop} şifre sıfırlama kodunuz: {code}. Kodu kimseyle paylaşmayın.",
-    "{shop} paneli için şifre sıfırlama kodunuz {code}. Bu kodu kimseyle paylaşmayın.",
-    "{shop} panel şifrenizi sıfırlamak için kodunuz: {code}. Kodu başkasıyla paylaşmayın.",
+    "{shop} şifre sıfırlama kodunuz: {code}. Bu kodu kimseyle paylaşmayınız.",
+    "{shop} paneli için şifre sıfırlama kodunuz: {code}. Güvenliğiniz için kodu kimseyle paylaşmayınız.",
+    "Sayın kullanıcımız, {shop} panel şifrenizi sıfırlamak için kodunuz: {code}. Lütfen kodu başkasıyla paylaşmayınız.",
 )
+# Üslup: resmi, mesafeli, "siz" dili; emoji ve samimi kalıp YOK ("isterseniz", "görüşmek üzere" gibi).
 CONFIRM = (
-    "✅ Randevunuz onaylandı\n{shop}\n{day} {date}, {time} · {staff}\n{service}\n\nGörüşmek üzere!",
-    "Randevunuz alındı ✅\n{service} · {staff}\n📅 {day} {date}, saat {time}\n{shop}",
-    "Merhaba {first}, randevunuz hazır ✅\n{day} {date} · {time}\n{service} · {staff}\n{shop}",
-    "{shop} randevunuz onaylandı ✅\n📅 {day} {date}, {time}\n✂️ {service} ({staff})\nSizi bekliyoruz!",
+    "Sayın {customer}, randevunuz onaylanmıştır.\n{shop}\nTarih: {day} {date}, saat {time}\nHizmet: {service} ({staff})\nSizi bekliyoruz.",
+    "{shop} randevunuz oluşturulmuştur.\nTarih: {day} {date}, saat {time}\nHizmet: {service}\nPersonel: {staff}\nİyi günler dileriz.",
+    "Sayın {customer}, {day} {date} saat {time} için {shop} randevunuz onaylanmıştır.\nHizmet: {service} ({staff})",
+    "Randevunuz onaylanmıştır.\n{shop}\n{day} {date}, saat {time}\n{service} · {staff}\nİyi günler dileriz.",
 )
 # Randevuyu işletme/personel panelden (telefonla, yüz yüze) oluşturduğunda: müşteri kendisi almadı, bu belli olmalı.
 CONFIRM_MANUAL = (
-    "{shop} sizin için randevu oluşturdu ✅\n📅 {day} {date}, {time}\n✂️ {service} ({staff})\nGörüşmek üzere!",
-    "Merhaba {first}, {shop} randevunuzu oluşturdu ✅\n{day} {date} · {time}\n{service} · {staff}",
-    "Randevunuz {shop} tarafından oluşturuldu ✅\n📅 {day} {date}, saat {time}\n{service} · {staff}\nSizi bekliyoruz!",
-    "{shop} randevunuzu kaydetti ✅\n📅 {day} {date}, {time}\n{service} · {staff}",
+    "Sayın {customer}, {shop} tarafından adınıza randevu oluşturulmuştur.\nTarih: {day} {date}, saat {time}\nHizmet: {service} ({staff})",
+    "{shop} sizin için randevu oluşturmuştur.\nTarih: {day} {date}, saat {time}\nHizmet: {service}\nPersonel: {staff}\nİyi günler dileriz.",
+    "Sayın {customer}, randevunuz {shop} tarafından kaydedilmiştir.\n{day} {date}, saat {time}\n{service} · {staff}",
+    "{shop} tarafından adınıza randevu alınmıştır.\nTarih: {day} {date}, saat {time}\nHizmet: {service} ({staff})\nSizi bekliyoruz.",
 )
 CANCEL_CUSTOMER = (
-    "Randevunuz iptal edildi.\n{day} {date} {time} · {service}\nYeniden randevu için: {link}",
-    "İptal işleminiz tamam ✔️\n{day} {date}, {time} randevusu iptal edildi.\nYeni randevu: {link}",
-    "{first}, {day} {date} {time} randevunuz iptal edildi. İsterseniz yeniden alabilirsiniz: {link}",
+    "Sayın {customer}, {day} {date} saat {time} tarihli randevunuz iptal edilmiştir.\nYeni randevu için: {link}",
+    "Randevu iptaliniz gerçekleştirilmiştir.\nİptal edilen randevu: {day} {date}, saat {time} · {service}\nYeni randevu için: {link}",
+    "Sayın {customer}, talebiniz üzerine {day} {date} saat {time} randevunuz iptal edilmiştir.\nYeni randevu için: {link}",
 )
 CANCEL_SHOP = (
-    "{shop} randevunuzu iptal etmek zorunda kaldı 🙏\n{day} {date} {time} · {service}\nÖzür dileriz. Yeni randevu: {link}",
-    "Üzgünüz, {day} {date} {time} randevunuz işletme tarafından iptal edildi 🙏\nYeni randevu için: {link}",
-    "{first}, {shop} {day} {date} {time} randevunuzu iptal etti. Rahatsızlık için özür dileriz 🙏 Yeni randevu: {link}",
+    "Sayın {customer}, {day} {date} saat {time} tarihli randevunuz {shop} tarafından iptal edilmiştir. Verdiğimiz rahatsızlıktan dolayı özür dileriz.\nYeni randevu için: {link}",
+    "{shop} olarak, {day} {date} saat {time} randevunuzu iptal etmek zorunda kaldığımızı bildiririz. Anlayışınız için teşekkür ederiz.\nYeni randevu için: {link}",
+    "Sayın {customer}, işletmemizden kaynaklanan bir nedenle {day} {date} saat {time} randevunuz iptal edilmiştir. Özür dileriz.\nYeni randevu için: {link}",
 )
 REMINDER = (
-    "⏰ Hatırlatma\nBugün {time} · {service}\n{staff} · {shop}",
-    "Randevunuza 1 saat kaldı ⏰\n{time} · {service} ({staff})\n{shop}",
-    "{first}, bugün saat {time} randevunuz var ⏰\n{shop} · {staff}",
+    "Sayın {customer}, bugün saat {time} randevunuz bulunmaktadır.\n{shop} · {service} ({staff})",
+    "Hatırlatma: bugün saat {time} randevunuz vardır.\n{shop}\nHizmet: {service} ({staff})",
+    "Sayın {customer}, randevunuza 1 saat kalmıştır.\nSaat: {time}\n{shop} · {service} ({staff})",
 )
 STAFF_NEW = (
-    "🆕 Yeni randevu\n{day} {date}, {time}\n{customer} · {service}",
-    "Yeni randevu geldi 📅\n{customer} · {service}\n{day} {date} saat {time}",
-    "🆕 {day} {date} {time} · {customer}\n{service}",
+    "Yeni randevu\nTarih: {day} {date}, saat {time}\nMüşteri: {customer}\nHizmet: {service}",
+    "Size yeni bir randevu atanmıştır.\n{day} {date}, saat {time}\n{customer} · {service}",
+    "Yeni randevu bilgisi\n{customer} · {service}\n{day} {date}, saat {time}",
 )
 STAFF_CANCEL = (
-    "❌ Randevu iptal\n{day} {date}, {time}\n{customer} · {service}",
-    "İptal edildi ❌ {customer}, {day} {date} {time} ({service})",
-    "❌ {day} {date} {time} randevusu iptal: {customer} · {service}",
+    "Randevu iptali\nTarih: {day} {date}, saat {time}\nMüşteri: {customer}\nHizmet: {service}",
+    "Aşağıdaki randevu iptal edilmiştir.\n{day} {date}, saat {time}\n{customer} · {service}",
+    "Randevu iptal bilgisi\n{customer} · {service}\n{day} {date}, saat {time}",
 )
 WELCOME = (
-    "Merhaba, {shop} 👋 Randevu için: {link}\nSorularınız için yazabilirsiniz.",
-    "{shop}'e hoş geldiniz! Online randevu almak için: {link}",
-    "Selam 👋 {shop} randevu sayfası: {link}\nBaşka bir konuda yazabilirsiniz.",
-    "Merhaba! {shop} olarak yardımcı olmaktan memnuniyet duyarız. Hızlıca randevu almak için: {link}",
+    "Sayın müşterimiz, {shop} işletmesine hoş geldiniz. Randevu almak için: {link}\nSorularınız için bu numaradan yazabilirsiniz.",
+    "{shop} olarak sizi ağırlamaktan memnuniyet duyarız. Online randevu için: {link}\nBaşka bir konuda yazabilirsiniz.",
+    "Sayın müşterimiz, {shop} randevu sayfası: {link}\nSorularınız için bu numaradan bize ulaşabilirsiniz.",
+    "{shop} ile ilgilendiğiniz için teşekkür ederiz. Randevu almak için: {link}\nBaşka bir konuda yardıma ihtiyaç duyarsanız yazabilirsiniz.",
 )
 
 _VARIANTS: dict[str, tuple[str, ...]] = {
