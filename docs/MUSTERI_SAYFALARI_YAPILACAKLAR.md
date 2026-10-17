@@ -21,6 +21,9 @@ randevu akışı (`BookingPage`: Hizmet, Berber, Zaman, Bilgiler + telefon doğr
 4. [ ] **WhatsApp'tan iptal:** hatırlatmaya "iptal" yazan müşterinin randevusu iptal olsun; berbere bildirim (bkz. EKSIKLER.md).
 5. [ ] **Hizmet süresi + çalışma saatleri / "şu an açık-kapalı"** ana sayfada görünür mü kontrol edilip eksikse eklenir.
 
+## YÜKSEK ÖNCELİK (altyapı)
+- [ ] **Görsel depolama** (görseller DB'den dosyaya): ayrıntı ve gerekçe `EKSIKLER.md` P1 maddesinde. Hizmet görselleri bu yüzden küçük sınırla (400 bin karakter) tutuluyor.
+
 ## Bilerek yapılmayacaklar
 Müşteri hesabı/şifre, puan ve yorum (kapsam dışı), online ödeme, kampanya/kupon. Ayrı foto galeri sayfası da YOK: portfolyo
 hissi hizmet kartlarındaki görsellerle verilir (görseller DB'de, "az ve öz").
