@@ -684,21 +684,17 @@ function TimeStep({
   const stripRef = useRef<HTMLDivElement>(null)
   const monthFmt = useMemo(() => new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }), [])
 
-  // Seçili gün görünür kalsın (sayfayı değil, yalnızca şeridi kaydırır). ORTALAMA YOK: gün zaten tamamen görünüyorsa
-  // şerit kıpırdamaz (yakın bir günü seçince tarihler uzağa kaymasın); yalnızca kenarda kesikse ya da dışındaysa,
-  // görünür olacak kadar MİNİMUM kaydırılır.
+  // Şerit, kullanıcı tıklayınca ASLA kaymaz (yakın bir günü seçince tarihler uzağa kaymasın; kaydırmak isteyen kendisi kaydırır).
+  // Tek istisna: bu adım yeniden açıldığında (ör. "Geri"den dönünce) daha önce seçilmiş gün şeridin dışında kalıyorsa,
+  // yalnızca görünür olacak kadar kaydırılır. Yalnızca ilk açılışta çalışır.
   useEffect(() => {
     const strip = stripRef.current
     const btn = strip?.querySelector<HTMLElement>('[aria-pressed="true"]')
     if (!strip || !btn) return
-    const margin = 8
-    const viewLeft = strip.scrollLeft
-    const viewRight = viewLeft + strip.clientWidth
-    const btnLeft = btn.offsetLeft
-    const btnRight = btnLeft + btn.offsetWidth
-    if (btnLeft - margin < viewLeft) strip.scrollTo({ left: Math.max(0, btnLeft - margin), behavior: 'auto' })
-    else if (btnRight + margin > viewRight) strip.scrollTo({ left: btnRight + margin - strip.clientWidth, behavior: 'auto' })
-  }, [date])
+    const viewRight = strip.scrollLeft + strip.clientWidth
+    if (btn.offsetLeft + btn.offsetWidth > viewRight) strip.scrollTo({ left: btn.offsetLeft + btn.offsetWidth + 8 - strip.clientWidth, behavior: 'auto' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div>
