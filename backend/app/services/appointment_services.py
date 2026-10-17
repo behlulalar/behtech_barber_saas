@@ -208,7 +208,8 @@ async def check_daily_limit(db: Session, tenant_id: int, customer_id: int, appoi
     result = await db.execute(query)
     all_appointments = result.scalars().all()
 
-    if len(all_appointments) >= settings.daily_appointment_limit: 
+    # 0 = sınırsız (limit kapalı).
+    if settings.daily_appointment_limit > 0 and len(all_appointments) >= settings.daily_appointment_limit: 
         raise HTTPException(status_code=400, detail="Günlük randevu alma limitini aştınız.")
 
 async def check_slot_available(db: Session, staff_id: int, appointment_date: date, appointment_time: time) -> None:

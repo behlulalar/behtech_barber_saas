@@ -299,3 +299,9 @@ async def test_customer_me_returns_registered_name_or_null(api, shop):
     tok2 = mint_customer_token(other.tenant.id, "5550007777")
     assert (await api.get("/api/customer/me", slug="beta", token=tok2)).json() is None
     assert (await api.get("/api/customer/me", slug="alfa")).status_code == 401
+
+
+async def test_daily_limit_zero_means_unlimited(api, shop, monkeypatch):
+    monkeypatch.setattr(settings, "daily_appointment_limit", 0)
+    for at in ("09:00", "09:30", "10:00", "10:30"):
+        assert (await book(api, shop, at)).status_code == 200
