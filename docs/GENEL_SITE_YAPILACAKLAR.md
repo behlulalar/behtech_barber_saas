@@ -17,12 +17,16 @@ modeli korunur (SSS'deki "Fiyat nedir?" cevabı bu haliyle kalır).
 ## YAPILACAKLAR (onaylandı, sırayla)
 
 ### 1. Bulunabilirlik (kısa iş, hemen fayda)
-- [ ] **Paylaşım önizlemesi:** `index.html`'e description + Open Graph/Twitter etiketleri + paylaşım görseli. Linkin WhatsApp/Instagram'da
+- [x] (2026-10-17 YAPILDI; tanıtım sitesi için. Dükkân alt alanlarının kendi önizlemesi YOK: aşağıya bkz.) **Paylaşım önizlemesi:** `index.html`'e description + Open Graph/Twitter etiketleri + paylaşım görseli. Linkin WhatsApp/Instagram'da
       başlık+görselle kart olarak çıkması (berberlere satışta en çok paylaşılacak kanallar).
-- [ ] **Sitemap + robots.txt'e sitemap satırı + yapılandırılmış veri (JSON-LD):** Google'da "berber randevu sistemi" aramaları için temel.
+- [x] (2026-10-17 YAPILDI; sitemap/robots derleme sırasında VITE_PRODUCT_HOST'tan üretilir) **Sitemap + robots.txt'e sitemap satırı + yapılandırılmış veri (JSON-LD):** Google'da "berber randevu sistemi" aramaları için temel.
       Not: sayfa SPA; ürün sitesi alanı (`isProductHost`) ve `/kayit`, `/yasal/*` sitemap'e girer; `/panel`, `/platform` zaten engelli.
 - [ ] **Ölçüm sayacı:** çerezsiz, hafif (ziyaret, "Ücretsiz dene" tıklaması, kayıt tamamlama). Cloudflare Web Analytics betiği CSP'ye
       takılıyor; ya CSP'ye izin verilir ya kendi sunucumuzda basit sayaç kurulur (KVKK: kişisel veri tutmadan).
+
+- [ ] **Dükkân alt alanları için kişiye özel paylaşım önizlemesi (YENİ, önemli):** berber randevu adresini WhatsApp/Instagram'da paylaşınca önizlemede
+      işletme adı + logo/kapak çıksın (şu an tanıtım sitesinin genel kartı çıkar, çünkü sayfa tarayıcıda oluşuyor ve bot JavaScript çalıştırmaz).
+      Çözüm: nginx dükkân alt alanında `/` ve `/randevu` isteklerini backend'e yönlendirip index.html'e dükkân adı/açıklaması/görseli enjekte eden küçük bir uç (SSR-lite).
 
 ### 2. İkna eden içerik
 - [ ] **İşletme panelinden gerçek ekran görüntüsü** (takvim / günün randevuları): şu an yalnızca müşteri tarafı telefon taslağı var; berberin
