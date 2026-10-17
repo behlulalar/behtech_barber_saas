@@ -57,13 +57,12 @@ export function useApplyTextSize() {
   }, [s])
 }
 
-/** "Yazı boyutu" seçici: 4 kademe, her biri 44px dokunma hedefi. */
+/** "Yazı boyutu" seçici: 4 kademe, her biri ≥44px dokunma hedefi (Hesabım > Görünüm). */
 export function TextSizeControl({ className }: { className?: string }) {
   const s = useTextSize()
   return (
-    <div className={cn('px-3 py-1', className)}>
-      <p id="text-size-label" className="mb-1 text-xs font-medium text-muted">Yazı boyutu</p>
-      <div role="radiogroup" aria-labelledby="text-size-label" className="grid grid-cols-4 gap-1">
+    <div className={className}>
+      <div role="radiogroup" aria-label="Yazı boyutu" className="grid max-w-md grid-cols-4 gap-2">
         {OPTIONS.map((o) => (
           <button
             key={o.value}
@@ -74,12 +73,13 @@ export function TextSizeControl({ className }: { className?: string }) {
             title={o.aria}
             onClick={() => setTextSize(o.value)}
             className={cn(
-              'inline-flex min-h-11 items-center justify-center rounded-sm border font-semibold leading-none transition-colors',
+              'inline-flex min-h-12 items-center justify-center rounded-sm border font-semibold leading-none transition-colors',
               o.cls,
               s === o.value ? 'border-copper bg-panel-hover text-cream' : 'border-panel-line text-muted-strong hover:bg-panel-raised hover:text-cream',
             )}
           >
             {o.label}
+            <span className="sr-only"> ({o.aria})</span>
           </button>
         ))}
       </div>

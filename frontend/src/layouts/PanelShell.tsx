@@ -6,7 +6,7 @@ import { Avatar } from '../components/ui/Avatar'
 import { InstallButton } from '../components/InstallButton'
 import { Drawer } from '../components/ui/Drawer'
 import { cn } from '../lib/cn'
-import { TextSizeControl, useApplyTextSize } from '../lib/textSize'
+import { useApplyTextSize } from '../lib/textSize'
 import { ThemeToggle } from '../lib/theme'
 
 export interface NavItem {
@@ -88,7 +88,6 @@ function UserBlock({ user, onLogout, installable }: { user: PanelShellProps['use
       </div>
       {installable && <InstallButton />}
       <ThemeToggle withLabel className="mt-1 w-full hover:bg-panel-raised" />
-      <TextSizeControl className="mt-1" />
       <button
         type="button"
         onClick={onLogout}

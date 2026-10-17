@@ -17,6 +17,7 @@ import { useTenant } from '../../lib/queries'
 import { useStaffAuth } from '../../lib/auth'
 import { formatPhone, fullName } from '../../lib/format'
 import { passwordValid } from '../../lib/passwordPolicy'
+import { TextSizeControl } from '../../lib/textSize'
 
 /** Personelin panele gireceği gizli adres (yalnızca yönetici). */
 function StaffLoginUrlCard() {
@@ -133,6 +134,11 @@ export default function AccountPage() {
         </Card>
 
         {isManager && <StaffLoginUrlCard />}
+
+        <Card>
+          <CardHeader title="Yazı boyutu" description="Yazılar küçük geliyorsa büyütün. Seçiminiz yalnızca bu cihazda geçerlidir." />
+          <TextSizeControl />
+        </Card>
 
         <Card>
           <CardHeader title="Şifreyi değiştir" description="Değişince diğer cihazlardaki oturumlar kapanır." />
