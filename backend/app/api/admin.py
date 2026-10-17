@@ -51,13 +51,14 @@ from app.core.net import client_ip
 from app.services.otp_delivery import deliver_code
 from app.services.whatsapp_texts import reset_text
 from app.services import report_services
-from app.services import appointment_notifications, announcement_services, platform_services, whatsapp_connection_services as wa_svc
+from app.services import appointment_notifications, announcement_services, notification_services, platform_services, whatsapp_connection_services as wa_svc
 from app.services import whatsapp_guard as wa_guard, whatsapp_services
 from app.services.otp_delivery import to_whatsapp_number
 from app.schemas.whatsapp import WhatsappConnectIn, WhatsappConnectOut, WhatsappStatusOut, WhatsappTestIn
 from app.models.message_log import MessageLog
 from app.schemas.tenant import SetupOut
 from app.schemas.announcement import AnnouncementPublic
+from app.schemas.notification import InboxOut, InboxRead
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
 
@@ -819,6 +820,24 @@ async def list_customers(
 async def admin_announcements(staff: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
     """Platformdan gelen, bu işletme için şu an geçerli duyurular (kapatma tarayıcıda hatırlanır)."""
     return await announcement_services.active_for_tenant(db, staff.tenant_id)
+
+
+@router.get("/admin/inbox", response_model=InboxOut)
+async def admin_inbox(staff: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
+    """Bildirim kutusu: platform duyuruları + işletmeye özel bildirimler (okundu bilgisi sunucuda)."""
+    return await notification_services.inbox(db, staff.tenant_id, is_manager(staff))
+
+
+@router.post("/admin/inbox/read", status_code=204)
+async def admin_inbox_read(data: InboxRead, staff: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
+    await notification_services.mark_read(db, staff.tenant_id, data.keys)
+    return Response(status_code=204)
+
+
+@router.post("/admin/inbox/read-all", status_code=204)
+async def admin_inbox_read_all(staff: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
+    await notification_services.mark_read(db, staff.tenant_id, None)
+    return Response(status_code=204)
 
 
 @router.get("/admin/setup", response_model=SetupOut)

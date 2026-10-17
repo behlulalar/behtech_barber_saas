@@ -48,12 +48,14 @@ from app.schemas.platform import (
     TwoFactorStatus,
 )
 from app.schemas.announcement import AnnouncementIn, AnnouncementOut, AnnouncementUpdate
+from app.schemas.notification import NotificationIn, NotificationOut
 from app.schemas.whatsapp import PlatformWhatsappOut, WhatsappPauseIn
 from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantPage
 from app.services import whatsapp_admin_services as whatsapp_admin
 from app.services import platform_2fa_services as twofa
 from app.services import (
     announcement_services,
+    notification_services,
     audit_services,
     job_services,
     metrics_services,
@@ -381,6 +383,22 @@ async def platform_tenant_whatsapp_pause(
 ):
     """Kötüye kullanımda dükkânın tüm WhatsApp gönderimini elle durdurur / yeniden açar."""
     return await whatsapp_admin.set_paused(db, tenant_id, data.paused, data.reason, admin, request)
+
+
+@router.get("/tenants/{tenant_id}/notifications", response_model=list[NotificationOut])
+async def platform_tenant_notifications(
+    tenant_id: int, admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db)
+):
+    return await notification_services.list_for_tenant(db, tenant_id)
+
+
+@router.post("/tenants/{tenant_id}/notifications", response_model=NotificationOut, status_code=201)
+async def platform_send_tenant_notification(
+    tenant_id: int, data: NotificationIn, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    """Tek işletmenin paneline özel bildirim gönderir (toplu gönderim = Duyurular)."""
+    return await notification_services.send_to_tenant(db, tenant_id, data, admin, request)
 
 
 @router.get("/tenants/options", response_model=list[TenantOption])

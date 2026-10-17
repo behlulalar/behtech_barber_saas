@@ -30,10 +30,11 @@ async def _targets(db: AsyncSession, ids: list[int]) -> dict[int, list[int]]:
     return out
 
 
-def _out(a: Announcement, targets: list[int]) -> AnnouncementOut:
+def _out(a: Announcement, targets: list[int], reads: int = 0, all_count: int = 0) -> AnnouncementOut:
     return AnnouncementOut(
         id=a.id, title=a.title, body=a.body, level=a.level, target_all=a.target_all, tenant_ids=sorted(targets),
         starts_on=a.starts_on, ends_on=a.ends_on, status=_status(a, date.today()), created_at=a.created_at,
+        target_count=all_count if a.target_all else len(targets), read_count=reads,
     )
 
 
@@ -49,7 +50,9 @@ async def _validate_tenants(db: AsyncSession, ids: list[int]) -> list[int]:
 async def list_all(db: AsyncSession) -> list[AnnouncementOut]:
     rows = (await db.execute(select(Announcement).order_by(Announcement.id.desc()))).scalars().all()
     targets = await _targets(db, [a.id for a in rows])
-    return [_out(a, targets[a.id]) for a in rows]
+    from app.services.notification_services import announcement_stats  # döngüsel içe aktarmayı önler
+    reads, all_count = await announcement_stats(db, [a.id for a in rows])
+    return [_out(a, targets[a.id], reads.get(a.id, 0), all_count) for a in rows]
 
 
 async def create(db: AsyncSession, data: AnnouncementIn, actor: PlatformAdmin, request: Request) -> AnnouncementOut:
@@ -126,4 +129,4 @@ async def active_for_tenant(db: AsyncSession, tenant_id: int) -> list[Announceme
             or_(Announcement.target_all.is_(True), Announcement.id.in_(targeted)),
         ).order_by(Announcement.id.desc())
     )).scalars().all()
-    return [AnnouncementPublic(id=a.id, title=a.title, body=a.body, level=a.level) for a in rows]
+    return [AnnouncementPublic(id=a.id, title=a.title, body=a.body, level=a.level, created_at=a.created_at) for a in rows]

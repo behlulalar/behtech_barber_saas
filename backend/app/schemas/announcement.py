@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 class AnnouncementIn(BaseModel):
     title: str = Field(min_length=1, max_length=120)
     body: str = Field(min_length=1, max_length=2000)
-    level: Literal["info", "warning"] = "info"
+    level: Literal["info", "warning", "critical"] = "info"
     target_all: bool = True
     tenant_ids: list[int] = Field(default_factory=list, max_length=500)  # target_all=false ise en az bir işletme
     starts_on: date | None = None  # boşsa bugün
@@ -25,7 +25,7 @@ class AnnouncementIn(BaseModel):
 class AnnouncementUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=120)
     body: str | None = Field(default=None, min_length=1, max_length=2000)
-    level: Literal["info", "warning"] | None = None
+    level: Literal["info", "warning", "critical"] | None = None
     target_all: bool | None = None
     tenant_ids: list[int] | None = Field(default=None, max_length=500)
     starts_on: date | None = None
@@ -44,6 +44,8 @@ class AnnouncementOut(BaseModel):
     ends_on: date | None
     status: str  # scheduled | active | ended
     created_at: datetime | None = None
+    target_count: int = 0  # kaç işletmeye gidiyor
+    read_count: int = 0  # kaç işletme okudu
 
 
 class AnnouncementPublic(BaseModel):
@@ -52,3 +54,4 @@ class AnnouncementPublic(BaseModel):
     title: str
     body: str
     level: str
+    created_at: datetime | None = None

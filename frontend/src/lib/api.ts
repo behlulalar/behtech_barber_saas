@@ -3,6 +3,9 @@
 import type {
   CustomerName,
   AnnouncementIn,
+  InboxOut,
+  NotificationIn,
+  NotificationOut,
   AnnouncementOut,
   AnnouncementUpdate,
   PanelAnnouncement,
@@ -330,6 +333,9 @@ const s = 'staff' as const
 export const adminApi = {
   getLoginUrl: () => request<{ path: string }>('/admin/login-url', { auth: s }),
   listAnnouncements: () => request<PanelAnnouncement[]>('/admin/announcements', { auth: s }),
+  getInbox: () => request<InboxOut>('/admin/inbox', { auth: s }),
+  markInboxRead: (keys: string[]) => request<void>('/admin/inbox/read', { method: 'POST', body: { keys }, auth: s }),
+  markInboxReadAll: () => request<void>('/admin/inbox/read-all', { method: 'POST', auth: s }),
   getSetup: () => request<TenantSetup>('/admin/setup', { auth: s }),
 
   getRevenueReport: (period: ReportPeriod, date: string, staffId?: number) =>
@@ -430,6 +436,9 @@ export const platformApi = {
     request<Subscription>(`/platform/tenants/${tenantId}/trial`, { method: 'POST', body: data ?? {}, auth: p }),
   approveSignup: (id: number) => request<PlatformTenant>(`/platform/tenants/${id}/signup/approve`, { method: 'POST', auth: p }),
   rejectSignup: (id: number) => request<PlatformTenant>(`/platform/tenants/${id}/signup/reject`, { method: 'POST', auth: p }),
+  listTenantNotifications: (id: number) => request<NotificationOut[]>(`/platform/tenants/${id}/notifications`, { auth: p }),
+  sendTenantNotification: (id: number, data: NotificationIn) =>
+    request<NotificationOut>(`/platform/tenants/${id}/notifications`, { method: 'POST', body: data, auth: p }),
   getTenantWhatsapp: (id: number) => request<PlatformWhatsapp>(`/platform/tenants/${id}/whatsapp`, { auth: p }),
   setTenantWhatsappPaused: (id: number, paused: boolean, reason?: string) =>
     request<PlatformWhatsapp>(`/platform/tenants/${id}/whatsapp/pause`, { method: 'POST', body: { paused, ...(reason ? { reason } : {}) }, auth: p }),

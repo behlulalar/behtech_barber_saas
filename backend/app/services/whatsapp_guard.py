@@ -125,6 +125,10 @@ async def record_result(db: AsyncSession, row: WhatsappConnection, ok: bool) -> 
         row.paused_at = datetime.now()
         row.paused_reason = f"{AUTO_PAUSE_PREFIX} arka arkaya {row.consecutive_failures} başarısız gönderim"
         name = (await db.execute(select(Tenant.name).where(Tenant.id == row.tenant_id))).scalar_one_or_none() or str(row.tenant_id)
+        from app.services import notification_services as notif  # döngüsel içe aktarmayı önler
+        await notif.raise_alert(db, row.tenant_id, "wa_paused", "warning", "WhatsApp gönderimi durduruldu",
+                                "Art arda mesajlar gönderilemediği için gönderim otomatik durduruldu. Bağlantınızı kontrol edin; sorun sürerse bizimle iletişime geçin.",
+                                link="/panel/whatsapp")
         await alert_platform(db, "WhatsApp gönderimi durduruldu",
                              f"'{name}': arka arkaya {row.consecutive_failures} mesaj gönderilemedi, gönderim otomatik durduruldu.")
 

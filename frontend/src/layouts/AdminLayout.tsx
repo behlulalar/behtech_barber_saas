@@ -1,4 +1,4 @@
-import { CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserCog, UserRound, Users, Wallet, MessageCircle } from 'lucide-react'
+import { Bell, CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserCog, UserRound, Users, Wallet, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
@@ -8,6 +8,7 @@ import { authApi } from '../lib/api'
 import { useStaffAuth } from '../lib/auth'
 import { fullName } from '../lib/format'
 import { useDocumentTitle, useFavicon, useRouteLabel, useNoIndex } from '../lib/head'
+import { useInbox } from '../lib/inbox'
 import { useTenant } from '../lib/queries'
 import { useRegisterServiceWorker, useTenantPanelManifest } from '../lib/pwa'
 import { PanelShell, type NavItem } from './PanelShell'
@@ -19,6 +20,7 @@ const NAV: NavItem[] = [
   { to: '/panel/hizmetler', label: 'Hizmetler', icon: Scissors, tab: true, managerOnly: true },
   { to: '/panel/gelir', label: 'Gelir Raporu', icon: ChartColumn, managerOnly: true },
   { to: '/panel/ekip', label: 'Ekip', icon: UserRound },
+  { to: '/panel/bildirimler', label: 'Bildirimler', icon: Bell },
   { to: '/panel/hesabim', label: 'Hesabım', icon: UserCog },
   { to: '/panel/calisma-saatleri', label: 'Çalışma Saatleri', icon: Clock, managerOnly: true },
   { to: '/panel/odeme-yontemleri', label: 'Ödeme Yöntemleri', icon: Wallet, managerOnly: true },
@@ -76,7 +78,9 @@ export default function AdminLayout() {
   useNoIndex()
   const { me, logout, isManager } = useStaffAuth()
   const tenant = useTenant()
-  const nav = isManager ? NAV : NAV.filter((n) => !n.managerOnly)
+  const inbox = useInbox()
+  const unread = inbox.data?.unread ?? 0
+  const nav = (isManager ? NAV : NAV.filter((n) => !n.managerOnly)).map((n) => (n.to === '/panel/bildirimler' ? { ...n, badge: unread } : n))
   useDocumentTitle(useRouteLabel(NAV), 'Panel', tenant.data?.business_name)
   useFavicon(tenant.data?.logo_image)
   useTenantPanelManifest(!!tenant.data)

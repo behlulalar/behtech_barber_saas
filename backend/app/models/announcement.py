@@ -13,7 +13,7 @@ class Announcement(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(120))
     body: Mapped[str] = mapped_column(Text)
-    level: Mapped[str] = mapped_column(String(10), server_default="info")  # info | warning
+    level: Mapped[str] = mapped_column(String(10), server_default="info")  # info | warning | critical
     target_all: Mapped[bool] = mapped_column(Boolean, server_default="true")
     starts_on: Mapped[date] = mapped_column(Date)
     ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)

@@ -23,6 +23,7 @@ from app.models.impersonation_code import ImpersonationCode
 from app.models.consent_record import ConsentRecord
 from app.models.message_log import MessageLog
 from app.models.announcement import Announcement, AnnouncementTarget
+from app.models.notification import AnnouncementRead, Notification
 from app.models.whatsapp_connection import WhatsappConnection
 from app.models.outbound_message import OutboundMessage
 from app.models.platform_admin import PlatformBackupCode

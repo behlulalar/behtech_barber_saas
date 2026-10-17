@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tenant import Tenant
 from app.models.whatsapp_connection import WhatsappConnection
-from app.services import welcome_services, whatsapp_guard as guard, whatsapp_services as evo
+from app.services import notification_services as notif, welcome_services, whatsapp_guard as guard, whatsapp_services as evo
 
 UNREACHABLE = "WhatsApp sunucusuna şu an ulaşılamıyor, lütfen biraz sonra tekrar deneyin"
 
@@ -44,8 +44,10 @@ async def _apply_state(db: AsyncSession, row: WhatsappConnection, state: str, re
             row.connected_at = row.connected_at if was_open else datetime.now()
         row.disconnect_reason = row.disconnected_at = None
         row.consecutive_failures = 0
+        await notif.resolve_alert(db, row.tenant_id, "wa_disconnect")
         if row.paused and (row.paused_reason or "").startswith(guard.AUTO_PAUSE_PREFIX):
             row.paused, row.paused_reason, row.paused_at = False, None, None  # yeniden bağlandı: otomatik durdurma kalkar
+            await notif.resolve_alert(db, row.tenant_id, "wa_paused")
     elif state == "close":
         phone = row.phone
         row.phone = row.profile_name = row.connected_at = None
@@ -55,6 +57,11 @@ async def _apply_state(db: AsyncSession, row: WhatsappConnection, state: str, re
             row.disconnected_at = datetime.now()
             name = (await db.execute(select(Tenant.name).where(Tenant.id == row.tenant_id))).scalar_one_or_none()
             kind = "engellenmiş ya da oturumu kapatılmış olabilir" if str(reason) in BAN_LIKE else "bağlantısı koptu"
+            await notif.raise_alert(
+                db, row.tenant_id, "wa_disconnect", "critical", "WhatsApp bağlantınız koptu",
+                ("Hesabınız engellenmiş ya da cihaz telefonunuzdan kaldırılmış olabilir. " if str(reason) in BAN_LIKE else "")
+                + "Bağlantı yeniden kurulana kadar müşterileriniz doğrulama kodu ve randevu mesajı alamaz.",
+                link="/panel/whatsapp")
             await guard.alert_platform(db, "İşletme WhatsApp'ı koptu",
                                        f"'{name}' WhatsApp hattı ({phone or '-'}) {kind}. Müşteriler kod alamıyor.")
 

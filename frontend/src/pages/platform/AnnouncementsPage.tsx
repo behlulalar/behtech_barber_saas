@@ -24,7 +24,7 @@ import { ServerError } from './platformShared'
 
 const STATUS_LABELS: Record<AnnouncementStatus, string> = { active: 'Yayında', scheduled: 'Zamanlanmış', ended: 'Bitti' }
 const STATUS_TONES: Record<AnnouncementStatus, BadgeTone> = { active: 'success', scheduled: 'info', ended: 'neutral' }
-const LEVEL_LABELS: Record<AnnouncementLevel, string> = { info: 'Bilgi', warning: 'Uyarı' }
+const LEVEL_LABELS: Record<AnnouncementLevel, string> = { info: 'Bilgi', warning: 'Uyarı', critical: 'Acil' }
 
 const TITLE_MAX = 120
 const BODY_MAX = 2000
@@ -77,11 +77,20 @@ export default function AnnouncementsPage() {
       ),
     },
     { key: 'status', header: 'Durum', cell: (a) => <Badge tone={STATUS_TONES[a.status]}>{STATUS_LABELS[a.status]}</Badge> },
-    { key: 'level', header: 'Seviye', cell: (a) => <Badge tone={a.level === 'warning' ? 'warning' : 'neutral'}>{LEVEL_LABELS[a.level]}</Badge> },
+    { key: 'level', header: 'Seviye', cell: (a) => <Badge tone={a.level === 'critical' ? 'danger' : a.level === 'warning' ? 'warning' : 'neutral'}>{LEVEL_LABELS[a.level]}</Badge> },
     {
       key: 'target',
       header: 'Hedef',
       cell: (a) => <span className="text-muted-strong">{a.target_all ? 'Tüm işletmeler' : `${a.tenant_ids.length} işletme`}</span>,
+    },
+    {
+      key: 'reads',
+      header: 'Okuyan',
+      cell: (a) => (
+        <span className={a.target_count > 0 && a.read_count < a.target_count ? 'text-warning' : 'text-muted-strong'}>
+          {a.read_count} / {a.target_count}
+        </span>
+      ),
     },
     { key: 'actions', header: 'İşlem', align: 'right', hideOnMobile: true, cell: actions },
   ]
@@ -233,6 +242,7 @@ function AnnouncementForm({ item, onClose }: { item: AnnouncementOut | null; onC
             items={[
               { value: 'info', label: 'Bilgi' },
               { value: 'warning', label: 'Uyarı' },
+              { value: 'critical', label: 'Acil' },
             ]}
           />
         </div>

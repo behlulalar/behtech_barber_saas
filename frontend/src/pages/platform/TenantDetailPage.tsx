@@ -16,6 +16,7 @@ import { formatPhone, formatPrice } from '../../lib/format'
 import type { Payment, Subscription } from '../../types/api'
 import { formatDateDMY } from './billing'
 import { EditPeriodModal, PaymentModal, RenewModal, useSubscriptions } from './BillingModals'
+import { NotificationTenantCard } from './NotificationTenantCard'
 import { WhatsappTenantCard } from './WhatsappTenantCard'
 import { SignupReviewCard } from './SignupReviewCard'
 import { NoteCard, OwnerCard, PanelLoginCard, RecentEventsCard, SetupCard, SupportCard } from './TenantDetailParts'
@@ -262,6 +263,7 @@ export default function TenantDetailPage() {
         <PanelLoginCard tenant={tenant} />
         <SupportCard tenant={tenant} />
         <WhatsappTenantCard tenantId={tenant.id} />
+        <NotificationTenantCard tenantId={tenant.id} />
       </div>
 
       <Card>

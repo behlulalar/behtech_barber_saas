@@ -910,7 +910,7 @@ export interface ImpersonateStartOut {
 
 /* ---------- Duyurular ---------- */
 
-export type AnnouncementLevel = 'info' | 'warning'
+export type AnnouncementLevel = 'info' | 'warning' | 'critical'
 export type AnnouncementStatus = 'scheduled' | 'active' | 'ended'
 
 export interface AnnouncementIn {
@@ -938,6 +938,40 @@ export interface AnnouncementOut {
   ends_on: string | null
   status: AnnouncementStatus
   created_at: string
+  target_count: number
+  read_count: number
+}
+
+/* ---------- Bildirim kutusu ---------- */
+
+export interface InboxItem {
+  key: string
+  source: 'announcement' | 'notification'
+  kind: 'announcement' | 'message' | 'whatsapp'
+  level: AnnouncementLevel
+  title: string
+  body: string
+  link: string | null
+  created_at: string | null
+  read: boolean
+}
+
+export interface InboxOut {
+  unread: number
+  items: InboxItem[]
+}
+
+export interface NotificationIn {
+  title: string
+  body: string
+  level: AnnouncementLevel
+}
+
+export interface NotificationOut extends NotificationIn {
+  id: number
+  kind: string
+  created_at: string | null
+  read_at: string | null
 }
 
 export interface PanelAnnouncement {

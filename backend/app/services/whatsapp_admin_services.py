@@ -13,6 +13,7 @@ from app.models.tenant import Tenant
 from app.models.verification_code import VerificationCode
 from app.models.whatsapp_connection import WhatsappConnection
 from app.schemas.whatsapp import PlatformWhatsappOut
+from app.services import notification_services as notif
 from app.services.audit_services import audit
 
 
@@ -66,6 +67,10 @@ async def set_paused(db: AsyncSession, tenant_id: int, paused: bool, reason: str
     row.paused_reason = ((reason or "").strip()[:200] or "Platform yöneticisi durdurdu") if paused else None
     if not paused:
         row.consecutive_failures = 0
+        await notif.resolve_alert(db, tenant_id, "wa_paused")
+    else:
+        await notif.raise_alert(db, tenant_id, "wa_paused", "warning", "WhatsApp gönderimi durduruldu",
+                                f"{row.paused_reason}. Ayrıntı için bizimle iletişime geçin.", link="/panel/whatsapp")
     await audit(db, actor=actor, request=request, action="whatsapp.pause" if paused else "whatsapp.resume",
                 entity_type="tenant", entity_id=tenant.id, tenant_id=tenant.id,
                 summary=f"'{tenant.name}' WhatsApp gönderimi {'durduruldu' if paused else 'yeniden açıldı'}",
