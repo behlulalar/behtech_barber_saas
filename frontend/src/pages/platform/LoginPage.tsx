@@ -13,6 +13,7 @@ import { PRODUCT_NAME, useDocumentTitle, useNoIndex } from '../../lib/head'
 import { ApiError, errorMessage } from '../../lib/api'
 import { CodeInput } from './TwoFactor'
 import { usePlatformAuth } from '../../lib/auth'
+import { useRegisterServiceWorker } from '../../lib/pwa'
 import { usePlatformManifest } from '../../lib/push'
 import { isValidPhone, normalizePhone } from '../../lib/format'
 
@@ -20,6 +21,7 @@ export default function LoginPage() {
   useNoIndex()
   useDocumentTitle('Platform girişi', PRODUCT_NAME)
   usePlatformManifest()
+  useRegisterServiceWorker()
   const { status, login, verifyMfa, logout, me } = usePlatformAuth()
 
   const location = useLocation()

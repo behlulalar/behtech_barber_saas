@@ -57,6 +57,11 @@ server {
         include /etc/nginx/snippets/berber-security.conf;
         try_files $uri =404;
     }
+    location = /manifest-platform.webmanifest {
+        default_type application/manifest+json;
+        include /etc/nginx/snippets/berber-security.conf;
+        add_header Cache-Control "no-cache";
+    }
     location = /sw.js {
         add_header Cache-Control "no-cache";
         include /etc/nginx/snippets/berber-security.conf;

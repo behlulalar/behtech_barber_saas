@@ -6,6 +6,7 @@ import { MFA_SETUP_EVENT, platformApi } from '../lib/api'
 import { usePlatformAuth } from '../lib/auth'
 import { formatPhone } from '../lib/format'
 import { PRODUCT_NAME, useDocumentTitle, useRouteLabel, useNoIndex } from '../lib/head'
+import { useRegisterServiceWorker } from '../lib/pwa'
 import { usePlatformManifest } from '../lib/push'
 import { TwoFactorSetup } from '../pages/platform/TwoFactor'
 import { PanelShell, type NavItem } from './PanelShell'
@@ -61,6 +62,7 @@ export default function PlatformLayout() {
   const pending = pendingQ.data?.total ?? 0
   const NAV = useMemo(() => BASE_NAV.map((n) => (n.to === '/platform/basvurular' ? { ...n, badge: pending } : n)), [pending])
   usePlatformManifest()
+  useRegisterServiceWorker() // 'Uygulamayı yükle' (kurulabilirlik) için sayfa açılışında kayıtlı olmalı; bildirim izni ayrıca Ayarlar'dan
   const detail = useMatch('/platform/isletmeler/:id')
   const tenants = useQuery({ queryKey: ['platform', 'tenant', detail?.params.id], queryFn: () => platformApi.getTenant(Number(detail!.params.id)), enabled: !!detail })
   const detailName = detail ? tenants.data?.name : undefined
@@ -69,6 +71,7 @@ export default function PlatformLayout() {
   if (mfaGate) return <MfaSetupGate onLogout={logout} />
   return (
     <PanelShell
+      installable
       width="wide"
       eyebrow="Platform"
       brand="BehTech Randevu"
