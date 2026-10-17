@@ -23,7 +23,8 @@ class AppointmentCreate(BaseModel):
     """Müşteri randevu isteği. Telefon body'den DEĞİL, OTP token'ından gelir."""
     name: PersonName
     surname: PersonName
-    staff_id: int
+    # Boş = "fark etmez": sunucu o saati alabilen berberler arasından seçer.
+    staff_id: int | None = None
     service_id: int
     appointment_date: date
     appointment_time: NormalizedTime

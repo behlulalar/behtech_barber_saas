@@ -8,6 +8,7 @@ import {
   Clock,
   Scissors,
   UserRound,
+  Users,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -46,6 +47,9 @@ import type { AppointmentPublicOut, PublicService, PublicStaff, SlotsResponse, V
 import { OtpCodeForm } from './OtpCodeForm'
 
 type Step = 'service' | 'staff' | 'time' | 'contact' | 'verify' | 'done'
+
+/** "Fark etmez" seçimi (gerçek berber id'leri 1'den başlar). */
+const ANY_STAFF = 0
 
 const STEPS: { key: 'service' | 'staff' | 'time' | 'contact'; label: string }[] = [
   { key: 'service', label: 'Hizmet' },
@@ -95,7 +99,10 @@ export default function BookingPage() {
   const staff = useQuery({ queryKey: ['staff'], queryFn: publicApi.getStaff })
 
   const service = services.data?.find((s) => s.id === serviceId) ?? null
-  const barber = staff.data?.find((s) => s.id === staffId) ?? null
+  const barber: PublicStaff | null =
+    staffId === ANY_STAFF
+      ? { id: ANY_STAFF, name: 'Fark', surname: 'etmez', photo_image: null, service_ids: [] }
+      : (staff.data?.find((s) => s.id === staffId) ?? null)
 
   // Seçili hizmeti veren berberler; tek kişi varsa otomatik seçilir.
   const offeringStaff = useMemo(
@@ -153,7 +160,7 @@ export default function BookingPage() {
 
   const availability = useQuery({
     queryKey: ['availability', 'slots', staffId, serviceId, date],
-    queryFn: () => publicApi.getSlots({ staff_id: staffId!, service_id: serviceId!, date }),
+    queryFn: () => publicApi.getSlots({ staff_id: staffId === ANY_STAFF ? undefined : staffId!, service_id: serviceId!, date }),
     enabled: step === 'time' && staffId != null && serviceId != null,
     staleTime: 15_000,
   })
@@ -189,7 +196,7 @@ export default function BookingPage() {
       customerApi.createAppointment({
         name: name.trim(),
         surname: surname.trim(),
-        staff_id: staffId!,
+        staff_id: staffId === ANY_STAFF ? undefined : staffId!,
         service_id: serviceId!,
         appointment_date: date,
         appointment_time: time!.slice(0, 5),
@@ -669,6 +676,24 @@ function StaffStep({
     )
   return (
     <div role="radiogroup" aria-label="Berber" className="space-y-3">
+      {items.length >= 2 && (
+        <button
+          type="button"
+          role="radio"
+          aria-checked={value === ANY_STAFF}
+          onClick={() => onChange(ANY_STAFF)}
+          className={cn(optionBase, optionState(value === ANY_STAFF))}
+        >
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full border border-line-strong bg-surface text-copper-bright">
+            <Users className="size-6" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-lg leading-snug text-cream">Fark etmez</span>
+            <span className="mt-0.5 block text-xs text-muted">Seçtiğiniz saatte müsait olan berber atanır.</span>
+          </span>
+          <RadioMark selected={value === ANY_STAFF} />
+        </button>
+      )}
       {items.map((p) => {
         const selected = p.id === value
         return (

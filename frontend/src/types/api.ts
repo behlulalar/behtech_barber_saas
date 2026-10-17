@@ -56,7 +56,8 @@ export interface PublicService extends ServiceBrief {
 }
 
 export interface AvailabilityParams {
-  staff_id: number
+  /** Boş = "fark etmez" (hizmeti veren tüm berberlerin birleşik saatleri). */
+  staff_id?: number
   service_id: number
   date: string
 }
@@ -111,7 +112,8 @@ export interface VerifyCodeResponse {
 export interface CreateAppointmentRequest {
   name: string
   surname: string
-  staff_id: number
+  /** Boş = "fark etmez": sunucu o saati alabilen berberler arasından seçer. */
+  staff_id?: number
   service_id: number
   appointment_date: string
   appointment_time: string

@@ -27,10 +27,12 @@ from app.schemas.signup import SignupRequest, SignupResponse
 from app.services.admin_services import service_ids_by_staff
 from app.services.appointment_services import (
     SLOT_MINUTES,
+    build_merged_slot_grid,
     build_slot_grid,
     check_daily_limit,
     get_available_slots,
     lock_staff_schedule,
+    pick_staff_for_slot,
 )
 from app.services import appointment_notifications, panel_key, signup_services, whatsapp_connection_services
 from app.services.consent_services import require_customer_consent
@@ -154,13 +156,17 @@ def _hhmm(t: time, end: bool = False) -> str:
 
 @router.get("/availability/slots", response_model=SlotsResponse)
 async def availability_slots_route(
-    staff_id: int,
     service_id: int,
     date: date,
+    staff_id: int | None = None,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ):
-    grid = await build_slot_grid(db, tenant.id, staff_id, service_id, date)
+    # staff_id yoksa "fark etmez": hizmeti veren tüm berberlerin birleşik gridi.
+    if staff_id is None:
+        grid = await build_merged_slot_grid(db, tenant.id, service_id, date)
+    else:
+        grid = await build_slot_grid(db, tenant.id, staff_id, service_id, date)
     return SlotsResponse(
         date=grid.date,
         slot_minutes=SLOT_MINUTES,
@@ -245,21 +251,25 @@ async def appointment_create(
         raise HTTPException(status_code=404, detail="Hizmet bulunamadı")
     if not service.is_active:
         raise HTTPException(status_code=400, detail="Bu hizmet şu an verilmiyor")
-    staff = (
-        await db.execute(select(Staff).where(Staff.id == data.staff_id, Staff.tenant_id == tenant.id))
-    ).scalar_one_or_none()
-    if staff is None:
-        raise HTTPException(status_code=404, detail="Berber bulunamadı")
-    if not staff.is_active:
-        raise HTTPException(status_code=400, detail="Berber bulunamadı")
+    staff = None
+    if data.staff_id is not None:
+        staff = (
+            await db.execute(select(Staff).where(Staff.id == data.staff_id, Staff.tenant_id == tenant.id))
+        ).scalar_one_or_none()
+        if staff is None:
+            raise HTTPException(status_code=404, detail="Berber bulunamadı")
+        if not staff.is_active:
+            raise HTTPException(status_code=400, detail="Berber bulunamadı")
 
     customer = await get_or_create_customer(db, tenant.id, identity.phone, data.name.strip(), data.surname.strip())
     await check_daily_limit(db, tenant.id, customer.id, data.appointment_date)
 
     # get_or_create_customer commit edebilir; kilit ondan SONRA alınmalı ki INSERT'e kadar sürsün.
-    await lock_staff_schedule(db, tenant.id, data.staff_id)
+    if staff is None:  # "fark etmez": o saati alabilen, o gün en az randevusu olan berber
+        staff = await pick_staff_for_slot(db, tenant.id, data.service_id, data.appointment_date, data.appointment_time)
+    await lock_staff_schedule(db, tenant.id, staff.id)
     # Slot listesi: hizmet/berber bu dükkâna ait mi, çalışma saati, izin, çakışma — hepsini kapsar.
-    slots = await get_available_slots(db, tenant.id, data.staff_id, data.service_id, data.appointment_date)
+    slots = await get_available_slots(db, tenant.id, staff.id, data.service_id, data.appointment_date)
     if data.appointment_time not in {s.replace(second=0, microsecond=0) for s in slots}:
         await db.rollback()
         raise HTTPException(status_code=409, detail="Bu saat artık müsait değil, lütfen başka bir saat seçin")
@@ -269,7 +279,7 @@ async def appointment_create(
     appointment = Appointment(
         tenant_id=tenant.id,
         customer_id=customer.id,
-        staff_id=data.staff_id,
+        staff_id=staff.id,
         service_id=data.service_id,
         appointment_date=data.appointment_date,
         appointment_time=data.appointment_time,

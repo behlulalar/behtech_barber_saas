@@ -1,11 +1,11 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.working_hours import WorkingHours
 from app.models.time_off import TimeOff
 from app.models.service import Service
-from app.models.staff import Staff
+from app.models.staff import RoleType, Staff
 from app.models.staff_service import StaffService
 import math
 from dataclasses import dataclass
@@ -219,3 +219,74 @@ async def check_slot_available(db: Session, staff_id: int, appointment_date: dat
     if all_available_slots is not None:
         raise HTTPException(status_code=409, detail="Bu randevu dolu, lütfen başka bir saat deneyin!")
      
+
+
+async def staff_for_service(db: Session, tenant_id: int, service_id: int) -> list[Staff]:
+    """Bu hizmeti veren aktif berberler (teknik destek hariç), id sırasıyla."""
+    rows = await db.execute(
+        select(Staff)
+        .join(StaffService, (StaffService.staff_id == Staff.id) & (StaffService.tenant_id == tenant_id))
+        .where(
+            Staff.tenant_id == tenant_id, Staff.is_active == True,  # noqa: E712
+            Staff.role != RoleType.TECHNICAL_SUPPORT, StaffService.service_id == service_id,
+        )
+        .order_by(Staff.id)
+    )
+    return list(rows.scalars().all())
+
+
+# Birleşik durumda aynı saat için berberlerin durumları arasından gösterilecek olan (küçük = öncelikli).
+_STATUS_RANK = {"free": 0, "busy": 1, "off": 2, "past": 3}
+
+
+async def build_merged_slot_grid(db: Session, tenant_id: int, service_id: int, appointment_date: date) -> SlotGrid:
+    """"Fark etmez" için: hizmeti veren tüm berberlerin gridlerini birleştirir. Bir saat, en az bir berber alabiliyorsa seçilebilir."""
+    service = (await db.execute(select(Service).where(Service.id == service_id, Service.tenant_id == tenant_id))).scalar_one_or_none()
+    if service is None:
+        raise HTTPException(status_code=404, detail="Hizmet bulunamadı")
+    needed = max(1, math.ceil(service.duration_min / SLOT_MINUTES))
+    team = await staff_for_service(db, tenant_id, service_id)
+    grids = [await build_slot_grid(db, tenant_id, m.id, service_id, appointment_date) for m in team]
+    if not grids:
+        return SlotGrid(appointment_date, needed, "day_off", [])
+    open_grids = [g for g in grids if g.closed_reason is None]
+    if not open_grids:
+        reasons = {g.closed_reason for g in grids}
+        return SlotGrid(appointment_date, needed, "time_off" if reasons == {"time_off"} else "day_off", [])
+    merged: dict[time, SlotInfo] = {}
+    for g in open_grids:
+        for sl in g.slots:
+            cur = merged.get(sl.start)
+            if cur is None:
+                merged[sl.start] = SlotInfo(sl.start, sl.end, sl.status, sl.bookable)
+            elif sl.bookable and not cur.bookable:
+                merged[sl.start] = SlotInfo(sl.start, sl.end, "free", True)
+            elif not cur.bookable and not sl.bookable and _STATUS_RANK[sl.status] < _STATUS_RANK[cur.status]:
+                merged[sl.start] = SlotInfo(sl.start, sl.end, sl.status, False)
+    slots = [merged[k] for k in sorted(merged, key=_time_to_minutes)]
+    return SlotGrid(appointment_date, needed, None, slots)
+
+
+async def pick_staff_for_slot(db: Session, tenant_id: int, service_id: int, appointment_date: date, appointment_time: time) -> Staff:
+    """"Fark etmez": o saati alabilen berberler arasından o gün en az randevusu olanı seçer (eşitlikte küçük id).
+    Berber satırları deterministik (id) sırayla kilitlenir: eşzamanlı isteklerde kilit sırası aynı kalır, kilitlenme olmaz.
+    Kilitler çağıran transaction'ın sonuna kadar sürer (arada commit çağrılmamalı)."""
+    team = await staff_for_service(db, tenant_id, service_id)
+    for m in team:
+        await lock_staff_schedule(db, tenant_id, m.id)
+    wanted = appointment_time.replace(second=0, microsecond=0)
+    candidates: list[Staff] = []
+    for m in team:
+        slots = await get_available_slots(db, tenant_id, m.id, service_id, appointment_date)
+        if wanted in {t.replace(second=0, microsecond=0) for t in slots}:
+            candidates.append(m)
+    if not candidates:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Bu saat artık müsait değil, lütfen başka bir saat seçin")
+    loads = dict((await db.execute(
+        select(Appointment.staff_id, func.count()).where(
+            Appointment.tenant_id == tenant_id, Appointment.appointment_date == appointment_date,
+            Appointment.status != AppointmentStatus.CANCELLED, Appointment.staff_id.in_([m.id for m in candidates]),
+        ).group_by(Appointment.staff_id)
+    )).all())
+    return min(candidates, key=lambda m: (loads.get(m.id, 0), m.id))
