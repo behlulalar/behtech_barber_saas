@@ -58,7 +58,7 @@ export interface AvailabilityParams {
   date: string
 }
 
-export type SlotStatus = 'free' | 'busy' | 'past'
+export type SlotStatus = 'free' | 'busy' | 'past' | 'off'
 
 export interface Slot {
   /** "HH:MM" */
@@ -313,7 +313,10 @@ export interface TimeOff {
   staff_id: number
   start_date: string
   end_date: string
+  start_time: string | null
+  end_time: string | null
   reason: string | null
+  conflicting_appointments?: number
 }
 
 export interface TimeOffCreate {
@@ -321,6 +324,8 @@ export interface TimeOffCreate {
   start_date: string
   end_date: string
   reason?: string | null
+  start_time?: string | null
+  end_time?: string | null
 }
 
 export interface PaymentMethod {

@@ -69,7 +69,7 @@ class AppointmentPublicOut(BaseModel):
 class SlotOut(BaseModel):
     start: str  # "HH:MM"
     end: str  # "HH:MM" (gün sonu için "24:00")
-    status: Literal["free", "busy", "past"]
+    status: Literal["free", "busy", "past", "off"]
     bookable: bool
 
 

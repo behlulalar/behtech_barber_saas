@@ -301,16 +301,33 @@ class WorkingHourOut(_Orm):
     end_time: time
 
 
+def _on_grid(t: time) -> bool:
+    return t.minute in (0, 30) and t.second == 0 and t.microsecond == 0
+
+
 class TimeOffCreate(BaseModel):
     staff_id: int
     start_date: date
     end_date: date
+    # İsteğe bağlı saat aralığı: ikisi birden verilir ya da hiçbiri (tüm gün). Aralık, tarih aralığındaki HER gün için geçerlidir.
+    # end_time 00:00 = gün sonu. Saatler :00 / :30 olmalı (randevular 30 dk ızgarasında).
+    start_time: time | None = None
+    end_time: time | None = None
     reason: Annotated[str, StringConstraints(strip_whitespace=True, max_length=255)] | None = None
 
     @model_validator(mode="after")
     def _order(self):
         if self.start_date > self.end_date:
             raise ValueError("Başlangıç tarihi bitiş tarihinden sonra olamaz")
+        if (self.start_time is None) != (self.end_time is None):
+            raise ValueError("Saat aralığı için başlangıç ve bitiş saati birlikte girilmeli (ya da ikisi de boş: tüm gün)")
+        if self.start_time is not None and self.end_time is not None:
+            if not (_on_grid(self.start_time) and _on_grid(self.end_time)):
+                raise ValueError("Saatler yalnızca :00 ya da :30 olabilir")
+            if self.end_time != time(0, 0) and self.end_time <= self.start_time:
+                raise ValueError("Bitiş saati başlangıç saatinden sonra olmalı")
+            if self.end_time == time(0, 0) and self.start_time == time(0, 0):
+                raise ValueError("Saat aralığı boş olamaz (tüm gün için saatleri boş bırakın)")
         return self
 
 
@@ -319,7 +336,11 @@ class TimeOffOut(_Orm):
     staff_id: int
     start_date: date
     end_date: date
+    start_time: time | None = None
+    end_time: time | None = None
     reason: str | None
+    # Yalnızca oluşturma yanıtında: bu izinle çakışan MEVCUT onaylı randevu sayısı (iptal edilmez, yalnızca uyarı).
+    conflicting_appointments: int = 0
 
 
 # ---------- payment methods ----------

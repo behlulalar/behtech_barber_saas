@@ -163,7 +163,7 @@ function SlotCell({
 
   if (!slot.bookable) {
     const tooShort = slot.status === 'free'
-    const label = slot.status === 'busy' ? 'Dolu' : slot.status === 'past' ? 'Geçti' : 'Süre yetmez'
+    const label = slot.status === 'busy' ? 'Dolu' : slot.status === 'off' ? 'Kapalı' : slot.status === 'past' ? 'Geçti' : 'Süre yetmez'
     // Seçili aralığın devamı olan (bookable olmayabilen) slotlar vurgulu kalır.
     if (inRange) {
       return (
@@ -183,6 +183,7 @@ function SlotCell({
         role="radio"
         aria-checked={false}
         aria-disabled="true"
+        aria-label={`${slot.start} – ${slot.end}, ${label.toLowerCase()}`}
         title={tooShort ? `Bu hizmet ${n} slot sürüyor` : undefined}
         className={cn(
           CELL,

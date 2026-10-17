@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
 import { createPortal } from 'react-dom'
 import { cn } from '../../lib/cn'
 
-type ToastKind = 'success' | 'error' | 'info'
+type ToastKind = 'success' | 'error' | 'info' | 'warning'
 
 interface ToastItem {
   id: number
@@ -15,12 +15,13 @@ interface ToastApi {
   success: (message: string) => void
   error: (message: string) => void
   info: (message: string) => void
+  warning: (message: string) => void
 }
 
 const ToastContext = createContext<ToastApi | null>(null)
 
-const ICONS = { success: CheckCircle2, error: AlertCircle, info: Info }
-const COLORS = { success: 'text-success', error: 'text-danger', info: 'text-info' }
+const ICONS = { success: CheckCircle2, error: AlertCircle, info: Info, warning: AlertCircle }
+const COLORS = { success: 'text-success', error: 'text-danger', info: 'text-info', warning: 'text-warning' }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
@@ -32,7 +33,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (kind: ToastKind, message: string) => {
       const id = nextId.current++
       setItems((cur) => [...cur.slice(-3), { id, kind, message }])
-      window.setTimeout(() => dismiss(id), kind === 'error' ? 6000 : 4000)
+      window.setTimeout(() => dismiss(id), kind === 'error' || kind === 'warning' ? 6000 : 4000)
     },
     [dismiss],
   )
@@ -42,6 +43,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       success: (m) => push('success', m),
       error: (m) => push('error', m),
       info: (m) => push('info', m),
+      warning: (m) => push('warning', m),
     }),
     [push],
   )

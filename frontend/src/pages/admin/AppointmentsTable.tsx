@@ -96,6 +96,10 @@ interface Props {
   onCreate: (slot: { staffId: number; date: string; time: string }) => void
 }
 
+function timeToMin(t: string): number {
+  return Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
+}
+
 export function AppointmentsTable({ date, appointments, staff, flow, onCreate }: Props) {
   const today = todayLocalISO()
   const isToday = date === today
@@ -132,11 +136,20 @@ export function AppointmentsTable({ date, appointments, staff, flow, onCreate }:
     () =>
       staff.map((s, i) => {
         const hours = (hoursQs[i]?.data ?? []).find((h) => h.day_of_week === weekday)
-        const off = (offQs[i]?.data ?? []).some((t) => t.start_date <= date && date <= t.end_date)
+        const todays = (offQs[i]?.data ?? []).filter((t) => t.start_date <= date && date <= t.end_date)
+        const off = todays.some((t) => !t.start_time || !t.end_time)
+        // Saat aralıklı izinler: dakika cinsinden [başlangıç, bitiş); "00:00" bitiş = gün sonu.
+        const offRanges = todays
+          .filter((t) => t.start_time && t.end_time)
+          .map((t) => {
+            const s = timeToMin(t.start_time as string)
+            const e = timeToMin(t.end_time as string)
+            return [s, e === 0 ? 24 * 60 : e] as const
+          })
         const loaded = hoursQs[i]?.isSuccess && offQs[i]?.isSuccess
         const window = hours && !off ? windowOf(hours.start_time, hours.end_time) : null
         const list = appointments.filter((a) => a.staff.id === s.id)
-        return { staff: s, window, off, loaded, placed: layoutColumn(list), count: list.filter((a) => a.status !== 'cancelled').length }
+        return { staff: s, window, off, offRanges, loaded, placed: layoutColumn(list), count: list.filter((a) => a.status !== 'cancelled').length }
       }),
     // hoursQs/offQs her render yeni dizi; veri değişimini data referanslarından yakala.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -229,9 +242,10 @@ export function AppointmentsTable({ date, appointments, staff, flow, onCreate }:
               {/* Boş slotlar */}
               {slotStarts.map((m) => {
                 const inWindow = c.window ? m >= c.window[0] && m + SLOT <= c.window[1] : false
+                const inTimeOff = c.offRanges.some(([s, e]) => m < e && m + SLOT > s)
                 const past = isPastDay || (isToday && m + SLOT <= nowMin)
                 const taken = c.placed.some((p) => p.appt.status !== 'cancelled' && m < p.end && m + SLOT > p.start)
-                const open = inWindow && !past && !taken
+                const open = inWindow && !past && !taken && !inTimeOff
                 const hour = m % 60 === 0
                 const base = cn(
                   'absolute inset-x-0 border-t',
@@ -243,7 +257,7 @@ export function AppointmentsTable({ date, appointments, staff, flow, onCreate }:
                     <div
                       key={m}
                       aria-hidden="true"
-                      className={cn(base, !inWindow && c.loaded && 'bg-[repeating-linear-gradient(135deg,transparent_0_6px,color-mix(in_srgb,var(--color-cream)_5%,transparent)_6px_12px)]', past && inWindow && 'bg-ink/30')}
+                      className={cn(base, (!inWindow || inTimeOff) && c.loaded && 'bg-[repeating-linear-gradient(135deg,transparent_0_6px,color-mix(in_srgb,var(--color-cream)_5%,transparent)_6px_12px)]', past && inWindow && !inTimeOff && 'bg-ink/30')}
                       style={style}
                     />
                   )

@@ -37,7 +37,7 @@ DAY_MINUTES = 24 * 60
 class SlotInfo:
     start: time
     end: time  # 24:00 için time(0, 0)
-    status: str  # free | busy | past
+    status: str  # free | busy | past | off (saat aralıklı izin)
     bookable: bool
 
 
@@ -97,16 +97,20 @@ async def build_slot_grid(
 
     needed = max(1, math.ceil(service.duration_min / SLOT_MINUTES))
 
-    time_off_result = await db.execute(
-        select(TimeOff.id).where(
+    time_off_rows = (await db.execute(
+        select(TimeOff.start_time, TimeOff.end_time).where(
             TimeOff.tenant_id == tenant_id,
             TimeOff.staff_id == staff_id,
             TimeOff.start_date <= appointment_date,
             TimeOff.end_date >= appointment_date,
-        ).limit(1)
-    )
-    if time_off_result.first() is not None:
-        return SlotGrid(appointment_date, needed, "time_off", [])
+        )
+    )).all()
+    if any(st is None for st, _ in time_off_rows):
+        return SlotGrid(appointment_date, needed, "time_off", [])  # tüm gün izin
+    # Saat aralıklı izinler: o gün yalnızca bu saatler kapalı (bitiş 00:00 = gün sonu)
+    off_intervals = [
+        (_time_to_minutes(st), (_time_to_minutes(en) or DAY_MINUTES)) for st, en in time_off_rows
+    ]
 
     working_hours_result = await db.execute(
         select(WorkingHours).where(
@@ -168,6 +172,8 @@ async def build_slot_grid(
     for s in starts:
         if any(s < busy_end and s + SLOT_MINUTES > busy_start for busy_start, busy_end in busy_intervals):
             statuses.append("busy")
+        elif any(s < off_end and s + SLOT_MINUTES > off_start for off_start, off_end in off_intervals):
+            statuses.append("off")  # berber bu saatte izinli/kapalı (randevu alınamaz)
         elif is_past(s):
             statuses.append("past")
         else:

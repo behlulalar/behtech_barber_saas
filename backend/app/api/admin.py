@@ -652,12 +652,16 @@ async def create_time_off(
         staff_id=data.staff_id,
         start_date=data.start_date,
         end_date=data.end_date,
+        start_time=data.start_time,
+        end_time=data.end_time,
         reason=data.reason or None,
     )
     db.add(row)
     await db.commit()
     await db.refresh(row)
-    return row
+    out = TimeOffOut.model_validate(row)
+    out.conflicting_appointments = await svc.count_time_off_conflicts(db, row)
+    return out
 
 
 @router.delete("/admin/time-off/{time_off_id}", status_code=204)

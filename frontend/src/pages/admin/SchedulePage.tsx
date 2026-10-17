@@ -196,6 +196,15 @@ function HoursEditor({ staffId, initial }: { staffId: number; initial: WorkingHo
 /* İzinler                                                             */
 /* ------------------------------------------------------------------ */
 
+function timeLabel(t: TimeOff): string | null {
+  if (!t.start_time || !t.end_time) return null
+  const end = hhmm(t.end_time)
+  return `${hhmm(t.start_time)} – ${end === '00:00' ? '24:00' : end}`
+}
+
+const START_OPTIONS = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`)
+const END_OPTIONS = [...START_OPTIONS.slice(1), '00:00']
+
 function rangeLabel(t: TimeOff): string {
   if (t.start_date === t.end_date) return formatDate(t.start_date)
   return `${formatDateShort(t.start_date)} – ${formatDate(t.end_date)}`
@@ -234,12 +243,15 @@ function TimeOffCard({ staffId }: { staffId: number }) {
 
   const item = (t: TimeOff, muted?: boolean) => {
     const days = diffDaysISO(t.start_date, t.end_date) + 1
+    const times = timeLabel(t)
     return (
       <li key={t.id} className={cn('flex items-center gap-2 rounded-md border border-panel-line bg-panel-raised py-1.5 pl-4 pr-1.5', muted && 'opacity-60')}>
         <div className="min-w-0 flex-1 py-1.5">
           <p className="text-sm font-medium text-cream">{rangeLabel(t)}</p>
+          {times && <p className="text-sm tabular-nums text-copper-bright">{times}</p>}
           <p className="truncate text-xs text-muted">
-            {days} gün{t.reason ? ` · ${t.reason}` : ''}
+            {times ? (days > 1 ? `${days} gün · her gün` : 'Saat aralığı') : `${days} gün`}
+            {t.reason ? ` · ${t.reason}` : ''}
           </p>
         </div>
         <IconButton label="İzni kaldır" onClick={() => setDeleting(t)} className="hover:text-danger">
@@ -253,7 +265,7 @@ function TimeOffCard({ staffId }: { staffId: number }) {
     <Card>
       <CardHeader
         title="İzinler"
-        description="Bu tarihlerde randevu alınamaz."
+        description="Bu tarih ve saatlerde randevu alınamaz."
         action={
           <Button size="sm" variant="secondary" onClick={() => setAdding(true)} leftIcon={<Plus className="size-4" />}>
             İzin ekle
@@ -268,7 +280,7 @@ function TimeOffCard({ staffId }: { staffId: number }) {
           <Skeleton className="h-16 w-full" />
         </div>
       ) : upcoming.length === 0 && past.length === 0 ? (
-        <EmptyState icon={<CalendarOff />} title="Planlı izin yok" description="Tatil ya da izin günü eklediğinizde o tarihler randevuya kapanır." className="py-8" />
+        <EmptyState icon={<CalendarOff />} title="Planlı izin yok" description="Tatil, izin günü ya da belirli saatler (ör. öğle arası) ekleyin." className="py-8" />
       ) : (
         <>
           {upcoming.length === 0 ? <p className="mb-3 text-sm text-muted">Yaklaşan izin yok.</p> : <ul className="flex flex-col gap-2">{upcoming.map((t) => item(t))}</ul>}
@@ -297,7 +309,7 @@ function TimeOffCard({ staffId }: { staffId: number }) {
         loading={remove.isPending}
         destructive
         title="İzin kaldırılsın mı?"
-        description={deleting ? `${rangeLabel(deleting)} tarihleri tekrar randevuya açılacak.` : undefined}
+        description={deleting ? `${rangeLabel(deleting)}${timeLabel(deleting) ? ` ${timeLabel(deleting)?.replace(/ – /, '–')}` : ''} tekrar randevuya açılacak.` : undefined}
         confirmLabel="Kaldır"
       />
     </Card>
@@ -311,16 +323,34 @@ function TimeOffForm({ staffId, onClose }: { staffId: number; onClose: () => voi
   const [start, setStart] = useState(today)
   const [end, setEnd] = useState(today)
   const [reason, setReason] = useState('')
+  const [allDay, setAllDay] = useState(true)
+  const [startTime, setStartTime] = useState('12:00')
+  const [endTime, setEndTime] = useState('13:00')
   const [touched, setTouched] = useState(false)
 
   const dateError = touched && (!start || !end) ? 'Tarihleri seçin.' : touched && start > end ? 'Bitiş, başlangıçtan önce olamaz.' : null
 
+  // "00:00" bitiş = gün sonu (24:00) → her zaman geçerli.
+  const timeError = touched && !allDay && endTime !== '00:00' && endTime <= startTime ? 'Bitiş saati, başlangıçtan sonra olmalı.' : null
+  const timesInvalid = !allDay && endTime !== '00:00' && endTime <= startTime
+
   const save = useMutation({
-    mutationFn: () => adminApi.createTimeOff({ staff_id: staffId, start_date: start, end_date: end, reason: reason.trim() || null }),
-    onSuccess: () => {
+    mutationFn: () =>
+      adminApi.createTimeOff({
+        staff_id: staffId,
+        start_date: start,
+        end_date: end,
+        reason: reason.trim() || null,
+        ...(allDay ? {} : { start_time: startTime, end_time: endTime }),
+      }),
+    onSuccess: (created) => {
       void qc.invalidateQueries({ queryKey: qk.timeOff })
       void qc.invalidateQueries({ queryKey: ['public', 'availability'] })
-      toast.success('İzin eklendi')
+      void qc.invalidateQueries({ queryKey: qk.appointments })
+      void qc.invalidateQueries({ queryKey: qk.dashboard })
+      const n = created?.conflicting_appointments ?? 0
+      if (n > 0) toast.warning(`İzin eklendi. Bu aralıkta ${n} randevu var; mevcut randevular iptal edilmedi, lütfen kontrol edin.`)
+      else toast.success('İzin eklendi')
       onClose()
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -328,7 +358,7 @@ function TimeOffForm({ staffId, onClose }: { staffId: number; onClose: () => voi
 
   function submit() {
     setTouched(true)
-    if (!start || !end || start > end) return
+    if (!start || !end || start > end || timesInvalid) return
     save.mutate()
   }
 
@@ -339,7 +369,7 @@ function TimeOffForm({ staffId, onClose }: { staffId: number; onClose: () => voi
       dismissible={!save.isPending}
       size="sm"
       title="İzin ekle"
-      description="Tek gün için başlangıç ve bitişi aynı seçin."
+      description="Tüm günü ya da yalnızca belirli saatleri kapatabilirsiniz."
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={save.isPending}>
@@ -379,6 +409,37 @@ function TimeOffForm({ staffId, onClose }: { staffId: number; onClose: () => voi
           <p role="alert" className="-mt-2 text-xs font-medium text-danger">
             {dateError}
           </p>
+        )}
+        <Switch checked={allDay} onChange={setAllDay} label="Tüm gün" />
+        {!allDay && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Başlangıç saati" required>
+                <Select value={startTime} invalid={Boolean(timeError)} onChange={(e) => setStartTime(e.target.value)}>
+                  {START_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Bitiş saati" required>
+                <Select value={endTime} invalid={Boolean(timeError)} onChange={(e) => setEndTime(e.target.value)}>
+                  {END_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t === '00:00' ? '24:00 (gün sonu)' : t}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            {timeError && (
+              <p role="alert" className="-mt-2 text-xs font-medium text-danger">
+                {timeError}
+              </p>
+            )}
+            {start !== end && <p className="-mt-2 text-xs text-muted">Bu saatler seçilen her gün için kapatılır.</p>}
+          </>
         )}
         <Field label="Sebep" hint="İsteğe bağlı not.">
           <Input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={255} placeholder="Örn. Yıllık izin" />

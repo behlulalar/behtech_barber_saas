@@ -11,6 +11,7 @@ from app.models.customer import Customers
 from app.models.service import Service
 from app.models.staff import RoleType, Staff
 from app.models.staff_service import StaffService
+from app.models.time_off import TimeOff
 from app.schemas.admin import (
     AdminAppointmentOut,
     AdminServiceOut,
@@ -362,3 +363,31 @@ async def delete_working_hours(db: AsyncSession, tenant_id: int, staff_id: int) 
     await db.execute(
         delete(WorkingHours).where(WorkingHours.tenant_id == tenant_id, WorkingHours.staff_id == staff_id)
     )
+
+
+async def count_time_off_conflicts(db: AsyncSession, row: TimeOff) -> int:
+    """Bu izinle çakışan MEVCUT onaylı randevu sayısı (randevular iptal edilmez; panel yalnızca uyarır).
+    Tüm gün izinde tarih aralığındaki tüm onaylı randevular; saat aralıklı izinde yalnızca süresi aralıkla kesişenler sayılır."""
+    import math
+    from datetime import time as _t
+
+    rows = (await db.execute(
+        select(Appointment.appointment_time, Service.duration_min)
+        .join(Service, Appointment.service_id == Service.id)
+        .where(
+            Appointment.tenant_id == row.tenant_id, Appointment.staff_id == row.staff_id,
+            Appointment.status == AppointmentStatus.CONFIRMED,
+            Appointment.appointment_date >= row.start_date, Appointment.appointment_date <= row.end_date,
+        )
+    )).all()
+    if row.start_time is None or row.end_time is None:
+        return len(rows)
+    off_start = row.start_time.hour * 60 + row.start_time.minute
+    off_end = (row.end_time.hour * 60 + row.end_time.minute) or 24 * 60
+    n = 0
+    for t, dur in rows:
+        a_start = t.hour * 60 + t.minute
+        a_end = a_start + math.ceil(dur / 30) * 30
+        if a_start < off_end and a_end > off_start:
+            n += 1
+    return n
