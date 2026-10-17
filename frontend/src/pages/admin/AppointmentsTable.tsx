@@ -191,7 +191,9 @@ export function AppointmentsTable({ date, appointments, staff, flow, onCreate }:
     <div>
       <div
         ref={scrollRef}
-        className="relative max-h-[72dvh] overflow-auto rounded-md border border-panel-line bg-panel"
+        // isolate: içerideki sabit sütun/başlık hücrelerinin z-index'leri (z-30 vb.) kendi bağlamında kalır; aksi halde sayfa kaydırılınca
+        // sol üst köşe hücresi üstteki sabit panel başlığının (z-30) ÜSTÜNE biner.
+        className="relative isolate max-h-[72dvh] overflow-auto rounded-md border border-panel-line bg-panel"
         role="region"
         aria-label="Günlük randevu tablosu"
         tabIndex={0}
