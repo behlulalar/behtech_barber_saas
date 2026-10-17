@@ -455,6 +455,7 @@ export const platformApi = {
   replySupport: (id: number, message: string) =>
     request<SupportTicket>(`/platform/support/${id}/reply`, { method: 'POST', body: { message }, auth: p }),
   closeSupport: (id: number) => request<SupportTicket>(`/platform/support/${id}/close`, { method: 'POST', auth: p }),
+  eraseTenant: (id: number, confirm_slug: string) => request<void>(`/platform/tenants/${id}/erase`, { method: 'POST', body: { confirm_slug }, auth: p }),
   getFunnel: () => request<Funnel>('/platform/funnel', { auth: p }),
   getActions: () => request<ActionQueue>('/platform/actions', { auth: p }),
   getSiteStats: (days = 30) => request<SiteStats>('/platform/site-stats', { auth: p, query: { days } }),

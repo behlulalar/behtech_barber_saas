@@ -347,3 +347,7 @@ class TwoFactorGuardedIn(BaseModel):
 
 class BackupCodesOut(BaseModel):
     backup_codes: list[str]
+
+
+class TenantEraseIn(BaseModel):
+    confirm_slug: str = Field(min_length=1, max_length=255)

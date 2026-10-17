@@ -24,6 +24,7 @@ from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.platform import (
     AuditActionOut,
     AuditPage,
+    TenantEraseIn,
     ImpersonateIn,
     ImpersonateOut,
     JobRunOut,
@@ -66,6 +67,7 @@ from app.services import (
     notification_services,
     site_stats_services,
     action_services,
+    kvkk_services,
     funnel_services,
     support_services,
     audit_services,
@@ -452,6 +454,28 @@ async def platform_tenant_whatsapp_pause(
 ):
     """Kötüye kullanımda dükkânın tüm WhatsApp gönderimini elle durdurur / yeniden açar."""
     return await whatsapp_admin.set_paused(db, tenant_id, data.paused, data.reason, admin, request)
+
+
+@router.get("/tenants/{tenant_id}/export")
+async def platform_tenant_export(
+    tenant_id: int, request: Request, admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    """KVKK: işletmenin verisini ZIP (CSV'ler) olarak indirir. Şifre ve görsel içermez."""
+    from fastapi.responses import Response as _Response
+
+    data, filename = await kvkk_services.export_zip(db, tenant_id, admin, request)
+    return _Response(content=data, media_type="application/zip",
+                     headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
+
+
+@router.post("/tenants/{tenant_id}/erase", status_code=204)
+async def platform_tenant_erase(
+    tenant_id: int, data: TenantEraseIn, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    """KVKK: işletmenin kişisel verisini KALICI siler (muhasebe kaydı korunur). İşletme pasif olmalı; alt alan adı yazılarak onaylanır."""
+    await kvkk_services.erase(db, tenant_id, data.confirm_slug, admin, request)
+    return Response(status_code=204)
 
 
 @router.get("/tenants/{tenant_id}/notifications", response_model=list[NotificationOut])

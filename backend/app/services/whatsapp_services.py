@@ -134,6 +134,11 @@ async def logout(name: str) -> None:
     await _call("DELETE", f"/instance/logout/{name}", ok_statuses=(400, 404))
 
 
+async def delete_instance(name: str) -> None:
+    """Instance'ı Evolution'dan tamamen siler (KVKK silme). Zaten yoksa sorun değil."""
+    await _call("DELETE", f"/instance/delete/{name}", ok_statuses=(400, 404))
+
+
 async def send_text(name: str, number: str, message: str, delay_ms: int | None = None) -> None:
     """Dükkânın kendi instance'ından metin mesajı. v1 (`textMessage.text`) ve v2 (`text`) biçimi birlikte gönderilir.
     delay_ms: göndermeden önce karşı tarafta "yazıyor..." gösterip bekler (bot görüntüsünü azaltır, ban koruması)."""
