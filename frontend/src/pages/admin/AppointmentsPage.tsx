@@ -247,7 +247,7 @@ export default function AppointmentsPage() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="min-w-0 text-sm font-medium capitalize text-muted-strong">{rangeLabel}</p>
+          <p className="min-w-0 text-lg font-semibold capitalize text-cream md:text-xl">{rangeLabel}</p>
           <div className="flex flex-wrap items-center gap-2">
             {isManager && (
               <Select aria-label="Berber filtresi" value={staffFilter} onChange={(e) => setStaffFilter(e.target.value)} className="min-w-44">
