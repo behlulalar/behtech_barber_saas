@@ -1,5 +1,7 @@
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 // Backend, Host header'ındaki subdomain'den tenant çözümlediği için yerel geliştirmede
@@ -23,6 +25,16 @@ function seoPlugin(origin: string): Plugin {
   return {
     name: 'behtech-seo',
     transformIndexHtml: (html) => html.replaceAll('%PRODUCT_ORIGIN%', origin),
+    // Önizleme (Open Graph/Twitter) etiketleri YALNIZCA tanıtım sitesinde olsun: product.html'e tam hâli yazılır, index.html'den
+    // <!--seo:start-->...<!--seo:end--> bloğu çıkarılır. nginx tanıtım alanında product.html'i, dükkân alt alanlarında index.html'i sunar;
+    // böylece bir berber kendi adresini paylaşınca BehTech'in büyük kartı değil, sade bir bağlantı çıkar.
+    closeBundle() {
+      const idx = resolve('dist/index.html')
+      if (!existsSync(idx)) return
+      const html = readFileSync(idx, 'utf8')
+      writeFileSync(resolve('dist/product.html'), html)
+      writeFileSync(idx, html.replace(/[ \t]*<!--seo:start-->[\s\S]*?<!--seo:end-->\n?/, ''))
+    },
     generateBundle() {
       const urls = pages.map((p) => `  <url><loc>${origin}${p === '/' ? '/' : p}</loc></url>`).join('\n')
       this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n` })

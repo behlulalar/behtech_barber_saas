@@ -78,10 +78,18 @@ server {
         add_header Cache-Control "no-cache";
     }
     # SPA: bilinmeyen yollar index.html'e (rota React'ta). Her uzantılı bulunmayan dosya 404 olsun.
+    # Tanıtım alanında product.html (paylaşım önizleme etiketleri var), dükkân alt alanlarında index.html (sade).
+    set $spa_index /index.html;
+    if ($host = {{CERT_NAME}}) { set $spa_index /product.html; }
+    location = / {
+        add_header Cache-Control "no-cache";
+        include /etc/nginx/snippets/berber-security.conf;
+        try_files $spa_index =404;
+    }
     location / {
         add_header Cache-Control "no-cache";
         include /etc/nginx/snippets/berber-security.conf;
-        try_files $uri $uri/ /index.html;
+        try_files $uri $uri/ $spa_index;
     }
     # Gizli/derleme dosyaları
     location ~ /\.(?!well-known) { deny all; }

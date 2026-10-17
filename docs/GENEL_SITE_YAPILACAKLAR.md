@@ -24,9 +24,7 @@ modeli korunur (SSS'deki "Fiyat nedir?" cevabı bu haliyle kalır).
 - [ ] **Ölçüm sayacı:** çerezsiz, hafif (ziyaret, "Ücretsiz dene" tıklaması, kayıt tamamlama). Cloudflare Web Analytics betiği CSP'ye
       takılıyor; ya CSP'ye izin verilir ya kendi sunucumuzda basit sayaç kurulur (KVKK: kişisel veri tutmadan).
 
-- [ ] **Dükkân alt alanları için kişiye özel paylaşım önizlemesi (YENİ, önemli):** berber randevu adresini WhatsApp/Instagram'da paylaşınca önizlemede
-      işletme adı + logo/kapak çıksın (şu an tanıtım sitesinin genel kartı çıkar, çünkü sayfa tarayıcıda oluşuyor ve bot JavaScript çalıştırmaz).
-      Çözüm: nginx dükkân alt alanında `/` ve `/randevu` isteklerini backend'e yönlendirip index.html'e dükkân adı/açıklaması/görseli enjekte eden küçük bir uç (SSR-lite).
+- [x] (2026-10-17 KARAR: YAPILMAYACAK) **Dükkân alt alanları için kişiye özel/büyük paylaşım önizlemesi:** kullanıcı berber linki paylaşılınca büyük önizleme kartı çıkmasını istemiyor. Bu yüzden önizleme (Open Graph/Twitter) etiketleri YALNIZCA tanıtım alanında: derleme `dist/product.html` (etiketli) ve `dist/index.html` (etiketsiz) üretir, nginx tanıtım alanında product.html'i, dükkân alt alanlarında index.html'i sunar.
 
 ### 2. İkna eden içerik
 - [ ] **İşletme panelinden gerçek ekran görüntüsü** (takvim / günün randevuları): şu an yalnızca müşteri tarafı telefon taslağı var; berberin
