@@ -1,5 +1,5 @@
 import re
-from datetime import date
+from datetime import date, datetime, timedelta
 
 from fastapi import HTTPException, Request
 import secrets
@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.models.appointment import Appointment
+from app.models.message_log import MessageLog
 from app.models.platform_admin import PlatformAdmin
 from app.models.staff import RoleType, Staff
 from app.models.tenant import Tenant
@@ -87,6 +88,8 @@ def _row_to_out(row, setup: SetupOut | None = None, activity: tuple | None = Non
         setup=setup,
         last_login_at=activity[0] if activity else None,
         last_booking_at=activity[1] if activity else None,
+        bookings_30d=activity[2] if activity else 0,
+        messages_30d=activity[3] if activity else 0,
     )
 
 
@@ -112,7 +115,16 @@ async def _activity_for(db: Session, tenant_ids: list[int]) -> dict[int, tuple]:
     bookings = dict((await db.execute(
         select(Appointment.tenant_id, func.max(Appointment.created_at)).where(Appointment.tenant_id.in_(tenant_ids)).group_by(Appointment.tenant_id)
     )).all())
-    return {t: (logins.get(t), bookings.get(t)) for t in tenant_ids}
+    since = datetime.now() - timedelta(days=30)
+    bookings_30 = dict((await db.execute(
+        select(Appointment.tenant_id, func.count()).where(Appointment.tenant_id.in_(tenant_ids), Appointment.created_at >= since)
+        .group_by(Appointment.tenant_id)
+    )).all())
+    msgs_30 = dict((await db.execute(
+        select(MessageLog.tenant_id, func.count()).where(MessageLog.tenant_id.in_(tenant_ids), MessageLog.created_at >= since, MessageLog.ok == True)  # noqa: E712
+        .group_by(MessageLog.tenant_id)
+    )).all())
+    return {t: (logins.get(t), bookings.get(t), bookings_30.get(t, 0), msgs_30.get(t, 0)) for t in tenant_ids}
 
 
 async def _setup_for(db: Session, tenant_ids: list[int]) -> dict[int, SetupOut]:

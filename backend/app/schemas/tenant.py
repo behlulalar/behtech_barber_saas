@@ -43,6 +43,8 @@ class TenantOut(BaseModel):
     setup: SetupOut | None = None
     last_login_at: datetime | None = None  # işletme personelinin son başarılı girişi
     last_booking_at: datetime | None = None  # en son randevu alınma/oluşturulma zamanı
+    bookings_30d: int = 0  # son 30 günde oluşturulan randevu sayısı
+    messages_30d: int = 0  # son 30 günde başarıyla gönderilen WhatsApp mesajı sayısı
 
 
 class TenantDetailOut(TenantOut):

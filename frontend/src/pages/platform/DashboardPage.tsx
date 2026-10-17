@@ -15,6 +15,7 @@ import { errorMessage, platformApi } from '../../lib/api'
 import { formatDateShort, formatNumber, formatPrice, formatTimestamp } from '../../lib/format'
 import type { MetricsOverview } from '../../types/api'
 import { ActionQueueCard } from './ActionQueueCard'
+import { FunnelCard } from './FunnelCard'
 import { SiteStatsCard } from './SiteStatsCard'
 
 function revenuePoints(m: MetricsOverview): ColumnPoint[] {
@@ -264,6 +265,7 @@ export default function DashboardPage() {
       </Card>
 
       <div className="mt-6">
+        <FunnelCard />
         <SiteStatsCard />
       </div>
     </>

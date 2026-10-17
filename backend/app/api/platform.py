@@ -54,6 +54,7 @@ from app.schemas.platform import (
 from app.schemas.announcement import AnnouncementIn, AnnouncementOut, AnnouncementUpdate
 from app.schemas.notification import NotificationIn, NotificationOut
 from app.schemas.actions import ActionQueueOut
+from app.schemas.funnel import FunnelOut
 from app.schemas.support import PlatformTicketOut, TicketOut, TicketReplyIn
 from app.schemas.site_stats import SiteStatsOut
 from app.schemas.whatsapp import PlatformWhatsappOut, WhatsappPauseIn
@@ -65,6 +66,7 @@ from app.services import (
     notification_services,
     site_stats_services,
     action_services,
+    funnel_services,
     support_services,
     audit_services,
     job_services,
@@ -313,6 +315,12 @@ async def job_runs(
 @router.get("/system/status", response_model=SystemStatus)
 async def system_status(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
     return await system_services.get_status(db)
+
+
+@router.get("/funnel", response_model=FunnelOut)
+async def platform_funnel(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
+    """Dönüşüm hunisi: kayıt -> onay -> kurulum -> ilk randevu -> ilk ödeme."""
+    return await funnel_services.build(db)
 
 
 @router.get("/support", response_model=list[PlatformTicketOut])

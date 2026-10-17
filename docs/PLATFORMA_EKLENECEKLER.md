@@ -14,8 +14,8 @@ Genel kapsam kararları ve eksikler: `EKSIKLER.md`. İşletme (admin) paneli iç
 ## 2. İşletme sağlığı ve kullanım
 - [x] (2026-10-17 YAPILDI: `staff.last_login_at` + son randevu oluşturma; İşletmeler listesinde "Son etkinlik" sütunu, detayda "Son etkinlik" kartı, 14 gündür sessiz faturalı işletme aksiyon kuyruğunda "Bilgi"; giriş verisi canlıya geçişten sonra dolmaya başlar) **Son etkinlik:** her işletme için son giriş ve son randevu zamanı; "14 gündür randevu yok" listesi (vazgeçme riski).
 - [x] (ZATEN VARDI: işletme detayında "Kurulum durumu" kartı ve listede "Kurulum" sütunu; platform bunu `SetupOut` ile gösteriyor) **Kurulum ilerlemesi:** işletme panelindeki kurulum rehberi adımlarının platformda görünmesi (demo'da takılanlar, WhatsApp'ı bağlamayanlar).
-- [ ] **Dönüşüm hunisi:** kayıt -> onay -> kurulum tamam -> ilk randevu -> ilk ödeme; hangi aşamada kayıp var.
-- [ ] **Kullanım sayıları:** işletme başına aylık randevu ve WhatsApp mesajı (fiyatlandırma + kötüye kullanım tespiti).
+- [x] (2026-10-17 YAPILDI: Genel Bakış'ta "Kayıttan ödemeye" kartı, `GET /platform/funnel`; yalnızca kendi kayıt olan işletmeler, "ulaştı" mantığıyla her zaman azalan) **Dönüşüm hunisi:** kayıt -> onay -> kurulum tamam -> ilk randevu -> ilk ödeme; hangi aşamada kayıp var.
+- [x] (2026-10-17 YAPILDI: işletme detayı "Son etkinlik" kartında son 30 gün randevu ve başarılı WhatsApp mesajı sayısı; listede/limitlerde gösterilmiyor) **Kullanım sayıları:** işletme başına aylık randevu ve WhatsApp mesajı (fiyatlandırma + kötüye kullanım tespiti).
 
 ## 3. Para
 - [ ] **Gelir görünümü:** aylık düzenli gelir (MRR), tahsil edilen / bekleyen / gecikmiş, aylık grafik.

@@ -58,6 +58,14 @@ export function ActivityCard({ tenant }: { tenant: PlatformTenantDetail }) {
           <dt className="text-muted">Toplam randevu</dt>
           <dd className="tabular-nums text-cream">{tenant.appointment_count}</dd>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+          <dt className="text-muted">Son 30 gün: alınan randevu</dt>
+          <dd className="tabular-nums text-cream">{tenant.bookings_30d}</dd>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+          <dt className="text-muted">Son 30 gün: WhatsApp mesajı</dt>
+          <dd className="tabular-nums text-cream">{tenant.messages_30d}</dd>
+        </div>
       </dl>
     </Card>
   )

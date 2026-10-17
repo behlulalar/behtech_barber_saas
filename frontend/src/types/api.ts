@@ -501,6 +501,18 @@ export interface ActionQueue {
   items: ActionItem[]
 }
 
+export interface FunnelStep {
+  key: string
+  label: string
+  count: number
+  pct_of_first: number | null
+  pct_of_prev: number | null
+}
+
+export interface Funnel {
+  steps: FunnelStep[]
+}
+
 export interface SiteStatDay {
   day: string
   view: number
@@ -564,6 +576,8 @@ export interface PlatformTenant {
   signup_status: SignupStatus | null
   last_login_at: string | null
   last_booking_at: string | null
+  bookings_30d: number
+  messages_30d: number
   /** Gizli personel giriş adresi ("/panel/g/<key>"). */
   panel_login_path: string | null
 }
