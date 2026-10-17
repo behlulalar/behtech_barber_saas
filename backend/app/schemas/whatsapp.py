@@ -16,6 +16,11 @@ class WhatsappStatusOut(BaseModel):
     # Sahip kesmeden kopma: 'logged_out' | 'forbidden' (ban şüphesi) | 'connection_lost' | 'health_check' | Evolution kodu
     disconnect_reason: str | None = None
     disconnected_at: datetime | None = None
+    welcome_enabled: bool = True  # karşılama mesajı açık mı
+
+
+class WhatsappSettingsIn(BaseModel):
+    welcome_enabled: bool
 
 
 class WhatsappConnectIn(BaseModel):

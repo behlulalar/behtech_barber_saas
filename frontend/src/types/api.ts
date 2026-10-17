@@ -390,6 +390,8 @@ export interface WhatsappStatus {
   /** Dolu: sahip kesmeden hat koptu ('logged_out' | 'forbidden' | 'connection_lost' | 'health_check' | ...). */
   disconnect_reason: string | null
   disconnected_at: string | null
+  /** Karşılama mesajı açık mı (numaraya ilk kez yazana otomatik hoş geldiniz + randevu bağlantısı). */
+  welcome_enabled: boolean
 }
 
 export interface PlatformWhatsapp extends WhatsappStatus {

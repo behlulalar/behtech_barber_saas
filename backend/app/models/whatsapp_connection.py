@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, false, func, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, false, func, text, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -31,5 +31,7 @@ class WhatsappConnection(Base):
     # Bağlıyken kopma: neden (Evolution statusReason / 'health_check') ve zaman. Panelde uyarı şeridi bunu kullanır.
     disconnect_reason: Mapped[str | None] = mapped_column(String(60), nullable=True)
     disconnected_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # İşletmenin ayarı: numarasına ilk kez yazana otomatik karşılama + randevu bağlantısı gitsin mi ("iptal" yanıtı bundan etkilenmez).
+    welcome_enabled: Mapped[bool] = mapped_column(Boolean, server_default=true())
     # Kötüye kullanım alarmı (çok sayıda doğrulanmayan kod) en son ne zaman tetiklendi (bildirim tekrarını önler).
     abuse_alerted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

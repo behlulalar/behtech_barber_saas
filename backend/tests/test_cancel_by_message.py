@@ -98,3 +98,22 @@ async def test_negated_or_ordinary_text_does_not_cancel(api, shop, monkeypatch):
     a = await appt(shop)
     await say(api, shop, monkeypatch, text="iptal etmeyin lütfen")
     assert await status_of(a) == AppointmentStatus.CONFIRMED
+
+
+async def test_welcome_can_be_turned_off_but_cancel_replies_still_work(api, shop, monkeypatch):
+    await connect_whatsapp(shop.tenant.id)
+    r = await api.patch("/api/admin/whatsapp/settings", slug=shop.slug, token=shop.owner_token, json={"welcome_enabled": False})
+    assert r.status_code == 200 and r.json()["welcome_enabled"] is False
+    assert (await api.get("/api/admin/whatsapp", slug=shop.slug, token=shop.owner_token)).json()["welcome_enabled"] is False
+    assert await say(api, shop, monkeypatch, text="merhaba") == []  # karşılama gitmez
+    a = await appt(shop)
+    msgs = await say(api, shop, monkeypatch, text="iptal")  # iptal akışı etkilenmez
+    assert await status_of(a) == AppointmentStatus.CANCELLED and "cancel_customer" in [m.kind for m in msgs]
+    await api.patch("/api/admin/whatsapp/settings", slug=shop.slug, token=shop.owner_token, json={"welcome_enabled": True})
+    assert [m.kind for m in await say(api, shop, monkeypatch, text="merhaba", jid="905559998877@s.whatsapp.net")].count("welcome") == 1
+
+
+async def test_welcome_setting_needs_connection_and_manager(api, shop):
+    assert (await api.patch("/api/admin/whatsapp/settings", slug=shop.slug, token=shop.owner_token, json={"welcome_enabled": False})).status_code == 409
+    await connect_whatsapp(shop.tenant.id)
+    assert (await api.patch("/api/admin/whatsapp/settings", slug=shop.slug, token=shop.staff_token, json={"welcome_enabled": False})).status_code == 403

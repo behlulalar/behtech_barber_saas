@@ -59,7 +59,7 @@ from app.services import report_services
 from app.services import appointment_notifications, announcement_services, notification_services, platform_services, whatsapp_connection_services as wa_svc
 from app.services import whatsapp_guard as wa_guard, whatsapp_services
 from app.services.otp_delivery import to_whatsapp_number
-from app.schemas.whatsapp import WhatsappConnectIn, WhatsappConnectOut, WhatsappStatusOut, WhatsappTestIn
+from app.schemas.whatsapp import WhatsappConnectIn, WhatsappConnectOut, WhatsappSettingsIn, WhatsappStatusOut, WhatsappTestIn
 from app.models.message_log import MessageLog
 from app.schemas.tenant import SetupOut
 from app.schemas.announcement import AnnouncementPublic
@@ -887,7 +887,7 @@ def _wa_out(row, reachable: bool) -> WhatsappStatusOut:
     return WhatsappStatusOut(state=row.state, phone=row.phone, profile_name=row.profile_name,
                              connected_at=row.connected_at, server_reachable=reachable, paused=row.paused,
                              paused_reason=row.paused_reason, disconnect_reason=row.disconnect_reason,
-                             disconnected_at=row.disconnected_at)
+                             disconnected_at=row.disconnected_at, welcome_enabled=row.welcome_enabled)
 
 
 @router.get("/admin/whatsapp", response_model=WhatsappStatusOut)
@@ -906,6 +906,20 @@ async def admin_whatsapp_connect(
     """QR (ve telefon verildiyse eşleştirme kodu) üretir. QR ~40 sn geçerli; arayüz süresi dolunca yeniden ister."""
     row, qr, code = await wa_svc.start_connect(db, tenant, to_whatsapp_number(data.phone) if data.phone else None)
     return WhatsappConnectOut(**_wa_out(row, True).model_dump(), qr_base64=qr, pairing_code=code)
+
+
+@router.patch("/admin/whatsapp/settings", response_model=WhatsappStatusOut)
+async def admin_whatsapp_settings(
+    data: WhatsappSettingsIn,
+    current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db),
+):
+    """Karşılama mesajını aç/kapat (bağlantı kaydı varsa)."""
+    row = await wa_svc.get_row(db, tenant.id)
+    if row is None:
+        raise HTTPException(status_code=409, detail="Önce WhatsApp hesabınızı bağlayın")
+    row.welcome_enabled = data.welcome_enabled
+    await db.commit()
+    return _wa_out(row, True)
 
 
 @router.post("/admin/whatsapp/disconnect", response_model=WhatsappStatusOut)

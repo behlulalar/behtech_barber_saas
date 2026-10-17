@@ -398,6 +398,8 @@ export const adminApi = {
   connectWhatsapp: (phone?: string) =>
     request<WhatsappConnectOut>('/admin/whatsapp/connect', { method: 'POST', body: phone ? { phone } : {}, auth: s }),
   disconnectWhatsapp: () => request<WhatsappStatus>('/admin/whatsapp/disconnect', { method: 'POST', auth: s }),
+  setWhatsappWelcome: (welcome_enabled: boolean) =>
+    request<WhatsappStatus>('/admin/whatsapp/settings', { method: 'PATCH', body: { welcome_enabled }, auth: s }),
   testWhatsapp: (phone: string) => request<void>('/admin/whatsapp/test', { method: 'POST', body: { phone }, auth: s }),
 }
 

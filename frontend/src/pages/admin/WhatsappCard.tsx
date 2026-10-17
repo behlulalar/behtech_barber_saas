@@ -10,6 +10,7 @@ import { Field } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { PhoneInput } from '../../components/ui/PhoneInput'
 import { Skeleton } from '../../components/ui/Skeleton'
+import { Switch } from '../../components/ui/Switch'
 import { Tabs } from '../../components/ui/Tabs'
 import { useToast } from '../../components/ui/Toast'
 import { adminApi, errorMessage } from '../../lib/api'
@@ -59,6 +60,15 @@ export function WhatsappCard() {
       void qc.invalidateQueries({ queryKey: ['admin', 'setup'] })
       setConfirmOpen(false)
       toast.success('WhatsApp bağlantısı kesildi')
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+
+  const welcome = useMutation({
+    mutationFn: (on: boolean) => adminApi.setWhatsappWelcome(on),
+    onSuccess: (data) => {
+      qc.setQueryData(qk.whatsapp, data)
+      toast.success(data.welcome_enabled ? 'Karşılama mesajı açıldı' : 'Karşılama mesajı kapatıldı')
     },
     onError: (err) => toast.error(errorMessage(err)),
   })
@@ -122,6 +132,16 @@ export function WhatsappCard() {
                 {s.phone && <p className="font-medium tabular-nums text-cream">{formatWaPhone(s.phone)}</p>}
                 {s.profile_name && <p className="break-words text-muted-strong">{s.profile_name}</p>}
                 {s.connected_at && <p className="text-xs text-muted">Bağlanma: {formatConnectedAt(s.connected_at)}</p>}
+              </div>
+
+              <div className="border-t border-line pt-4">
+                <Switch
+                  checked={s.welcome_enabled}
+                  onChange={(v) => welcome.mutate(v)}
+                  disabled={welcome.isPending}
+                  label="Karşılama mesajı"
+                  description="Numaranıza yazan kişiye otomatik hoş geldiniz mesajı ve randevu bağlantısı gider (aynı kişiye 24 saatte en fazla bir kez). Müşterinin “iptal” yanıtı bu ayardan etkilenmez."
+                />
               </div>
 
               <div className="border-t border-line pt-4">
