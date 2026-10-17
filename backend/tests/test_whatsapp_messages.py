@@ -307,15 +307,23 @@ async def test_welcome_lid_contacts_are_replied_by_jid(api, shop, monkeypatch):
     assert (await queued("welcome"))[0].to_phone == "123456789012345@lid"
 
 
-INFORMAL = ("isterseniz", "isterseniz", "görüşmek üzere", "selam", "üzgünüz", "merhaba", "hoşça", "🙏", "👋", "✂️", "⏰")
+INFORMAL = ("isterseniz", "isterseniz", "görüşmek üzere", "selam", "üzgünüz", "merhaba", "hoşça", "🙏", "👋", "✂️")
+
+
+EMOJI_RULES = {"confirm": "✅", "confirm_manual": "✅", "reminder": "⏰", "staff_new": "📅"}
 
 
 @pytest.mark.parametrize("kind", sorted(texts._VARIANTS))
-def test_tone_is_formal_no_casual_phrases_or_emoji(kind):
+def test_tone_is_formal_and_emoji_rules(kind):
+    allowed = EMOJI_RULES.get(kind)  # None: bu türde emoji yok
     for v in texts._VARIANTS[kind]:
         low = v.lower()
         assert not any(w in low for w in INFORMAL), v
-        assert not re.search(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", v), v  # emoji yok
+        found = re.findall(r"[\U0001F300-\U0001FAFF\u2300-\u23FF\u2600-\u27BF]", v)
+        if allowed is None:
+            assert not found, v
+        else:
+            assert found == [allowed], v  # tam bir tane, o türe ait işlevsel emoji
 
 
 def test_customer_facing_messages_address_formally():
