@@ -11,6 +11,7 @@ kurallar her zaman geçerlidir, kullanıcı aksini söylemediği sürece.
 - `docs/EKSIKLER.md` — yapılmamış özellikler, bilinen eksikler, verilmiş kararlar (öncelik P0–P3). Platform yol haritası (Aşama B/C/D) burada.
 - `docs/PLATFORMA_EKLENECEKLER.md` — platform (sahip) paneline eklenecek özelliklerin beyin fırtınası listesi (öncelik önerisiyle).
 - `docs/ISLETME_PANELI_YAPILACAKLAR.md` — işletme (admin) paneli için onaylanan/reddedilen fikirler; ilke: az ve öz, yeni menü öğesi yok.
+- `docs/GENEL_SITE_YAPILACAKLAR.md` — tanıtım sitesi için kararlar (fiyat şimdilik YAZILMAYACAK: şirket yok) ve yapılacaklar.
 - `docs/OPERATIONS.md` — cron, yedek, ortam değişkenleri. Testler: `cd backend && bash scripts/run_tests.sh` (223 test).
 - Kullanıcı tercihi: **token'ı tasarruflu kullan** (az ajan, az ekran görüntüsü). Bir iş bitince ilgili maddeyi bu dosyalarda güncelle.
 
