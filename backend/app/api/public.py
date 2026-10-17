@@ -23,6 +23,7 @@ from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut, App
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
 from app.schemas.public import CustomerBrief, SendCodeResponse, StaffPublicOut, TenantPublicOut, VerifyCodeResponse
 from app.schemas.service import ServiceOut
+from app.schemas.site_stats import SiteHitIn
 from app.schemas.signup import SignupRequest, SignupResponse
 from app.services.admin_services import service_ids_by_staff
 from app.services.appointment_services import (
@@ -35,7 +36,7 @@ from app.services.appointment_services import (
     lock_staff_schedule,
     pick_staff_for_slot,
 )
-from app.services import appointment_notifications, panel_key, signup_services, whatsapp_connection_services
+from app.services import site_stats_services, appointment_notifications, panel_key, signup_services, whatsapp_connection_services
 from app.services.consent_services import require_customer_consent
 from app.services.customer_services import get_or_create_customer
 from app.core.net import client_ip
@@ -90,6 +91,13 @@ async def public_panel_manifest(
     }
     return Response(content=json.dumps(manifest, ensure_ascii=False), media_type="application/manifest+json",
                     headers={"Cache-Control": "no-cache"})
+
+
+@router.post("/public/site-hit", status_code=204)
+async def site_hit(data: SiteHitIn, db: Session = Depends(get_db)):
+    """Tanıtım sitesi sayacı (ziyaret / "Ücretsiz dene" / demo tıklaması). Çerez, IP, kimlik tutulmaz; yalnızca günlük toplam artar."""
+    await site_stats_services.hit(db, data.event)
+    return Response(status_code=204)
 
 
 @router.get("/public/tenant", response_model=TenantPublicOut)

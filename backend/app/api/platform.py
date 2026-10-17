@@ -49,6 +49,7 @@ from app.schemas.platform import (
 )
 from app.schemas.announcement import AnnouncementIn, AnnouncementOut, AnnouncementUpdate
 from app.schemas.notification import NotificationIn, NotificationOut
+from app.schemas.site_stats import SiteStatsOut
 from app.schemas.whatsapp import PlatformWhatsappOut, WhatsappPauseIn
 from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantPage
 from app.services import whatsapp_admin_services as whatsapp_admin
@@ -56,6 +57,7 @@ from app.services import platform_2fa_services as twofa
 from app.services import (
     announcement_services,
     notification_services,
+    site_stats_services,
     audit_services,
     job_services,
     metrics_services,
@@ -291,6 +293,15 @@ async def job_runs(
 @router.get("/system/status", response_model=SystemStatus)
 async def system_status(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
     return await system_services.get_status(db)
+
+
+@router.get("/site-stats", response_model=SiteStatsOut)
+async def platform_site_stats(
+    days: int = Query(default=30, ge=1, le=90),
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db),
+):
+    """Tanıtım sitesi sayaçları (ziyaret, "Ücretsiz dene" / demo tıklaması, kayıt sayısı)."""
+    return await site_stats_services.stats(db, days)
 
 
 @router.get("/metrics/overview", response_model=MetricsOverview)

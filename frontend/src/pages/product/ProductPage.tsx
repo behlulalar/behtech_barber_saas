@@ -8,6 +8,7 @@ import { ThemeToggle } from '../../lib/theme'
 import { BrandCredit } from '../../components/BrandCredit'
 import { LegalLink } from '../../components/LegalModal'
 import { BASE_DOMAIN } from '../../lib/site'
+import { startSiteStats } from '../../lib/siteStats'
 import type { LegalSlug } from '../../lib/legal'
 import { InstagramIcon } from '../../components/ContactLinks'
 import { CONTACT, DEMO_SITE_URL, instagramHandle, PRODUCT_NAME } from './content'
@@ -631,6 +632,7 @@ function Footer() {
 
 export default function ProductPage() {
   useRevealRoot()
+  useEffect(() => startSiteStats(DEMO_SITE_URL), [])
   useEffect(() => {
     const prev = document.title
     document.title = `${PRODUCT_NAME} · Berber ve kuaförler için online randevu`

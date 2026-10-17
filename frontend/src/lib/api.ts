@@ -89,6 +89,7 @@ import type {
   PlatformWhatsapp,
   TimeOff,
   Closure,
+  SiteStats,
   SiteLink,
   TimeOffCreate,
   TokenResponse,
@@ -425,6 +426,7 @@ export const platformApi = {
   resetAdminTwoFactor: (id: number) => request<void>(`/platform/admins/${id}/reset-2fa`, { method: 'POST', auth: p }),
   me: () => request<PlatformMe>('/platform/me', { auth: p }),
   getStats: () => request<PlatformStats>('/platform/stats', { auth: p }),
+  getSiteStats: (days = 30) => request<SiteStats>('/platform/site-stats', { auth: p, query: { days } }),
   getMetrics: () => request<MetricsOverview>('/platform/metrics/overview', { auth: p }),
   listTenants: (params?: TenantListParams) =>
     request<PlatformTenantPage>('/platform/tenants', { auth: p, query: { ...params } }),

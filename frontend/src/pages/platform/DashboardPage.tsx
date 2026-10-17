@@ -14,6 +14,7 @@ import { StatCard } from '../../components/ui/StatCard'
 import { errorMessage, platformApi } from '../../lib/api'
 import { formatDateShort, formatNumber, formatPrice, formatTimestamp } from '../../lib/format'
 import type { MetricsOverview } from '../../types/api'
+import { SiteStatsCard } from './SiteStatsCard'
 
 function revenuePoints(m: MetricsOverview): ColumnPoint[] {
   return m.monthly_revenue.map((r) => {
@@ -258,6 +259,10 @@ export default function DashboardPage() {
           </ul>
         )}
       </Card>
+
+      <div className="mt-6">
+        <SiteStatsCard />
+      </div>
     </>
   )
 }

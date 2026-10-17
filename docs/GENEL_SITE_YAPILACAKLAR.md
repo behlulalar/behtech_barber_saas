@@ -21,7 +21,7 @@ modeli korunur (SSS'deki "Fiyat nedir?" cevabı bu haliyle kalır).
       başlık+görselle kart olarak çıkması (berberlere satışta en çok paylaşılacak kanallar).
 - [x] (2026-10-17 YAPILDI; sitemap/robots derleme sırasında VITE_PRODUCT_HOST'tan üretilir) **Sitemap + robots.txt'e sitemap satırı + yapılandırılmış veri (JSON-LD):** Google'da "berber randevu sistemi" aramaları için temel.
       Not: sayfa SPA; ürün sitesi alanı (`isProductHost`) ve `/kayit`, `/yasal/*` sitemap'e girer; `/panel`, `/platform` zaten engelli.
-- [ ] **Ölçüm sayacı:** çerezsiz, hafif (ziyaret, "Ücretsiz dene" tıklaması, kayıt tamamlama). Cloudflare Web Analytics betiği CSP'ye
+- [x] (2026-10-17 YAPILDI: kendi sunucumuzda, çerezsiz; `site_stats` günlük toplamlar [ziyaret, "Ücretsiz dene", demo tıklaması], platform Genel Bakış'ta "Tanıtım sitesi" kartı 7/30 gün + kayıt sayısı; "Do Not Track" saygı görür; Cloudflare betiği kullanılmadı) **Ölçüm sayacı:** çerezsiz, hafif (ziyaret, "Ücretsiz dene" tıklaması, kayıt tamamlama). Cloudflare Web Analytics betiği CSP'ye
       takılıyor; ya CSP'ye izin verilir ya kendi sunucumuzda basit sayaç kurulur (KVKK: kişisel veri tutmadan).
 
 - [x] (2026-10-17 KARAR: YAPILMAYACAK) **Dükkân alt alanları için kişiye özel/büyük paylaşım önizlemesi:** kullanıcı berber linki paylaşılınca büyük önizleme kartı çıkmasını istemiyor. Bu yüzden önizleme (Open Graph/Twitter) etiketleri YALNIZCA tanıtım alanında: derleme `dist/product.html` (etiketli) ve `dist/index.html` (etiketsiz) üretir, nginx tanıtım alanında product.html'i, dükkân alt alanlarında index.html'i sunar.

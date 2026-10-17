@@ -465,6 +465,21 @@ export interface TwoFactorConfirmOut {
   access_token: string
 }
 
+export interface SiteStatDay {
+  day: string
+  view: number
+  trial_click: number
+  demo_click: number
+}
+
+export interface SiteStats {
+  days: SiteStatDay[]
+  view: number
+  trial_click: number
+  demo_click: number
+  signups: number
+}
+
 export interface MetricsOverview {
   mrr: number
   arr: number
