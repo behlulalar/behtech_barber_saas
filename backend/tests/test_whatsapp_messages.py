@@ -35,8 +35,8 @@ def test_every_kind_has_at_least_three_variants_and_renders_cleanly(kind):
     variants = texts._VARIANTS[kind]
     assert len(variants) >= 3 and len(set(variants)) == len(variants)
     for v in variants:
-        out = v.format(**SAMPLE)
-        assert not re.search(r"[{}]", out) and len(out) < 300  # kısa, doldurulmamış alan yok
+        out = texts.format_variant(v, SAMPLE)
+        assert not re.search(r"[{}]", out) and len(out) < 420  # doldurulmamış alan yok, makul uzunluk
 
 
 def test_no_link_in_otp_confirm_reminder_staff_messages():
@@ -328,3 +328,31 @@ def test_shop_name_never_gets_a_turkish_suffix_attached():
     for variants in texts._VARIANTS.values():
         for v in variants:
             assert not re.search(r"\{shop\}['’]", v), v
+
+
+@pytest.mark.parametrize("kind", sorted(texts._VARIANTS))
+def test_messages_are_readable_paragraphs_not_one_line(kind):
+    """Okunabilirlik: paragraflar boş satırla ayrılır; tek satıra sıkıştırılmış mesaj yok."""
+    for v in texts._VARIANTS[kind]:
+        out = texts.format_variant(v, SAMPLE)
+        assert "\n\n" in out, f"boş satırla ayrılmış paragraf yok: {kind}"
+        assert not any(len(line) > 110 for line in out.split("\n")), f"çok uzun satır: {out}"
+
+
+def test_appointment_details_are_separate_lines():
+    for kind in ("confirm", "confirm_manual", "cancel_customer", "cancel_shop"):
+        for v in texts._VARIANTS[kind]:
+            out = texts.format_variant(v, SAMPLE)
+            for label in ("Tarih: ", "Saat: ", "Hizmet: ", "Personel: "):
+                assert f"\n{label}" in out or out.startswith(label), (kind, label)
+    for kind in ("staff_new", "staff_cancel"):
+        for v in texts._VARIANTS[kind]:
+            out = texts.format_variant(v, SAMPLE)
+            assert "\nTarih: " in out and "\nSaat: " in out and "\nMüşteri: " in out
+
+
+def test_links_are_on_their_own_line():
+    for kind in ("cancel_customer", "cancel_shop", "welcome"):
+        for v in texts._VARIANTS[kind]:
+            lines = texts.format_variant(v, SAMPLE).split("\n")
+            assert SAMPLE["link"] in lines, (kind, lines)
