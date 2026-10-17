@@ -1,5 +1,5 @@
 import { Bell, CalendarDays, ChartColumn, Clock, LayoutDashboard, LifeBuoy, Scissors, Settings, Store, UserCog, UserRound, Users, Wallet, MessageCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
 import { WhatsappAlertBanner } from '../components/WhatsappAlertBanner'
@@ -9,6 +9,7 @@ import { useStaffAuth } from '../lib/auth'
 import { fullName } from '../lib/format'
 import { useDocumentTitle, useFavicon, useRouteLabel, useNoIndex } from '../lib/head'
 import { useInbox } from '../lib/inbox'
+import { prefetchPanel } from '../lib/prefetch'
 import { useTenant } from '../lib/queries'
 import { useRegisterServiceWorker, useTenantPanelManifest } from '../lib/pwa'
 import { PanelShell, type NavItem } from './PanelShell'
@@ -85,6 +86,7 @@ export default function AdminLayout() {
   useFavicon(tenant.data?.logo_image)
   useTenantPanelManifest(!!tenant.data)
   useRegisterServiceWorker()
+  useEffect(() => prefetchPanel('admin'), [])
   const imp = me?.impersonated_by
   return (
     <PanelShell

@@ -1,8 +1,9 @@
 import { LogOut, Menu } from 'lucide-react'
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Suspense, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
+import { Spinner } from '../components/ui/Spinner'
 import { InstallButton } from '../components/InstallButton'
 import { Drawer } from '../components/ui/Drawer'
 import { cn } from '../lib/cn'
@@ -172,7 +173,10 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner,
 
         <main className={cn('mx-auto w-full min-w-0 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pt-8 lg:pb-14 lg:pt-2', width === 'wide' ? 'max-w-[88rem]' : 'max-w-6xl')}>
           {notice}
-          <Outlet />
+          {/* Sayfa parçası inerken yalnızca içerik alanı bekler; menü ve üst çubuk yerinde kalır. */}
+          <Suspense fallback={<div className="flex min-h-[40svh] items-center justify-center"><Spinner size="lg" /></div>}>
+            <Outlet />
+          </Suspense>
         </main>
 
         {/* Mobil alt sekme çubuğu */}

@@ -6,6 +6,7 @@ import { MFA_SETUP_EVENT, platformApi } from '../lib/api'
 import { usePlatformAuth } from '../lib/auth'
 import { formatPhone } from '../lib/format'
 import { PRODUCT_NAME, useDocumentTitle, useRouteLabel, useNoIndex } from '../lib/head'
+import { prefetchPanel } from '../lib/prefetch'
 import { useRegisterServiceWorker } from '../lib/pwa'
 import { usePlatformManifest } from '../lib/push'
 import { TwoFactorSetup } from '../pages/platform/TwoFactor'
@@ -63,6 +64,7 @@ export default function PlatformLayout() {
   const NAV = useMemo(() => BASE_NAV.map((n) => (n.to === '/platform/basvurular' ? { ...n, badge: pending } : n)), [pending])
   usePlatformManifest()
   useRegisterServiceWorker() // 'Uygulamayı yükle' (kurulabilirlik) için sayfa açılışında kayıtlı olmalı; bildirim izni ayrıca Ayarlar'dan
+  useEffect(() => prefetchPanel('platform'), [])
   const detail = useMatch('/platform/isletmeler/:id')
   const tenants = useQuery({ queryKey: ['platform', 'tenant', detail?.params.id], queryFn: () => platformApi.getTenant(Number(detail!.params.id)), enabled: !!detail })
   const detailName = detail ? tenants.data?.name : undefined
