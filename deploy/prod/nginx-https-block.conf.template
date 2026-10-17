@@ -25,6 +25,13 @@ server {
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml application/manifest+json;
 
     # --- API (backend 127.0.0.1:19001). Host başlığı AYNEN iletilir: dükkân alt alan adından çözülür. ---
+    # Yüklenen görseller nginx'ten doğrudan (dosya adı içerik özeti: değişmez, sonsuza dek önbelleğe alınır; hız sınırı yok).
+    location ^~ /api/media/ {
+        alias /opt/berber/media/;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        include /etc/nginx/snippets/berber-security.conf;
+        try_files $uri =404;
+    }
     location /api/ {
         limit_req zone=berber_api burst=40 nodelay;
         proxy_pass http://127.0.0.1:19001;

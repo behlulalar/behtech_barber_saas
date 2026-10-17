@@ -2,7 +2,9 @@
 from tests.factories import *  # noqa
 from tests.helpers import *  # noqa
 
-PNG = "data:image/png;base64," + "A" * 200
+from tests.test_media import data_url, png
+
+PNG = data_url(png())
 
 
 async def _create(api, shop, **extra):
@@ -12,9 +14,9 @@ async def _create(api, shop, **extra):
 
 async def test_service_image_roundtrip_and_public_list(api, shop):
     r = await _create(api, shop, image=PNG)
-    assert r.status_code == 201 and r.json()["image"] == PNG
+    assert r.status_code == 201 and r.json()["image"].startswith("/api/media/")
     pub = (await api.get("/api/services", slug="alfa")).json()
-    assert any(s["name"] == "Saç + Sakal" and s["image"] == PNG for s in pub)
+    assert any(s["name"] == "Saç + Sakal" and s["image"].startswith("/api/media/") for s in pub)
 
 
 async def test_service_without_image_is_null(api, shop):
@@ -29,6 +31,6 @@ async def test_service_image_validation(api, shop):
 async def test_service_image_update_and_remove(api, shop):
     sid = (await _create(api, shop, image=PNG)).json()["id"]
     r = await api.patch(f"/api/admin/services/{sid}", slug="alfa", token=shop.owner_token, json={"price": 600})
-    assert r.status_code == 200 and r.json()["image"] == PNG  # görsele dokunulmadı
+    assert r.status_code == 200 and r.json()["image"].startswith("/api/media/")  # görsele dokunulmadı
     r = await api.patch(f"/api/admin/services/{sid}", slug="alfa", token=shop.owner_token, json={"image": ""})
     assert r.status_code == 200 and r.json()["image"] is None

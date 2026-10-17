@@ -21,6 +21,8 @@ if not _db_name.endswith("_test"):
 os.environ["DATABASE_URL"] = _url
 os.environ["ENVIRONMENT"] = "development"
 os.environ["OTP_FIXED_CODE"] = ""  # boş: rastgele OTP
+import tempfile
+os.environ["MEDIA_DIR"] = tempfile.mkdtemp(prefix="behtech_media_test_")  # yüklenen görseller test klasörüne
 os.environ["DAILY_APPOINTMENT_LIMIT"] = "50"
 os.environ["BASE_DOMAIN"] = "behtechlabs.com"
 os.environ["WHATSAPP_WORKER_ENABLED"] = "false"  # testlerde arka plan işçisi yok; kuyruk process_one ile elle işlenir

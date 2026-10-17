@@ -13,7 +13,7 @@ echo "== 1/5 Frontend derleniyor ($DOMAIN)"
 
 echo "== 2/5 Kod sunucuya gönderiliyor"
 $SSH "mkdir -p /opt/berber/backend /opt/berber/deploy/prod /opt/berber/frontend/dist"
-rsync -az --delete --exclude '.venv' --exclude '__pycache__' --exclude '.env' --exclude '.env.*' --exclude 'backups' \
+rsync -az --delete --exclude '.venv' --exclude '__pycache__' --exclude '.env' --exclude '.env.*' --exclude 'backups' --exclude 'media' \
       --exclude '.pytest_cache' --exclude 'tests' "$REPO/backend/" "$HOST:/opt/berber/backend/"
 rsync -az --exclude '.env' --exclude 'backend.env' --exclude 'backups' "$REPO/deploy/prod/" "$HOST:/opt/berber/deploy/prod/"
 rsync -az --no-owner --no-group --delete "$REPO/frontend/dist/" "$HOST:/opt/berber/frontend/dist/"
@@ -24,6 +24,7 @@ $SSH "bash /opt/berber/deploy/prod/setup-server.sh $DOMAIN"
 echo "== 4/5 Konteynerler (build + up)"
 $SSH "cd /opt/berber/deploy/prod && docker compose build backend && docker compose up -d --remove-orphans"
 $SSH "cd /opt/berber/deploy/prod && docker compose exec -T backend python scripts/bootstrap_db.py"
+$SSH "cd /opt/berber/deploy/prod && docker compose exec -T backend python scripts/migrate_images_to_files.py"
 
 echo "== 5/5 Sağlık kontrolü"
 $SSH "for i in \$(seq 1 20); do curl -fsS http://127.0.0.1:19001/api/health >/dev/null && echo 'backend sağlıklı' && break || sleep 2; done"

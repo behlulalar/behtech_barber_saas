@@ -7,7 +7,9 @@ ROOT=/opt/berber
 PROD=$ROOT/deploy/prod
 
 id berber >/dev/null 2>&1 || useradd --system --home "$ROOT" --shell /usr/sbin/nologin berber
-mkdir -p "$ROOT/backups" "$ROOT/frontend/dist" /var/www/berber-acme /var/log/berber
+mkdir -p "$ROOT/backups" "$ROOT/media" "$ROOT/frontend/dist" /var/www/berber-acme /var/log/berber
+chown 10001:10001 "$ROOT/media"  # backend konteyneri (uid 10001) görselleri buraya yazar; nginx okur (755)
+chmod 755 "$ROOT/media"
 chmod 711 "$ROOT"  # nginx (www-data) frontend/dist'e ulaşabilsin; sır dosyaları 600, listeleme kapalı
 chmod -R a+rX "$ROOT/frontend"
 

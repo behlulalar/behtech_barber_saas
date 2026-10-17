@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import MANAGER_ROLES, get_current_staff, get_current_tenant, is_manager, require_manager
-from app.core import qr
+from app.core import media, qr
 from app.core.config import settings
 from app.core.password_policy import enforce_password_policy
 from app.core.security import create_access_token, hash_password, verify_password
@@ -429,7 +429,9 @@ async def create_service(data: ServiceCreate, current: Staff = Depends(require_m
         raise HTTPException(status_code=409, detail="Bu isimde bir hizmet zaten var")
     tid = current.tenant_id
     staff_ids = data.staff_ids if data.staff_ids is not None else await svc.bookable_staff_ids(db, tid)
-    service = Service(tenant_id=tid, **data.model_dump(exclude={"staff_ids"}))
+    fields = data.model_dump(exclude={"staff_ids"})
+    fields["image"] = media.persist(fields.get("image"))
+    service = Service(tenant_id=tid, **fields)
     db.add(service)
     await svc.flush_or_409(db, "Bu isimde bir hizmet zaten var")
     await svc.set_service_staff(db, tid, service.id, staff_ids)
@@ -446,6 +448,8 @@ async def update_service(
     service = await _get_service(db, tid, service_id)
     changes = data.model_dump(exclude_unset=True)
     staff_ids = changes.pop("staff_ids", None)
+    if "image" in changes:
+        changes["image"] = media.persist(changes["image"])
     if "name" in changes and await _service_name_taken(db, tid, changes["name"], service_id):
         raise HTTPException(status_code=409, detail="Bu isimde bir hizmet zaten var")
     for k, v in changes.items():
@@ -505,7 +509,7 @@ async def create_staff(data: StaffCreate, current: Staff = Depends(require_manag
         phone=data.phone,
         password=hash_password(data.password),
         role=data.role,
-        photo_image=data.photo_image,
+        photo_image=media.persist(data.photo_image),
     )
     db.add(staff)
     await svc.flush_or_409(db, "Bu telefon numarası zaten kayıtlı")
@@ -523,6 +527,8 @@ async def update_staff(
 ):
     target = await svc.get_staff_in_tenant(db, current.tenant_id, staff_id)
     changes = data.model_dump(exclude_unset=True)
+    if "photo_image" in changes:
+        changes["photo_image"] = media.persist(changes["photo_image"])
     _forbid_super_admin_touch(current, target.role)
     _forbid_super_admin_touch(current, changes.get("role"))
     if "role" in changes and staff_id == current.id and changes["role"] != current.role:
@@ -814,8 +820,8 @@ async def put_settings(
     values = {
         "business_name": data.business_name,
         "business_adress": data.business_address or "",
-        "logo_image": data.logo_image,
-        "banner_image": data.banner_image,
+        "logo_image": media.persist(data.logo_image),
+        "banner_image": media.persist(data.banner_image),
         "notification_banner_enabled": data.notification_banner_enabled,
         "contact_phone": data.contact_phone,
         "whatsapp_phone": data.whatsapp_phone,

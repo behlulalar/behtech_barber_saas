@@ -10,6 +10,8 @@ APP="$DIR/backup_$TS.sql.gz"
 docker exec berber_db pg_dump -U berber --no-owner behtech_saas | gzip > "$APP.tmp" && mv "$APP.tmp" "$APP"
 docker exec berber_db pg_dump -U berber --no-owner evolution | gzip > "$DIR/evolution_$TS.sql.gz"
 chmod 600 "$DIR"/*.gz
+# Görseller dosya olarak (içerik adresli, değişmez): tek bir ayna kopya yeterli; silinenler de kalır (silme yok).
+mkdir -p "$DIR/media-mirror" && rsync -a /opt/berber/media/ "$DIR/media-mirror/"
 python3 - "$APP" <<'PY'
 import json, os, sys, datetime
 p = sys.argv[1]

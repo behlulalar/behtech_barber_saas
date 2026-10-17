@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     daily_appointment_limit: int
     otp_expiration_seconds: int
     backup_retention_days: int
+    # Yüklenen görsellerin (logo, kapak, fotoğraf) saklandığı klasör; canlıda kalıcı birime bağlanır (yedeğe dahil).
+    media_dir: str = "media"
     evolution_api_base_url: str
     evolution_api_key: str
     # ESKİ (tek platform hattı) — artık kullanılmıyor; her dükkânın kendi instance'ı var (whatsapp_connections).

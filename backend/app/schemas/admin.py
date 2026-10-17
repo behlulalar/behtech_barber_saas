@@ -65,6 +65,8 @@ _IMG_RE = re.compile(r"^data:image/(png|jpe?g|webp|gif);base64,")
 def _check_image(value: str | None) -> str | None:
     if value is None or value == "":
         return None
+    if re.fullmatch(r"/api/media/[0-9a-f]{32}\.(png|jpg|webp|gif)", value):
+        return value  # daha önce yüklenmiş görsel (dosya varlığı kaydederken kontrol edilir)
     if not _IMG_RE.match(value):
         raise ValueError("Görsel geçerli bir resim dosyası olmalı (PNG, JPEG, WebP, GIF)")
     if len(value) > _IMG_MAX_CHARS:
@@ -78,7 +80,7 @@ _SERVICE_IMG_MAX_CHARS = 400_000
 
 def _check_service_image(value: str | None) -> str | None:
     value = _check_image(value)
-    if value is not None and len(value) > _SERVICE_IMG_MAX_CHARS:
+    if value is not None and value.startswith("data:") and len(value) > _SERVICE_IMG_MAX_CHARS:
         raise ValueError("Hizmet görseli çok büyük (en fazla ~300 KB); daha küçük bir görsel seçin")
     return value
 
