@@ -61,3 +61,6 @@ docker compose exec backend python scripts/run_billing_checks.py
 - SMTP (e-posta bildirimi) ayarlanmadı; `backend.env`'e `SMTP_*` eklenip `docker compose up -d backend`.
 - Sunucu dışı yedek, izleme/uyarı (uptime, disk), `scripts/verify_backup.py` (ayrı bakım kullanıcısı gerekir) kurulmadı.
 - Cloudflare "Web Analytics" betiği CSP'ye takılır (zararsız); istenirse Cloudflare'de kapatın ya da CSP'ye izin verin.
+
+## Görseller (logo, kapak, personel/hizmet fotoğrafı)
+Dosya olarak `/opt/berber/media` (konteynerde `/data/media`, uid 10001 yazar, nginx `/api/media/` altında doğrudan sunar, `immutable` önbellek). Veritabanında yalnızca yol tutulur. `backup.sh` günlük `backups/media-mirror` kopyası alır. Eski data URL kayıtları `scripts/migrate_images_to_files.py` ile taşınır (deploy.sh çalıştırır). Kullanılmayan dosyalar: `docker compose exec backend python scripts/cleanup_media.py [--delete]`.

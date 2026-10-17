@@ -20,6 +20,7 @@ rsync -az --no-owner --no-group --delete "$REPO/frontend/dist/" "$HOST:/opt/berb
 
 echo "== 3/5 Sunucu hazırlığı"
 $SSH "bash /opt/berber/deploy/prod/setup-server.sh $DOMAIN"
+$SSH "bash /opt/berber/deploy/prod/apply-nginx.sh $DOMAIN https wildcard"  # şablon değişiklikleri (ör. görsel konumu) her yayında uygulanır; test başarısızsa eskisi geri konur
 
 echo "== 4/5 Konteynerler (build + up)"
 $SSH "cd /opt/berber/deploy/prod && docker compose build backend && docker compose up -d --remove-orphans"
