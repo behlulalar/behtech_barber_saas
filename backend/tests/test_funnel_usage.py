@@ -44,3 +44,17 @@ async def test_usage_counts_last_30_days(api, platform_admin, shop):
         await db.commit()
     d = (await api.get(f"/api/platform/tenants/{shop.tenant.id}", token=mint_platform_token(platform_admin))).json()
     assert d["bookings_30d"] == 2 and d["messages_30d"] == 1
+
+
+async def test_payments_csv_export_is_excel_safe(api, platform_admin, shop):
+    tok = mint_platform_token(platform_admin)
+    async with SessionFactory() as db:
+        db.add(Payment(tenant_id=shop.tenant.id, amount=1500, paid_on=date(2026, 10, 5), method="IBAN", note="=HYPERLINK(\"x\")"))
+        await db.commit()
+    r = await api.get("/api/platform/payments/export", token=tok)
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv") and "attachment" in r.headers["content-disposition"]
+    text = r.content.decode("utf-8")
+    assert text.startswith("﻿") and "Ödeme tarihi;İşletme;Tutar (₺);Yöntem;Dönem;Not" in text
+    assert "05.10.2026;" in text and ";1500;" in text
+    assert "'=HYPERLINK" in text and ";=HYPERLINK" not in text  # formül enjeksiyonu etkisiz
+    assert (await api.get("/api/platform/payments/export", token=shop.owner_token)).status_code == 401

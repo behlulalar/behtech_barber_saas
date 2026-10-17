@@ -18,8 +18,8 @@ Genel kapsam kararları ve eksikler: `EKSIKLER.md`. İşletme (admin) paneli iç
 - [x] (2026-10-17 YAPILDI: işletme detayı "Son etkinlik" kartında son 30 gün randevu ve başarılı WhatsApp mesajı sayısı; listede/limitlerde gösterilmiyor) **Kullanım sayıları:** işletme başına aylık randevu ve WhatsApp mesajı (fiyatlandırma + kötüye kullanım tespiti).
 
 ## 3. Para
-- [ ] **Gelir görünümü:** aylık düzenli gelir (MRR), tahsil edilen / bekleyen / gecikmiş, aylık grafik.
-- [ ] **CSV dışa aktarma:** ödemeler listesi (muhasebe için).
+- [x] (ZATEN VARDI: Genel Bakış'ta MRR/ARR/tahsilat kartları, aylık tahsilat grafiği, yenileme takvimi; Ödemeler sayfasında gecikmiş/bekleyen durumlar) **Gelir görünümü:** aylık düzenli gelir (MRR), tahsil edilen / bekleyen / gecikmiş, aylık grafik.
+- [x] (2026-10-17 YAPILDI: Ödemeler sayfasında "Ödemeleri CSV indir"; Türkçe Excel uyumlu [;, BOM], formül enjeksiyonu önlemli) **CSV dışa aktarma:** ödemeler listesi (muhasebe için).
 - [ ] **Makbuz/fatura PDF'i:** ödeme alınınca işletmeye verilecek belge (KVKK/şirket bilgileri hazır olunca anlamlı).
 - [ ] **Kupon kodu:** şu an yalnızca elle yüzde indirimi var; kayıt sırasında girilebilen kod sistemi sonraya.
 

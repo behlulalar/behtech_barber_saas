@@ -226,6 +226,23 @@ function parseDetail(body: unknown): string {
   return 'Bilinmeyen bir hata oluştu.'
 }
 
+/** Yetkili bir dosyayı (ör. CSV) indirir: Authorization başlığı gerektiği için düz bağlantı yerine fetch + blob. */
+export async function downloadFile(path: string, auth: TokenKind, fallbackName: string): Promise<void> {
+  const token = tokenStore.get(auth)
+  const res = await fetch(`/api${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  if (!res.ok) throw new Error('Dosya indirilemedi. Lütfen tekrar deneyin.')
+  const cd = res.headers.get('content-disposition') ?? ''
+  const name = /filename="?([^";]+)"?/.exec(cd)?.[1] ?? fallbackName
+  const url = URL.createObjectURL(await res.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 5000)
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, query, auth, signal } = options
   const headers: Record<string, string> = { Accept: 'application/json' }

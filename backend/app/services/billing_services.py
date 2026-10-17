@@ -904,3 +904,23 @@ async def run_billing_checks(db: AsyncSession) -> RunChecksResult:
         email_sent=email_sent, push_sent=push_sent,
     )
 
+
+def _csv_cell(value) -> str:
+    """CSV/Excel formül enjeksiyonuna karşı: =, +, -, @ ile başlayan metni tek tırnakla başlatır."""
+    text = "" if value is None else str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
+async def payments_csv(db: AsyncSession, tenant_id: int | None, date_from: date | None, date_to: date | None) -> str:
+    """Muhasebe için ödemeler listesi. Türkçe Excel uyumlu: ';' ayracı, UTF-8 BOM, virgülsüz tutar."""
+    import csv
+    import io
+
+    rows = await list_payments(db, tenant_id, date_from, date_to, limit=100_000)
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";", lineterminator="\r\n")
+    w.writerow(["Ödeme tarihi", "İşletme", "Tutar (₺)", "Yöntem", "Dönem", "Not"])
+    for p in rows:
+        w.writerow([p.paid_on.strftime("%d.%m.%Y"), _csv_cell(p.tenant_name), p.amount, _csv_cell(p.method),
+                    _csv_cell(p.subscription_label), _csv_cell(p.note)])
+    return "\ufeff" + buf.getvalue()

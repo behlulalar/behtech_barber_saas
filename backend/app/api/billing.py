@@ -131,6 +131,23 @@ async def list_payments(
     return await svc.list_payments(db, tenant_id, date_from, date_to)
 
 
+@router.get("/payments/export")
+async def export_payments(
+    tenant_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Ödemeleri CSV olarak indirir (Türkçe Excel uyumlu)."""
+    from fastapi.responses import Response as _Response
+
+    body = await svc.payments_csv(db, tenant_id, date_from, date_to)
+    return _Response(
+        content=body.encode("utf-8"), media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="odemeler-{date.today().isoformat()}.csv"', "Cache-Control": "no-store"},
+    )
+
+
 @router.post("/payments", response_model=PaymentOut, status_code=201)
 async def create_payment(data: PaymentCreate, request: Request, admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
     return await svc.create_payment(db, data, admin, request)

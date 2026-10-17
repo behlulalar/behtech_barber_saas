@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BASE_DOMAIN } from '../../lib/site'
-import { ArrowRight, Banknote, CalendarClock, CircleCheck, FlaskConical, Hourglass, Percent, Receipt, RefreshCw, Search, Settings2, Wallet } from 'lucide-react'
+import { ArrowRight, Banknote, CalendarClock, CircleCheck, Download, FlaskConical, Hourglass, Percent, Receipt, RefreshCw, Search, Settings2, Wallet } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button, buttonStyles } from '../../components/ui/Button'
@@ -13,7 +13,7 @@ import { StatCard } from '../../components/ui/StatCard'
 import { Table, type Column } from '../../components/ui/Table'
 import { Tabs } from '../../components/ui/Tabs'
 import { useToast } from '../../components/ui/Toast'
-import { errorMessage, platformApi } from '../../lib/api'
+import { downloadFile, errorMessage, platformApi } from '../../lib/api'
 import { formatPhone, formatPrice } from '../../lib/format'
 import type { TenantBilling } from '../../types/api'
 import { formatDateDMY, formatRate, STATUS_ORDER } from './billing'
@@ -147,6 +147,13 @@ export default function PaymentsPage() {
         description="Abonelik dönemleri, tahsilatlar ve hatırlatmalar."
         actions={
           <>
+            <Button
+              variant="secondary"
+              leftIcon={<Download className="size-4" />}
+              onClick={() => void downloadFile('/platform/payments/export', 'platform', 'odemeler.csv').catch((e) => toast.error(errorMessage(e)))}
+            >
+              Ödemeleri CSV indir
+            </Button>
             <Button variant="secondary" leftIcon={<RefreshCw className="size-4" />} loading={runChecks.isPending} onClick={() => runChecks.mutate()}>
               Kontrolleri şimdi çalıştır
             </Button>
