@@ -6,7 +6,7 @@ randevu akışı (`BookingPage`: Hizmet, Berber, Zaman, Bilgiler + telefon doğr
 `ISLETME_PANELI_YAPILACAKLAR.md`, `PLATFORMA_EKLENECEKLER.md`, `EKSIKLER.md`.
 
 ## Kullanıcı fikri (öncelikli)
-- [x] (2026-10-17 YAPILDI) **Hizmetler "kutu kutu" kartlar, görselli (portfolyo hissi).** Hizmetler formunda "Fotoğraf (isteğe bağlı)" (900px JPEG, ~300 KB sınırı, backend 400 bin karakter), ana sayfada 3 sütunlu kart ızgarası, randevu "Hizmet" adımında küçük görsel; fotoğrafsızsa hizmetin baş harfli çizgili yedek kapak. Ana sayfadaki hizmet kartına tıklayınca o hizmet seçili olarak doğrudan "Berber" adımı açılır (`/randevu?hizmet=ID`, YAPILDI). Müşteri "bu adam nasıl kesim yapıyor" sorusunu görerek yanıtlasın.
+- [x] (2026-10-17 YAPILDI) **Hizmetler "kutu kutu" kartlar, görselli (portfolyo hissi).** Hizmetler formunda "Fotoğraf (isteğe bağlı)" (900px JPEG, ~300 KB sınırı, backend 400 bin karakter), ana sayfada 3 sütunlu kart ızgarası, fotoğrafsızsa hizmetin baş harfli çizgili yedek kapak. Ana sayfadaki hizmet kartına tıklayınca o hizmet seçili olarak doğrudan "Berber" adımı açılır (`/randevu?hizmet=ID`, YAPILDI). Müşteri "bu adam nasıl kesim yapıyor" sorusunu görerek yanıtlasın.
       - Hizmet başına isteğe bağlı fotoğraf (işletme panelinde Hizmetler'den yüklenir, ImagePicker + istemci tarafı küçültme).
       - Fotoğraf yoksa da güzel görünen bir yedek tasarım (hizmet adından/simgesinden üretilen tipografik/desenli kapak; zaten
         işletme kapağı için benzeri var). Fotoğraflı ve fotoğrafsız kartlar bir arada yan yana uyumlu durmalı.
