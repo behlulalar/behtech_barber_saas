@@ -684,14 +684,20 @@ function TimeStep({
   const stripRef = useRef<HTMLDivElement>(null)
   const monthFmt = useMemo(() => new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }), [])
 
-  // Seçili günü şeridin içinde görünür tut (sayfayı değil, yalnızca şeridi kaydırır).
+  // Seçili gün görünür kalsın (sayfayı değil, yalnızca şeridi kaydırır). ORTALAMA YOK: gün zaten tamamen görünüyorsa
+  // şerit kıpırdamaz (yakın bir günü seçince tarihler uzağa kaymasın); yalnızca kenarda kesikse ya da dışındaysa,
+  // görünür olacak kadar MİNİMUM kaydırılır.
   useEffect(() => {
     const strip = stripRef.current
     const btn = strip?.querySelector<HTMLElement>('[aria-pressed="true"]')
-    if (strip && btn) {
-      const left = btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2
-      strip.scrollTo({ left: Math.max(0, left), behavior: 'auto' })
-    }
+    if (!strip || !btn) return
+    const margin = 8
+    const viewLeft = strip.scrollLeft
+    const viewRight = viewLeft + strip.clientWidth
+    const btnLeft = btn.offsetLeft
+    const btnRight = btnLeft + btn.offsetWidth
+    if (btnLeft - margin < viewLeft) strip.scrollTo({ left: Math.max(0, btnLeft - margin), behavior: 'auto' })
+    else if (btnRight + margin > viewRight) strip.scrollTo({ left: btnRight + margin - strip.clientWidth, behavior: 'auto' })
   }, [date])
 
   return (
