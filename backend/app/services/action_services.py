@@ -8,11 +8,14 @@ from app.models.notification import Notification
 from app.models.tenant import Tenant
 from app.models.whatsapp_connection import WhatsappConnection
 from app.schemas.actions import ActionItem, ActionQueueOut
-from app.services import billing_services
+from app.services import billing_services, system_services
 
 UNREAD_CRITICAL_AFTER = timedelta(hours=24)
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
-CATEGORY_ORDER = {"billing": 0, "whatsapp": 1, "notification": 2, "signup": 3}
+CATEGORY_ORDER = {"system": 0, "billing": 1, "whatsapp": 2, "notification": 3, "signup": 4}
+DISK_WARN_PCT = 85
+CERT_WARN_DAYS = 14
+ERRORS_WARN_PER_HOUR = 5
 
 _STATUS_TITLE = {
     "expired": ("high", "Abonelik bitti"),
@@ -78,6 +81,23 @@ async def build(db: AsyncSession) -> ActionQueueOut:
     for tid, name, n in unread:
         items.append(ActionItem(key=f"notif:{tid}", severity="medium", category="notification", title="Acil bildirim 24 saattir okunmadı",
                                 detail=f"{n} bildirim", tenant_id=tid, tenant_name=name, link=f"/platform/isletmeler/{tid}"))
+
+    # Sistem sağlığı: yedek, disk, sertifika, sunucu hataları (Sistem sayfasıyla aynı veri kaynakları)
+    sysstat = await system_services.get_status(db)
+    if not sysstat.backup.ok:
+        items.append(ActionItem(key="sys:backup", severity="high", category="system",
+                                title="Yedek güncel değil" if sysstat.backup.last_backup_at else "Henüz yedek alınmamış",
+                                detail="Yedek cron ayarını kontrol edin", link="/platform/sistem"))
+    h = sysstat.host
+    if h.disk_used_pct is not None and h.disk_used_pct >= DISK_WARN_PCT:
+        items.append(ActionItem(key="sys:disk", severity="high", category="system", title=f"Disk %{h.disk_used_pct} dolu",
+                                detail=f"{h.disk_free_gb} GB boş" if h.disk_free_gb is not None else None, link="/platform/sistem"))
+    if h.cert_days_left is not None and h.cert_days_left <= CERT_WARN_DAYS:
+        items.append(ActionItem(key="sys:cert", severity="high" if h.cert_days_left <= 5 else "medium", category="system",
+                                title="Sertifika süresi bitmek üzere", detail=f"{h.cert_days_left} gün kaldı", link="/platform/sistem"))
+    if sysstat.errors.last_hour >= ERRORS_WARN_PER_HOUR:
+        items.append(ActionItem(key="sys:errors", severity="high", category="system", title="Sunucuda hata artışı",
+                                detail=f"Son 1 saatte {sysstat.errors.last_hour} hata", link="/platform/sistem"))
 
     items.sort(key=lambda i: (SEVERITY_ORDER[i.severity], CATEGORY_ORDER[i.category], i.tenant_name or ""))
     return ActionQueueOut(total=len(items), high=sum(1 for i in items if i.severity == "high"), items=items)

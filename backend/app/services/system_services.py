@@ -18,10 +18,10 @@ from app.models.platform_admin import PlatformAdmin
 from app.models.push_subscription import PushSubscription
 from app.models.tenant import Tenant
 from app.schemas.platform import (
-    BackupStatus, BillingJobStatus, ChannelsStatus, CountsStatus, DbStatus, SystemStatus, WhatsappStats,
+    BackupStatus, BillingJobStatus, ChannelsStatus, CountsStatus, DbStatus, HostStatus, SystemStatus, WhatsappStats,
     WhatsappTenantUsage, WhatsappAlert,
 )
-from app.services import notify_services
+from app.services import error_services, notify_services
 from app.services.job_services import BILLING_JOB, job_run_out
 
 BACKUP_DIR = Path(__file__).resolve().parent.parent.parent / "backups"
@@ -141,5 +141,11 @@ async def get_status(db: AsyncSession) -> SystemStatus:
             select(func.count(LoginAttempt.id)).where(LoginAttempt.success == False, LoginAttempt.created_at > day_ago)  # noqa: E712
         ),
     )
+    h = _read_json("host_status.json") or {}
+    host = HostStatus(
+        checked_at=_parse(h.get("at")), disk_used_pct=h.get("disk_used_pct"), disk_free_gb=h.get("disk_free_gb"),
+        cert_days_left=h.get("cert_days_left"), cert_not_after=h.get("cert_not_after"),
+    )
     return SystemStatus(server_time=now, db=db_status, billing_job=billing_job, backup=backup,
-                        channels=channels, whatsapp=await _whatsapp_stats(db, day_ago), counts=counts)
+                        channels=channels, whatsapp=await _whatsapp_stats(db, day_ago), counts=counts,
+                        errors=await error_services.stats(db), host=host)

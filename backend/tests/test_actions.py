@@ -22,7 +22,8 @@ async def queue(api, admin):
 
 async def test_empty_queue_and_auth(api, platform_admin, shop):
     q = await queue(api, platform_admin)
-    assert q["total"] == 0 and q["items"] == []
+    # Testte yedek klasörü yok: yalnızca "yedek alınmamış" sistem uyarısı beklenir; başvuru/ödeme/WhatsApp/bildirim maddesi yok.
+    assert [i["key"] for i in q["items"] if i["category"] != "system"] == []
     assert (await api.get("/api/platform/actions", token=shop.owner_token)).status_code == 401
     assert (await api.get("/api/platform/actions")).status_code == 401
 

@@ -468,7 +468,7 @@ export interface TwoFactorConfirmOut {
 export interface ActionItem {
   key: string
   severity: 'high' | 'medium' | 'low'
-  category: 'signup' | 'billing' | 'whatsapp' | 'notification'
+  category: 'signup' | 'billing' | 'whatsapp' | 'notification' | 'system'
   title: string
   detail: string | null
   tenant_id: number | null
@@ -951,6 +951,8 @@ export interface SystemStatus {
     audit_logs_last_24h: number
     failed_logins_last_24h: number
   }
+  errors: { last_hour: number; last_24h: number; recent: { at: string; method: string; path: string; error: string }[] }
+  host: { checked_at: string | null; disk_used_pct: number | null; disk_free_gb: number | null; cert_days_left: number | null; cert_not_after: string | null }
 }
 
 export interface ImpersonateStart {

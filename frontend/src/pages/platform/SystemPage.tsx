@@ -114,6 +114,62 @@ function BackupCard({ b }: { b: SystemStatus['backup'] }) {
   )
 }
 
+function HostCard({ h }: { h: SystemStatus['host'] }) {
+  const unknown = h.checked_at === null
+  const disk: MarkState = h.disk_used_pct === null ? 'unknown' : h.disk_used_pct >= 85 ? 'error' : 'ok'
+  const cert: MarkState = h.cert_days_left === null ? 'unknown' : h.cert_days_left <= 14 ? 'error' : 'ok'
+  return (
+    <Card>
+      <CardHeader title="Sunucu" description="Disk ve sertifika; günlük yedekle birlikte kontrol edilir." />
+      {unknown && (
+        <p className="mb-3 text-sm text-muted-strong">Henüz sunucu durumu alınmadı (bir sonraki yedekte güncellenir).</p>
+      )}
+      <Rows>
+        <Row label="Disk">
+          {h.disk_used_pct !== null ? (
+            <span className="inline-flex flex-wrap items-center justify-end gap-x-2">
+              <StatusMark state={disk} label={`%${h.disk_used_pct} dolu`} />
+              {h.disk_free_gb !== null && <span className="text-xs text-muted">{h.disk_free_gb.toLocaleString('tr-TR')} GB boş</span>}
+            </span>
+          ) : '—'}
+        </Row>
+        <Row label="Sertifika">
+          {h.cert_days_left !== null ? (
+            <span className="inline-flex flex-wrap items-center justify-end gap-x-2">
+              <StatusMark state={cert} label={`${h.cert_days_left} gün kaldı`} />
+              {h.cert_not_after && <span className="text-xs text-muted">{h.cert_not_after}</span>}
+            </span>
+          ) : '—'}
+        </Row>
+        {h.checked_at && <Row label="Son kontrol">{formatDateTimeDMY(h.checked_at)}</Row>}
+      </Rows>
+    </Card>
+  )
+}
+
+function ErrorsCard({ e }: { e: SystemStatus['errors'] }) {
+  return (
+    <Card className="lg:col-span-3">
+      <CardHeader title="Sunucu hataları" description="İşlenmemiş (500) hatalar. Kişisel veri ya da sorgu parametresi tutulmaz." />
+      <Rows>
+        <Row label="Son 1 saat"><span className={e.last_hour >= 5 ? 'font-medium text-danger' : undefined}>{formatNumber(e.last_hour)}</span></Row>
+        <Row label="Son 24 saat">{formatNumber(e.last_24h)}</Row>
+      </Rows>
+      {e.recent.length > 0 && (
+        <ul className="mt-3 divide-y divide-panel-line border-t border-panel-line">
+          {e.recent.map((r, i) => (
+            <li key={i} className="py-2.5 text-sm">
+              <p className="break-all font-mono text-xs text-cream">{r.method} {r.path}</p>
+              <p className="break-words text-xs text-danger">{r.error}</p>
+              <p className="text-xs text-muted">{formatDateTimeDMY(r.at)}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  )
+}
+
 function WhatsappCard({ c, w }: { c: SystemStatus['channels']; w: SystemStatus['whatsapp'] }) {
   const cols: Column<SystemStatus['whatsapp']['top_tenants'][number]>[] = [
     { key: 'name', header: 'İşletme', primary: true, cell: (t) => <span className="break-words">{t.name}</span> },
@@ -278,6 +334,8 @@ export default function SystemPage() {
             {s ? <BillingCard s={s.billing_job} /> : <CardSkeleton />}
             {s ? <BackupCard b={s.backup} /> : <CardSkeleton />}
             {s ? <ChannelsCard c={s.channels} /> : <CardSkeleton />}
+            {s ? <HostCard h={s.host} /> : <CardSkeleton />}
+            {s ? <ErrorsCard e={s.errors} /> : <CardSkeleton />}
           </div>
 
           <Card>

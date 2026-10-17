@@ -147,7 +147,7 @@ async def status(api, admin):
 
 async def test_status_shape_and_db(api, platform_admin, backup_dir):
     s = await status(api, platform_admin)
-    assert set(s) == {"server_time", "db", "billing_job", "backup", "channels", "whatsapp", "counts"}
+    assert set(s) == {"server_time", "db", "billing_job", "backup", "channels", "whatsapp", "counts", "errors", "host"}
     assert s["db"]["ok"] is True and s["db"]["size_mb"] > 0
     assert set(s["billing_job"]) == {"last_run", "last_ok_at", "hours_since_last_ok", "overdue"}
     assert set(s["channels"]) == {"email_configured", "push_configured", "push_subscribers", "whatsapp_configured", "whatsapp_reachable", "whatsapp_state", "whatsapp_connected_tenants"}

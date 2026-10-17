@@ -48,3 +48,14 @@ async def tr_http_exception_handler(request: Request, exc: StarletteHTTPExceptio
     if isinstance(exc.detail, str) and exc.detail in _TR_DETAILS:
         exc.detail = _TR_DETAILS[exc.detail]
     return await http_exception_handler(request, exc)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """İşlenmemiş hata: teknik özet platform Sistem sayfasına kaydedilir (sayaç), kullanıcıya genel Türkçe mesaj döner."""
+    from fastapi.responses import JSONResponse
+
+    from app.services import error_services
+
+    await error_services.record(request.method, request.url.path, exc)
+    return JSONResponse(status_code=500, content={"detail": "Beklenmeyen bir hata oluştu, lütfen tekrar deneyin"})

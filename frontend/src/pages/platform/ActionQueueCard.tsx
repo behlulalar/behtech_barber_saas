@@ -1,6 +1,6 @@
 // Genel Bakış'ın en üstü: "Bugün ne yapmalıyım?" — başvuru, ödeme, WhatsApp ve okunmayan acil bildirimler tek listede.
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckCircle2, CreditCard, MessageCircle, UserPlus } from 'lucide-react'
+import { Bell, CheckCircle2, CreditCard, HeartPulse, MessageCircle, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
@@ -11,7 +11,7 @@ import { cn } from '../../lib/cn'
 import { errorMessage, platformApi } from '../../lib/api'
 import type { ActionItem } from '../../types/api'
 
-const ICONS = { signup: UserPlus, billing: CreditCard, whatsapp: MessageCircle, notification: Bell } as const
+const ICONS = { signup: UserPlus, billing: CreditCard, whatsapp: MessageCircle, notification: Bell, system: HeartPulse } as const
 const SHOWN = 6
 
 function Row({ item }: { item: ActionItem }) {
@@ -57,7 +57,7 @@ export function ActionQueueCard() {
       ) : d.total === 0 ? (
         <p className="flex items-center gap-2.5 text-sm text-muted-strong">
           <CheckCircle2 className="size-5 text-success" aria-hidden="true" />
-          Her şey yolunda: onay bekleyen başvuru, ödeme sorunu ya da kopan WhatsApp yok.
+          Her şey yolunda: onay bekleyen başvuru, ödeme sorunu, kopan WhatsApp ya da sistem uyarısı yok.
         </p>
       ) : (
         <>

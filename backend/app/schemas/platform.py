@@ -197,6 +197,28 @@ class CountsStatus(BaseModel):
     failed_logins_last_24h: int
 
 
+class ErrorRecent(BaseModel):
+    at: datetime
+    method: str
+    path: str
+    error: str
+
+
+class ErrorStatus(BaseModel):
+    last_hour: int
+    last_24h: int
+    recent: list[ErrorRecent]
+
+
+class HostStatus(BaseModel):
+    """Sunucu bilgisi (günlük yedek betiği host_status.json yazar): disk ve sertifika. Dosya yoksa alanlar boş."""
+    checked_at: datetime | None = None
+    disk_used_pct: int | None = None
+    disk_free_gb: float | None = None
+    cert_days_left: int | None = None
+    cert_not_after: str | None = None
+
+
 class SystemStatus(BaseModel):
     server_time: datetime
     db: DbStatus
@@ -205,6 +227,8 @@ class SystemStatus(BaseModel):
     channels: ChannelsStatus
     whatsapp: WhatsappStats
     counts: CountsStatus
+    errors: ErrorStatus
+    host: HostStatus
 
 
 class ImpersonateIn(BaseModel):

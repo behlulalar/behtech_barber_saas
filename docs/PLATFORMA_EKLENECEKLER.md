@@ -24,11 +24,11 @@ Genel kapsam kararları ve eksikler: `EKSIKLER.md`. İşletme (admin) paneli iç
 - [ ] **Kupon kodu:** şu an yalnızca elle yüzde indirimi var; kayıt sırasında girilebilen kod sistemi sonraya.
 
 ## 4. Sistem güvenliği ve işletmeye hazırlık
-- [ ] **Yedek durumu panelde (Sistem):** son yedek zamanı, boyut, geri yükleme doğrulandı mı (`verify_backup.py` henüz kurulu değil).
-- [ ] **Hata sayacı:** son 24 saatte 5xx sayısı (çökme/yavaşlık erken uyarısı).
+- [x] (2026-10-17 YAPILDI; ayrıca canlıda yedek kartının yanlış klasöre baktığı hata düzeltildi) **Yedek durumu panelde (Sistem):** son yedek zamanı, boyut, geri yükleme doğrulandı mı (`verify_backup.py` henüz kurulu değil).
+- [x] (2026-10-17 YAPILDI: `error_events` + Sistem sayfasında "Sunucu hataları" kartı; son 1 saatte ≥5 hata aksiyon kuyruğunda) **Hata sayacı:** son 24 saatte 5xx sayısı (çökme/yavaşlık erken uyarısı).
 - [ ] **Yönetici giriş geçmişi:** hangi yönetici, ne zaman, hangi IP'den girdi (denetim kaydında işlemler var, girişler yok);
       "Yedek" yönetici hesabı riski de burada görünür olur.
-- [ ] **Sertifika bitişi ve disk doluluğu uyarısı.**
+- [x] (2026-10-17 YAPILDI: günlük `backup.sh` host_status.json yazar; Sistem "Sunucu" kartı + aksiyon kuyruğu: disk ≥%85, sertifika ≤14 gün) **Sertifika bitişi ve disk doluluğu uyarısı.**
 - [ ] **Dış izleme (UptimeRobot vb.):** KARAR: sistem tam hazır olduktan sonra yapılacak (sunucu düşerse telefona haber).
       Şimdilik YAPILMAYACAK.
 
