@@ -6,9 +6,9 @@ Paketler, Duyurular, Denetim, Sistem, Yöneticiler, Ayarlar. Aşağıdakiler hen
 Genel kapsam kararları ve eksikler: `EKSIKLER.md`. İşletme (admin) paneli için ayrı beyin fırtınası yapılacak.
 
 ## 1. Bugün ne yapmalıyım? (aksiyon odaklı)
-- [ ] **Aksiyon kuyruğu (Genel Bakış):** tek liste — bekleyen başvurular, vadesi yaklaşan/geçen ödemeler, WhatsApp'ı kopan işletmeler,
+- [x] (2026-10-17 YAPILDI: Genel Bakış'ın en üstünde "Bugün ne yapmalıyım?" kartı; `GET /platform/actions`) **Aksiyon kuyruğu (Genel Bakış):** tek liste — bekleyen başvurular, vadesi yaklaşan/geçen ödemeler, WhatsApp'ı kopan işletmeler,
       deneme süresi bitmek üzere olanlar. Şu an bunlar farklı sayfalara dağılmış.
-- [ ] **Okunmamış bildirim takibi:** acil bildirim gönderilen işletme günlerdir okumadıysa panelde öne çıksın
+- [x] (2026-10-17 YAPILDI: 24 saattir okunmayan acil bildirim aksiyon kuyruğunda görünür) **Okunmamış bildirim takibi:** acil bildirim gönderilen işletme günlerdir okumadıysa panelde öne çıksın
       (altyapı var: `notifications.read_at`, `announcement_reads`; yalnızca gösterim eksik).
 
 ## 2. İşletme sağlığı ve kullanım

@@ -49,6 +49,7 @@ from app.schemas.platform import (
 )
 from app.schemas.announcement import AnnouncementIn, AnnouncementOut, AnnouncementUpdate
 from app.schemas.notification import NotificationIn, NotificationOut
+from app.schemas.actions import ActionQueueOut
 from app.schemas.site_stats import SiteStatsOut
 from app.schemas.whatsapp import PlatformWhatsappOut, WhatsappPauseIn
 from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantPage
@@ -58,6 +59,7 @@ from app.services import (
     announcement_services,
     notification_services,
     site_stats_services,
+    action_services,
     audit_services,
     job_services,
     metrics_services,
@@ -293,6 +295,12 @@ async def job_runs(
 @router.get("/system/status", response_model=SystemStatus)
 async def system_status(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
     return await system_services.get_status(db)
+
+
+@router.get("/actions", response_model=ActionQueueOut)
+async def platform_actions(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
+    """Genel Bakış'taki aksiyon kuyruğu: onay bekleyen başvurular, ödeme durumları, WhatsApp sorunları, okunmayan acil bildirimler."""
+    return await action_services.build(db)
 
 
 @router.get("/site-stats", response_model=SiteStatsOut)

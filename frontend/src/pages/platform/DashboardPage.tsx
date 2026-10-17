@@ -14,6 +14,7 @@ import { StatCard } from '../../components/ui/StatCard'
 import { errorMessage, platformApi } from '../../lib/api'
 import { formatDateShort, formatNumber, formatPrice, formatTimestamp } from '../../lib/format'
 import type { MetricsOverview } from '../../types/api'
+import { ActionQueueCard } from './ActionQueueCard'
 import { SiteStatsCard } from './SiteStatsCard'
 
 function revenuePoints(m: MetricsOverview): ColumnPoint[] {
@@ -89,6 +90,8 @@ export default function DashboardPage() {
           </Link>
         }
       />
+
+      <ActionQueueCard />
 
       {(stats.isError || metrics.isError) && (
         <p role="alert" className="mb-4 rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger">

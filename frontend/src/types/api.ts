@@ -465,6 +465,23 @@ export interface TwoFactorConfirmOut {
   access_token: string
 }
 
+export interface ActionItem {
+  key: string
+  severity: 'high' | 'medium' | 'low'
+  category: 'signup' | 'billing' | 'whatsapp' | 'notification'
+  title: string
+  detail: string | null
+  tenant_id: number | null
+  tenant_name: string | null
+  link: string
+}
+
+export interface ActionQueue {
+  total: number
+  high: number
+  items: ActionItem[]
+}
+
 export interface SiteStatDay {
   day: string
   view: number

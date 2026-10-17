@@ -23,7 +23,7 @@ const VALUE_TONES = {
 /** Sayı odaklı özet kutusu. Değerler Fraunces ile sayılara editoryal ağırlık verir. */
 export function StatCard({ label, value, hint, icon, tone = 'default', loading, className }: StatCardProps) {
   return (
-    <div className={cn('min-w-0 rounded-md border border-panel-line bg-panel p-4 md:p-5', className)}>
+    <div className={cn('@container min-w-0 rounded-md border border-panel-line bg-panel p-4 md:p-5', className)}>
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">{label}</p>
         {icon && <span className="text-muted [&>svg]:size-4">{icon}</span>}
@@ -31,7 +31,7 @@ export function StatCard({ label, value, hint, icon, tone = 'default', loading, 
       {loading ? (
         <Skeleton className="mt-3 h-9 w-24" />
       ) : (
-        <p className={cn('mt-2 truncate font-display text-3xl font-medium tabular-nums md:text-4xl', VALUE_TONES[tone])}>{value}</p>
+        <p className={cn('mt-2 truncate font-display text-[clamp(1.35rem,15cqw,2.25rem)] font-medium leading-tight tabular-nums', VALUE_TONES[tone])}>{value}</p>
       )}
       {hint && <p className="mt-1.5 text-xs text-muted">{hint}</p>}
     </div>
