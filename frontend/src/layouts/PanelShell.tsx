@@ -87,7 +87,6 @@ function UserBlock({ user, onLogout, installable }: { user: PanelShellProps['use
         </div>
       </div>
       {installable && <InstallButton />}
-      <ThemeToggle withLabel className="mt-1 w-full hover:bg-panel-raised" />
       <button
         type="button"
         onClick={onLogout}
@@ -152,18 +151,26 @@ export function PanelShell({ eyebrow, brand, nav, user, onLogout, extra, banner,
               <p className="eyebrow">{eyebrow}</p>
               <p className="mt-1 truncate font-display text-base font-medium leading-none text-cream">{current?.label ?? brand}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Menüyü aç"
-              className="-mr-2 inline-flex size-11 items-center justify-center rounded-sm text-muted-strong active:bg-cream/10"
-            >
-              <Menu className="size-6" />
-            </button>
+            <div className="-mr-2 flex items-center">
+              <ThemeToggle className="active:bg-cream/10" />
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Menüyü aç"
+                className="inline-flex size-11 items-center justify-center rounded-sm text-muted-strong active:bg-cream/10"
+              >
+                <Menu className="size-6" />
+              </button>
+            </div>
           </div>
         </header>
 
-        <main className={cn('mx-auto w-full min-w-0 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pt-8 lg:pb-14', width === 'wide' ? 'max-w-[88rem]' : 'max-w-6xl')}>
+        {/* Masaüstü: sağ üstte tema düğmesi (mobilde üst çubukta) */}
+        <div className="hidden justify-end px-8 pt-3 lg:flex">
+          <ThemeToggle className="hover:bg-panel-raised" />
+        </div>
+
+        <main className={cn('mx-auto w-full min-w-0 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pt-8 lg:pb-14 lg:pt-2', width === 'wide' ? 'max-w-[88rem]' : 'max-w-6xl')}>
           {notice}
           <Outlet />
         </main>
