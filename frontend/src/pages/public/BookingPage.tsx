@@ -11,7 +11,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { OtpUnavailable } from '../../components/OtpUnavailable'
 import { lookupContact, rememberContact } from '../../lib/knownContacts'
 import { LIVE_SLOTS_QUERY, useDropStaleSelection } from '../../lib/useLiveSlots'
@@ -98,6 +98,10 @@ export default function BookingPage() {
   const services = useQuery({ queryKey: ['services'], queryFn: publicApi.getServices })
   const staff = useQuery({ queryKey: ['staff'], queryFn: publicApi.getStaff })
 
+  // Ana sayfadaki hizmet kartından gelindiyse (?hizmet=ID) hizmet seçili başlar ve doğrudan berber adımına geçilir.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const deepLinkDone = useRef(false)
+
   const service = services.data?.find((s) => s.id === serviceId) ?? null
   const barber: PublicStaff | null =
     staffId === ANY_STAFF
@@ -115,6 +119,17 @@ export default function BookingPage() {
     if (!staff.data) return all
     return all.filter((s) => staff.data!.some((p) => p.service_ids.includes(s.id)))
   }, [services.data, staff.data])
+
+  useEffect(() => {
+    const wanted = Number(searchParams.get('hizmet'))
+    if (deepLinkDone.current || !searchParams.has('hizmet') || !services.data || !staff.data) return
+    deepLinkDone.current = true
+    if (wanted && bookableServices.some((s) => s.id === wanted)) {
+      setServiceId(wanted)
+      setStep('staff')
+    }
+    setSearchParams({}, { replace: true }) // adres çubuğu temiz kalsın; geri tuşu akışı bozmasın
+  }, [searchParams, services.data, staff.data, bookableServices, setSearchParams])
 
   useEffect(() => {
     if (step === 'staff' && offeringStaff.length === 1 && staffId !== offeringStaff[0].id) {

@@ -173,18 +173,29 @@ export default function LandingPage() {
           ) : services.data && services.data.length > 0 ? (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {services.data.map((s) => (
-                <li key={s.id} className="flex flex-col overflow-hidden rounded-md border border-line bg-surface-raised">
-                  <ServiceVisual id={s.id} name={s.name} image={s.image} className="aspect-[16/10] w-full" />
-                  <div className="flex flex-1 items-end justify-between gap-4 p-4">
-                    <div className="min-w-0">
-                      <h3 className="break-words font-display text-xl leading-snug text-cream">{s.name}</h3>
-                      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                        <Clock className="size-3.5" aria-hidden="true" />
-                        {formatDuration(s.duration_min)}
-                      </p>
+                <li key={s.id}>
+                  <Link
+                    to={`/randevu?hizmet=${s.id}`}
+                    aria-label={`${s.name}, ${formatPrice(s.price)} — randevu al`}
+                    className="group flex h-full flex-col overflow-hidden rounded-md border border-line bg-surface-raised transition-colors hover:border-copper/60 focus-visible:border-copper"
+                  >
+                    <ServiceVisual id={s.id} name={s.name} image={s.image} className="aspect-[16/10] w-full" />
+                    <div className="flex flex-1 items-end justify-between gap-4 p-4">
+                      <div className="min-w-0">
+                        <h3 className="break-words font-display text-xl leading-snug text-cream">{s.name}</h3>
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                          <Clock className="size-3.5" aria-hidden="true" />
+                          {formatDuration(s.duration_min)}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="font-display text-xl text-copper-bright">{formatPrice(s.price)}</p>
+                        <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-muted-strong transition-colors group-hover:text-copper-bright">
+                          Randevu al <ArrowRight className="size-3.5" aria-hidden="true" />
+                        </p>
+                      </div>
                     </div>
-                    <p className="shrink-0 font-display text-xl text-copper-bright">{formatPrice(s.price)}</p>
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>
