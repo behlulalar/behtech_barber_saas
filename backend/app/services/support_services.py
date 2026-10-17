@@ -1,5 +1,4 @@
 """İşletmeden platforma destek talepleri. Yanıt: işletmenin bildirim kutusuna düşer, talep kapanır."""
-import asyncio
 import logging
 from datetime import datetime, timedelta
 
@@ -15,21 +14,9 @@ from app.schemas.support import PlatformTicketOut, TicketIn, TicketOut, TicketRe
 from app.services.audit_services import audit
 
 logger = logging.getLogger(__name__)
-_BG: set[asyncio.Task] = set()  # arka plan görevleri çöp toplanmasın
 MAX_OPEN_PER_TENANT = 5
 MAX_PER_DAY = 10
 CATEGORY_LABELS = {"whatsapp": "WhatsApp", "appointments": "Randevular", "payment": "Ödeme", "other": "Diğer"}
-
-
-async def _alert_platform(body: str) -> None:
-    try:
-        from app.core.database import SessionFactory
-        from app.services import whatsapp_guard
-
-        async with SessionFactory() as db:
-            await whatsapp_guard.alert_platform(db, "Yeni destek talebi", body)
-    except Exception:
-        logger.exception("Destek talebi bildirimi gönderilemedi")
 
 
 def _out(t: SupportTicket) -> TicketOut:
@@ -49,9 +36,9 @@ async def create(db: AsyncSession, tenant: Tenant, staff: Staff, data: TicketIn)
     await db.commit()
     await db.refresh(t)
     # Platform sahibine anında haber (push + e-posta): ARKA PLANDA; yavaş/çalışmayan push servisi işletmeyi bekletmesin.
-    task = asyncio.create_task(_alert_platform(f"{tenant.name} ({CATEGORY_LABELS[t.category]}): {t.message[:140]}"))
-    _BG.add(task)
-    task.add_done_callback(_BG.discard)
+    from app.services import whatsapp_guard
+
+    whatsapp_guard.alert_platform_background("Yeni destek talebi", f"{tenant.name} ({CATEGORY_LABELS[t.category]}): {t.message[:140]}")
     return _out(t)
 
 

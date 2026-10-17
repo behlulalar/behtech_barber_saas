@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CircleCheck, CircleSlash, KeyRound, LogOut, Pencil, Power, ShieldOff, Trash2, UserPlus } from 'lucide-react'
+import { CircleCheck, CircleSlash, History, KeyRound, LogOut, Pencil, Power, ShieldOff, Trash2, UserPlus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { Badge } from '../../components/ui/Badge'
-import { Button, IconButton } from '../../components/ui/Button'
+import { Button, IconButton, buttonStyles } from '../../components/ui/Button'
 import { Card, CardHeader } from '../../components/ui/Card'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -155,6 +156,13 @@ export default function AdminsPage() {
         <Button size="sm" variant="ghost" leftIcon={<KeyRound className="size-4" />} onClick={() => setResetting(a)}>
           Şifre sıfırla
         </Button>
+        <Link
+          to={`/platform/denetim?group=Hesap&q=${encodeURIComponent(a.phone)}`}
+          className={buttonStyles({ variant: 'ghost', size: 'sm' })}
+        >
+          <History className="size-4" aria-hidden="true" />
+          Giriş geçmişi
+        </Link>
         {!a.is_me && (
           <Button size="sm" variant="ghost" leftIcon={<ShieldOff className="size-4" />} onClick={() => { setActionError(null); setResetting2fa(a) }}>
             2FA&apos;yı sıfırla

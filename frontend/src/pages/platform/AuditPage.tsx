@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, FilterX, ScrollText, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -44,12 +45,14 @@ function useDebounced<T>(value: T, ms = 350): T {
 }
 
 export default function AuditPage() {
-  const [group, setGroup] = useState('')
+  // Yöneticiler sayfasındaki "Giriş geçmişi" bağlantısı filtreyi adresten verir (?group=Hesap&q=<telefon>).
+  const [initial] = useSearchParams()
+  const [group, setGroup] = useState(initial.get('group') ?? '')
   const [action, setAction] = useState('')
   const [tenantId, setTenantId] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(initial.get('q') ?? '')
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState<AuditLog | null>(null)
   const dq = useDebounced(q.trim())

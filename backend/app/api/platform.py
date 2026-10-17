@@ -4,6 +4,10 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func, select
+
+from app.core.net import client_ip
+from app.models.audit_log import AuditLog
+from app.services import whatsapp_guard
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -91,6 +95,10 @@ async def platform_login(data: LoginRequest, request: Request, db: AsyncSession 
                         details={"phone": key, "lock_minutes": settings.login_lock_minutes})
             await db.commit()
             raise login_throttle.locked_now_error()
+        if admin is not None:  # var olan hesaba hatalı deneme: giriş geçmişinde görünsün (hesap yoksa kayıt yok: numara taraması tabloyu şişirmesin)
+            await audit(db, actor=None, request=request, action="platform.login_failed", actor_label=data.phone,
+                        entity_type="platform_admin", entity_id=admin.id, summary=f"{data.phone} için hatalı giriş denemesi")
+            await db.commit()
         raise HTTPException(status_code=401, detail="Telefon veya şifre hatalı")
     await login_throttle.clear_failures(db, "platform", key)
     if admin.totp_enabled:
@@ -107,11 +115,19 @@ async def platform_login(data: LoginRequest, request: Request, db: AsyncSession 
 
 
 async def _finish_login(db: AsyncSession, admin: PlatformAdmin, request: Request, remember: bool, method: str) -> PlatformLoginOut:
+    ip = client_ip(request)
+    # Yeni adres: bu yöneticinin daha önce hiç görülmeyen bir IP'sinden giriş (ilk giriş sayılmaz) -> işaret + anında bildirim.
+    seen_ips = {i for (i,) in (await db.execute(select(AuditLog.ip).where(
+        AuditLog.action == "platform.login", AuditLog.actor_id == admin.id).distinct())).all()}
+    new_ip = bool(seen_ips) and ip is not None and ip not in seen_ips
     admin.last_login_at = datetime.now()
     await audit(db, actor=admin, request=request, action="platform.login", entity_type="platform_admin",
-                entity_id=admin.id, summary="Platform girişi yapıldı" + (" (2FA yedek kodu kullanıldı)" if method == "backup" else ""),
-                details={"method": method})
+                entity_id=admin.id,
+                summary="Platform girişi yapıldı" + (" (2FA yedek kodu kullanıldı)" if method == "backup" else "") + (" — yeni adresten" if new_ip else ""),
+                details={"method": method, "new_ip": new_ip})
     await db.commit()
+    if new_ip:
+        whatsapp_guard.alert_platform_background("Yeni adresten yönetici girişi", f"{admin.name or admin.phone}: {ip}")
     return PlatformLoginOut(access_token=twofa.make_access_token(admin, remember))
 
 

@@ -142,3 +142,24 @@ async def alert_platform(db: AsyncSession, title: str, body: str) -> None:
         await notify_services.send_push_to_all(db, title, body, "/platform/sistem")
     except Exception:
         logger.exception("Platform alert failed")
+
+
+_BG_ALERTS: set = set()
+
+
+def alert_platform_background(title: str, body: str) -> None:
+    """alert_platform'u ARKA PLANDA (kendi oturumuyla) çalıştırır: yavaş push/e-posta isteği çağıran isteği bekletmesin."""
+    import asyncio
+
+    async def run() -> None:
+        try:
+            from app.core.database import SessionFactory
+
+            async with SessionFactory() as db:
+                await alert_platform(db, title, body)
+        except Exception:
+            logger.exception("Arka plan platform bildirimi başarısız")
+
+    task = asyncio.get_running_loop().create_task(run())
+    _BG_ALERTS.add(task)
+    task.add_done_callback(_BG_ALERTS.discard)

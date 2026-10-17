@@ -20,6 +20,7 @@ G_ACCOUNT, G_ADMIN, G_TENANT, G_PLAN, G_SUB, G_PAYMENT, G_SETTINGS, G_SYSTEM, G_
 # (value, label, group)
 CATALOG: list[tuple[str, str, str]] = [
     ("platform.login", "Platform girişi", G_ACCOUNT),
+    ("platform.login_failed", "Hatalı giriş denemesi", G_ACCOUNT),
     ("platform.login_locked", "Girişe çok fazla hatalı deneme", G_ACCOUNT),
     ("platform.password_changed", "Şifre değiştirildi", G_ACCOUNT),
     ("platform.logout_all", "Tüm cihazlardan çıkış", G_ACCOUNT),
