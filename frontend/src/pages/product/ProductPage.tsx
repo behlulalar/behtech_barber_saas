@@ -500,29 +500,29 @@ function ContactChannels() {
   if (items.length === 0) return null
   return (
     <section id="iletisim" className="border-t border-line">
-      <div className="mx-auto max-w-6xl px-5 py-16 md:py-24">
-        <Rv className="max-w-xl">
+      <div className="mx-auto max-w-6xl px-5 py-16 text-center md:py-24">
+        <Rv>
           <p className="eyebrow">İletişim</p>
           <h2 className="mt-4 font-display text-4xl font-light leading-[1.08] md:text-5xl">
             Bize <span className="italic text-copper-bright">ulaşın.</span>
           </h2>
         </Rv>
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Kartlar eşit genişlikte ve ortalı: 2 kanalda iki sütun, 3 kanalda üç sütun (mobilde tek sütun). */}
+        <ul className={`mx-auto mt-10 grid gap-4 sm:grid-cols-2 ${items.length >= 3 ? 'max-w-5xl lg:grid-cols-3' : 'max-w-3xl'}`}>
           {items.map((c, i) => (
             <Rv as="li" key={c.label} delay={i * 80}>
               <a
                 href={c.href}
                 {...(c.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                className="group flex min-h-20 items-center gap-4 rounded-lg border border-line bg-surface p-5 transition-colors hover:border-copper"
+                className="group flex h-full flex-col items-center gap-4 rounded-lg border border-line bg-surface px-6 py-8 text-center transition-colors hover:border-copper"
               >
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-copper/40 bg-copper/10 text-copper-bright">
+                <span className="flex size-14 items-center justify-center rounded-full border border-copper/40 bg-copper/10 text-copper-bright">
                   {c.icon}
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-xs uppercase tracking-[0.14em] text-muted">{c.label}</span>
-                  <span className="block truncate font-display text-xl text-cream group-hover:text-copper-bright">{c.value}</span>
+                <span className="min-w-0 max-w-full">
+                  <span className="block text-xs uppercase tracking-[0.16em] text-muted">{c.label}</span>
+                  <span className="mt-1 block break-words font-display text-xl text-cream transition-colors group-hover:text-copper-bright md:text-2xl">{c.value}</span>
                 </span>
-                <ArrowUpRight className="ml-auto size-5 shrink-0 text-muted transition-colors group-hover:text-copper-bright" aria-hidden="true" />
               </a>
             </Rv>
           ))}
@@ -535,9 +535,8 @@ function ContactChannels() {
 function Footer() {
   return (
     <footer className="border-t border-line pb-safe">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-        <BrandCredit />
-        <nav aria-label="İletişim" className="flex items-center gap-1">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-5 py-8 text-center text-sm text-muted">
+        <nav aria-label="İletişim" className="flex items-center justify-center gap-1">
           <a href="#iletisim" className="mr-2 inline-flex min-h-11 items-center hover:text-cream">
             İletişim
           </a>
@@ -552,7 +551,7 @@ function Footer() {
             </a>
           )}
         </nav>
-        <nav aria-label="Yasal" className="flex flex-wrap gap-x-5">
+        <nav aria-label="Yasal" className="flex flex-wrap justify-center gap-x-5">
           {[
             ['gizlilik', 'Gizlilik'],
             ['sartlar', 'Kullanım Şartları'],
@@ -564,6 +563,7 @@ function Footer() {
             </LegalLink>
           ))}
         </nav>
+        <BrandCredit className="mt-1" />
       </div>
     </footer>
   )
