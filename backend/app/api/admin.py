@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import MANAGER_ROLES, get_current_staff, get_current_tenant, is_manager, require_manager
+from app.core import qr
 from app.core.config import settings
 from app.core.password_policy import enforce_password_policy
 from app.core.security import create_access_token, hash_password, verify_password
@@ -36,6 +37,9 @@ from app.schemas.admin import (
     StaffCreate,
     StaffMe,
     StaffUpdate,
+    ClosureIn,
+    ClosureOut,
+    SiteLinkOut,
     TimeOffCreate,
     TimeOffOut,
     WorkingHourIn,
@@ -45,6 +49,7 @@ from app.schemas.auth import PanelKeyVerify, PanelLoginUrlOut, ForgotReset, Forg
 from app.schemas.public import SendCodeResponse
 from app.schemas.reports import ReportPeriod, RevenueReport
 from app.services import admin_services as svc
+from app.services import whatsapp_texts
 from app.services import impersonation_services
 from app.services import login_throttle, otp_services, panel_key
 from app.core.net import client_ip
@@ -679,6 +684,27 @@ async def delete_time_off(
     return Response(status_code=204)
 
 
+# ---------------------------------------------------------------- "Bugün kapalıyım"
+@router.get("/admin/closures", response_model=ClosureOut)
+async def closure_get(day: date = Query(alias="date"), current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)):
+    return await svc.closure_status(db, current.tenant_id, day)
+
+
+@router.post("/admin/closures", response_model=ClosureOut, status_code=201)
+async def closure_create(data: ClosureIn, current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)):
+    """İşletmeyi tek gün için kapatır: hizmet veren tüm personele o gün tüm gün izin açılır. Mevcut randevular İPTAL EDİLMEZ
+    (yanıttaki confirmed_appointments sayısı arayüzde uyarı olarak gösterilir)."""
+    if data.date < date.today():
+        raise HTTPException(status_code=400, detail="Geçmiş bir gün kapatılamaz")
+    return await svc.close_day(db, current.tenant_id, data.date)
+
+
+@router.delete("/admin/closures", response_model=ClosureOut)
+async def closure_delete(day: date = Query(alias="date"), current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)):
+    """"Tekrar aç": yalnızca "Bugün kapalıyım" ile açılan izinleri siler; personelin kendi izinlerine dokunmaz."""
+    return await svc.reopen_day(db, current.tenant_id, day)
+
+
 # ---------------------------------------------------------------- payment methods
 async def _get_payment_method(db: AsyncSession, tid: int, pm_id: int) -> PaymentMethod:
     pm = (
@@ -844,6 +870,13 @@ async def admin_inbox_read_all(staff: Staff = Depends(get_current_staff), db: As
 async def admin_setup(current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)):
     """Kurulum rehberi: işletmenin müşteri randevusu alabilmesi için eksikler (platformdaki kontrol listesiyle aynı mantık)."""
     return (await platform_services._setup_for(db, [current.tenant_id]))[current.tenant_id]
+
+
+@router.get("/admin/site-link", response_model=SiteLinkOut)
+async def admin_site_link(current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant)):
+    """Müşteri sitesinin adresi ve vitrine asılacak QR kodu (ana sayfa: hizmetler + randevu)."""
+    url = whatsapp_texts.site_url(tenant.slug).removesuffix("/randevu")
+    return SiteLinkOut(url=url, qr=qr.svg_data_uri(url))
 
 
 # ---------------------------------------------------------------- WhatsApp (dükkânın kendi hesabı)

@@ -6,19 +6,19 @@ berberin ayar yapması gerekmez. Genel eksikler: `EKSIKLER.md`. Platform paneli 
 
 ## YAPILACAKLAR (onaylandı)
 
-- [ ] **Menü sadeleştirme.** Sahibin menüsünde 12 öğe var. Öneri (uygulanmadan önce kısa bir onay alınabilir):
+- [x] (2026-10-17 YAPILDI) **Menü sadeleştirme.** Uygulanan: üstte Genel Bakış/Randevular/Müşteriler/Gelir Raporu/Bildirimler; "İŞLETME" başlığı altında Hizmetler/Ekip/Çalışma Saatleri/WhatsApp/Ayarlar; "HESAP" altında Hesabım. Ödeme Yöntemleri menüden çıktı, Ayarlar sayfasının sağ üstündeki "Ödeme yöntemleri" düğmesinden açılır (adres aynı). Eski öneri metni: Sahibin menüsünde 12 öğe var. Öneri (uygulanmadan önce kısa bir onay alınabilir):
       - Günlük işler üstte: Genel Bakış, Randevular, Müşteriler.
       - Bir kez kurulup bırakılanlar "İşletmem" başlığı altında: Hizmetler, Ekip, Çalışma Saatleri, WhatsApp, Ayarlar (Ödeme Yöntemleri Ayarlar'a taşınır).
       - Gelir Raporu, Bildirimler (okunmamış rozetiyle), Hesabım yerinde/uygun grupta kalır.
       - Berber (staff) menüsü zaten kısa (3 öğe); korunur.
       - Mobil alt çubuk (en fazla 4 sekme) ve Menü çekmecesi aynı gruplamayı izlemeli.
-- [ ] **Randevu linkini paylaşma + basılabilir QR.** Genel Bakış'ta tek kart: adres, "Kopyala", "WhatsApp ile paylaş", "QR kodu indir/yazdır".
+- [x] (2026-10-17 YAPILDI; yazdırma çıktısı gerçek yazıcıda denenmedi) **Randevu linkini paylaşma + basılabilir QR.** Genel Bakış'ta "Randevu adresiniz" kartı: Kopyala, WhatsApp ile paylaş, "QR kod ve afiş" (SVG indir + A4 afiş yazdır; yalnızca yönetici). QR ana sayfaya gider. Kalan: kurulum rehberine "adresi paylaşın" adımı eklenmedi; tasarımlı PVC afiş ayrı grafik iş. Eski öneri metni: Genel Bakış'ta tek kart: adres, "Kopyala", "WhatsApp ile paylaş", "QR kodu indir/yazdır".
       - QR vektör (SVG) ve yüksek hata düzeltmeli olmalı: vitrine PVC afiş olarak basılacak (kullanıcı fikri: anlaşmalı berberlere
         güzel tasarlanmış PVC kaplı afiş + QR verilmesi). Baskıda bozulmaması için sabit/kısa adres (işletme alt alanı) kullanılır.
       - Afiş: işletme adı + QR + "Randevu için okutun" içeren yazdırmaya hazır bir sayfa/PDF (A4/A5). Tasarım ayrı (grafik) iş; kodda
         yalnızca QR + metin yerleşimi üretilir. İleride platform panelinden işletme başına afiş PDF'i indirme düşünülebilir.
       - Kurulum rehberindeki eksik "müşteri sitenizin adresini paylaşın" adımı da bu kartla kapanır (bkz. EKSIKLER.md).
-- [ ] **"Bugün kapalıyım" tek tuşu (Genel Bakış).** Aniden kapanma günleri için: bugünü tek dokunuşla kapatır (mevcut "izin" altyapısı,
+- [x] (2026-10-17 YAPILDI) **"Bugün kapalıyım" tek tuşu (Genel Bakış).** Hizmet veren tüm personele o gün tüm gün izin açılır (işaret: izin nedeni "İşletme kapalı"); "Tekrar aç" yalnızca bunları siler, personelin kendi izinlerine dokunmaz; randevular iptal edilmez, sayı uyarıda gösterilir. Kalan: kapatınca randevusu olan müşterilere otomatik mesaj gitmiyor; "yarın da kapalıyım" yok. Eski öneri metni: Aniden kapanma günleri için: bugünü tek dokunuşla kapatır (mevcut "izin" altyapısı,
       tüm gün). Bugün için onaylı randevu varsa önce uyarı gösterilir (sayısıyla); randevular otomatik İPTAL EDİLMEZ (izin
       çakışma uyarısı mantığıyla aynı). Geri almak için aynı yerde "Tekrar aç". İsteğe bağlı: "yarın da kapalıyım".
 

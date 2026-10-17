@@ -327,6 +327,20 @@ export interface TimeOff {
   conflicting_appointments?: number
 }
 
+export interface SiteLink {
+  url: string
+  /** Baskıya uygun QR (SVG data URI). */
+  qr: string
+}
+
+/** "Bugün kapalıyım": işletmenin tek günlük kapalılık durumu. */
+export interface Closure {
+  date: string
+  closed: boolean
+  /** O gün için mevcut onaylı randevu sayısı (kapatınca iptal edilmez). */
+  confirmed_appointments: number
+}
+
 export interface TimeOffCreate {
   staff_id: number
   start_date: string

@@ -1,5 +1,5 @@
 import { LogOut, Menu } from 'lucide-react'
-import { Suspense, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, Suspense, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import { Avatar } from '../components/ui/Avatar'
@@ -21,6 +21,10 @@ export interface NavItem {
   managerOnly?: boolean
   /** Menü öğesinin yanında küçük sayı rozeti (0/boş ise gösterilmez). */
   badge?: number
+  /** Menüde bu öğeden önce küçük bir bölüm başlığı gösterilir (aynı başlıklı öğeler art arda gelmeli). */
+  group?: string
+  /** Menüde/çekmecede gösterilmez ama sayfa başlığı ve yönlendirme için tanımlı kalır. */
+  hidden?: boolean
 }
 
 interface PanelShellProps {
@@ -45,9 +49,12 @@ interface PanelShellProps {
 function NavList({ nav, onNavigate, variant }: { nav: NavItem[]; onNavigate?: () => void; variant: 'sidebar' | 'drawer' }) {
   return (
     <nav aria-label="Ana menü" className="flex flex-col gap-0.5 px-3">
-      {nav.map((item) => (
+      {nav.filter((n) => !n.hidden).map((item, i, list) => (
+        <Fragment key={item.to}>
+          {item.group && item.group !== list[i - 1]?.group && (
+            <p className="px-3 pb-1 pt-4 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted">{item.group}</p>
+          )}
         <NavLink
-          key={item.to}
           to={item.to}
           end={item.end}
           onClick={onNavigate}
@@ -72,6 +79,7 @@ function NavList({ nav, onNavigate, variant }: { nav: NavItem[]; onNavigate?: ()
             </>
           )}
         </NavLink>
+        </Fragment>
       ))}
     </nav>
   )

@@ -18,15 +18,17 @@ const NAV: NavItem[] = [
   { to: '/panel', label: 'Genel Bakış', icon: LayoutDashboard, end: true, tab: true },
   { to: '/panel/randevular', label: 'Randevular', icon: CalendarDays, tab: true },
   { to: '/panel/musteriler', label: 'Müşteriler', icon: Users, tab: true },
-  { to: '/panel/hizmetler', label: 'Hizmetler', icon: Scissors, tab: true, managerOnly: true },
   { to: '/panel/gelir', label: 'Gelir Raporu', icon: ChartColumn, managerOnly: true },
-  { to: '/panel/ekip', label: 'Ekip', icon: UserRound },
   { to: '/panel/bildirimler', label: 'Bildirimler', icon: Bell },
-  { to: '/panel/hesabim', label: 'Hesabım', icon: UserCog },
-  { to: '/panel/calisma-saatleri', label: 'Çalışma Saatleri', icon: Clock, managerOnly: true },
-  { to: '/panel/odeme-yontemleri', label: 'Ödeme Yöntemleri', icon: Wallet, managerOnly: true },
-  { to: '/panel/whatsapp', label: 'WhatsApp Bağlantısı', icon: MessageCircle, managerOnly: true },
-  { to: '/panel/ayarlar', label: 'Ayarlar', icon: Settings, managerOnly: true },
+  // Bir kez kurulup bırakılan işler ayrı başlık altında.
+  { to: '/panel/hizmetler', label: 'Hizmetler', icon: Scissors, tab: true, managerOnly: true, group: 'İşletme' },
+  { to: '/panel/ekip', label: 'Ekip', icon: UserRound, group: 'İşletme' },
+  { to: '/panel/calisma-saatleri', label: 'Çalışma Saatleri', icon: Clock, managerOnly: true, group: 'İşletme' },
+  { to: '/panel/whatsapp', label: 'WhatsApp Bağlantısı', icon: MessageCircle, managerOnly: true, group: 'İşletme' },
+  { to: '/panel/ayarlar', label: 'Ayarlar', icon: Settings, managerOnly: true, group: 'İşletme' },
+  { to: '/panel/hesabim', label: 'Hesabım', icon: UserCog, group: 'Hesap' },
+  // Menüde görünmez: Ayarlar sayfasından açılır.
+  { to: '/panel/odeme-yontemleri', label: 'Ödeme Yöntemleri', icon: Wallet, managerOnly: true, hidden: true },
 ]
 
 export const ROLE_LABELS = {

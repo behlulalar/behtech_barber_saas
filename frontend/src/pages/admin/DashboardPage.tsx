@@ -12,7 +12,9 @@ import { useStaffAuth } from '../../lib/auth'
 import { cn } from '../../lib/cn'
 import { addDaysISO, formatDateLong, formatNumber, formatPrice, todayLocalISO } from '../../lib/format'
 import { AppointmentRow, useAppointmentFlow } from './appointmentParts'
+import { ClosureCard } from './ClosureCard'
 import { SetupGuide } from './SetupGuide'
+import { ShareCard } from './ShareCard'
 import { ErrorBlock, qk } from './shared'
 
 function greeting(): string {
@@ -81,6 +83,8 @@ export default function DashboardPage() {
       />
 
       {isManager && <SetupGuide />}
+      {isManager && <ClosureCard />}
+      {isManager && <ShareCard />}
 
       {dash.isError && <ErrorBlock className="mb-6" error={dash.error} onRetry={() => void dash.refetch()} />}
 

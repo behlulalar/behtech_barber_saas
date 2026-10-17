@@ -88,6 +88,8 @@ import type {
   WhatsappStatus,
   PlatformWhatsapp,
   TimeOff,
+  Closure,
+  SiteLink,
   TimeOffCreate,
   TokenResponse,
   VerifyCodeRequest,
@@ -373,6 +375,10 @@ export const adminApi = {
 
   listTimeOff: (staffId?: number) => request<TimeOff[]>('/admin/time-off', { auth: s, query: { staff_id: staffId } }),
   createTimeOff: (data: TimeOffCreate) => request<TimeOff>('/admin/time-off', { method: 'POST', body: data, auth: s }),
+  getSiteLink: () => request<SiteLink>('/admin/site-link', { auth: s }),
+  getClosure: (date: string) => request<Closure>('/admin/closures', { auth: s, query: { date } }),
+  closeDay: (date: string) => request<Closure>('/admin/closures', { method: 'POST', body: { date }, auth: s }),
+  reopenDay: (date: string) => request<Closure>('/admin/closures', { method: 'DELETE', auth: s, query: { date } }),
   deleteTimeOff: (id: number) => request<void>(`/admin/time-off/${id}`, { method: 'DELETE', auth: s }),
 
   listPaymentMethods: () => request<PaymentMethod[]>('/admin/payment-methods', { auth: s }),

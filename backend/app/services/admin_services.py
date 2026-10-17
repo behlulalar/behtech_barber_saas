@@ -391,3 +391,50 @@ async def count_time_off_conflicts(db: AsyncSession, row: TimeOff) -> int:
         if a_start < off_end and a_end > off_start:
             n += 1
     return n
+
+
+# ---------------------------------------------------------------- işletme kapalı günü
+CLOSURE_REASON = "İşletme kapalı"  # "Bugün kapalıyım" ile oluşturulan izinlerin işareti; "Tekrar aç" yalnızca bunları siler
+
+
+async def closure_status(db: AsyncSession, tenant_id: int, day: date):
+    from app.schemas.admin import ClosureOut
+
+    team = await bookable_staff_ids(db, tenant_id)
+    off = set((await db.execute(
+        select(TimeOff.staff_id).where(
+            TimeOff.tenant_id == tenant_id, TimeOff.start_date <= day, TimeOff.end_date >= day,
+            TimeOff.start_time.is_(None), TimeOff.staff_id.in_(team or [0]),
+        )
+    )).scalars().all())
+    count = (await db.execute(
+        select(func.count()).select_from(Appointment).where(
+            Appointment.tenant_id == tenant_id, Appointment.appointment_date == day,
+            Appointment.status == AppointmentStatus.CONFIRMED,
+        )
+    )).scalar_one()
+    return ClosureOut(date=day, closed=bool(team) and set(team) <= off, confirmed_appointments=count)
+
+
+async def close_day(db: AsyncSession, tenant_id: int, day: date):
+    team = await bookable_staff_ids(db, tenant_id)
+    already = set((await db.execute(
+        select(TimeOff.staff_id).where(
+            TimeOff.tenant_id == tenant_id, TimeOff.start_date <= day, TimeOff.end_date >= day,
+            TimeOff.start_time.is_(None), TimeOff.staff_id.in_(team or [0]),
+        )
+    )).scalars().all())
+    for sid in team:
+        if sid not in already:
+            db.add(TimeOff(tenant_id=tenant_id, staff_id=sid, start_date=day, end_date=day, reason=CLOSURE_REASON))
+    await db.commit()
+    return await closure_status(db, tenant_id, day)
+
+
+async def reopen_day(db: AsyncSession, tenant_id: int, day: date):
+    await db.execute(delete(TimeOff).where(
+        TimeOff.tenant_id == tenant_id, TimeOff.start_date == day, TimeOff.end_date == day,
+        TimeOff.start_time.is_(None), TimeOff.reason == CLOSURE_REASON,
+    ))
+    await db.commit()
+    return await closure_status(db, tenant_id, day)

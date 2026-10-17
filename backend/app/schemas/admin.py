@@ -414,3 +414,19 @@ class CustomerAdminOut(BaseModel):
     created_at: datetime | None
     appointment_count: int
     last_appointment_date: date | None
+
+
+# ---------- işletme kapalı günü ("Bugün kapalıyım") ----------
+class ClosureIn(BaseModel):
+    date: date
+
+
+class ClosureOut(BaseModel):
+    date: date
+    closed: bool  # hizmet veren TÜM personel o gün tüm gün izinli
+    confirmed_appointments: int  # o gün için mevcut onaylı randevu sayısı (iptal edilmez)
+
+
+class SiteLinkOut(BaseModel):
+    url: str  # müşteri sitesinin adresi (işletme alt alanı)
+    qr: str  # baskıya uygun QR (SVG data URI)

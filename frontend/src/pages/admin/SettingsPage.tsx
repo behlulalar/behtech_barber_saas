@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Button } from '../../components/ui/Button'
+import { Link } from 'react-router-dom'
+import { Button, buttonStyles } from '../../components/ui/Button'
 import { Card, CardHeader } from '../../components/ui/Card'
 import { Field } from '../../components/ui/Field'
 import { ImagePicker } from '../../components/ui/ImagePicker'
@@ -20,7 +21,15 @@ export default function SettingsPage() {
   const query = useQuery({ queryKey: qk.settings, queryFn: adminApi.getSettings })
   return (
     <>
-      <PageHeader title="Ayarlar" description="İşletme bilgileriniz müşteri sitesinde görünür." />
+      <PageHeader
+        title="Ayarlar"
+        description="İşletme bilgileriniz müşteri sitesinde görünür."
+        actions={
+          <Link to="/panel/odeme-yontemleri" className={buttonStyles({ variant: 'secondary' })}>
+            Ödeme yöntemleri
+          </Link>
+        }
+      />
       {query.isError ? (
         <ErrorBlock error={query.error} onRetry={() => void query.refetch()} />
       ) : query.isLoading || !query.data ? (
