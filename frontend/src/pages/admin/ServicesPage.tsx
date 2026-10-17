@@ -8,6 +8,8 @@ import { Checkbox } from '../../components/ui/Checkbox'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Field } from '../../components/ui/Field'
+import { ImagePicker } from '../../components/ui/ImagePicker'
+import { SERVICE_IMAGE_MAX_CHARS } from '../../lib/image'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
@@ -196,6 +198,7 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
   const [price, setPrice] = useState(service ? String(service.price) : '')
   const [duration, setDuration] = useState(service ? String(service.duration_min) : '30')
   const [active, setActive] = useState(service?.is_active ?? true)
+  const [image, setImage] = useState<string | null>(service?.image ?? null)
   const [touched, setTouched] = useState(false)
   const staffQuery = useActiveStaffList()
   const providers = (staffQuery.data ?? []).filter((m) => m.role !== 'technical_support')
@@ -217,7 +220,15 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
     mutationFn: () => {
       // Teknik destek gibi listede olmayan eski bağlantılar korunur; listedekiler seçime göre belirlenir.
       const staffIds = [...(service?.staff_ids.filter((id) => !providerIds.has(id)) ?? []), ...selected.filter((id) => providerIds.has(id))]
-      const data = { name: name.trim(), price: priceNum, duration_min: durNum, is_active: active, staff_ids: staffIds }
+      const data = {
+        name: name.trim(),
+        price: priceNum,
+        duration_min: durNum,
+        is_active: active,
+        staff_ids: staffIds,
+        // Yeni hizmette yalnızca seçildiyse gönder; düzenlemede değiştiyse (kaldırma = null) gönder.
+        ...(service ? (image !== (service.image ?? null) ? { image } : {}) : image ? { image } : {}),
+      }
       return service ? adminApi.updateService(service.id, data) : adminApi.createService(data)
     },
     onSuccess: () => {
@@ -288,6 +299,10 @@ function ServiceForm({ service, onClose }: { service: AdminService | null; onClo
               {formatDuration(m)}
             </button>
           ))}
+        </div>
+        <div>
+          <ImagePicker label="Fotoğraf (isteğe bağlı)" value={image} onChange={setImage} aspect="card" maxDim={900} type="image/jpeg" maxChars={SERVICE_IMAGE_MAX_CHARS} />
+          <p className="mt-1.5 text-xs text-muted">Müşteri sitesinde hizmet kartında görünür. Yoksa şık bir yedek görünüm kullanılır.</p>
         </div>
         <Switch checked={active} onChange={setActive} label="Aktif" description="Pasif hizmet müşterilere ve yeni randevulara sunulmaz." />
         <fieldset className="min-w-0">

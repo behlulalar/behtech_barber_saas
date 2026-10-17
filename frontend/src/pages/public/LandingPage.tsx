@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { ServiceVisual } from '../../components/booking/ServiceVisual'
 import { ArrowRight, CalendarCheck, Clock, MapPin, Scissors, Smartphone, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -149,33 +150,32 @@ export default function LandingPage() {
 
       {/* HİZMETLER */}
       <section id="hizmetler" className="mx-auto w-full max-w-6xl px-5 py-16 md:px-10 md:py-24">
-        <div className="grid gap-10 md:grid-cols-[0.8fr_1.2fr] md:gap-16">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <p className="eyebrow">Hizmetler</p>
-            <h2 className="mt-4 font-display text-3xl font-medium leading-tight text-cream md:text-5xl">
-              Fiyat listesi
-            </h2>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
-              Tüm fiyatlar açık. Süreler yaklaşık değerlerdir.
-            </p>
-            <Link to="/randevu" className={buttonStyles({ variant: 'secondary', className: 'mt-6 hidden md:inline-flex' })}>
-              Randevu al
-            </Link>
+            <h2 className="mt-4 font-display text-3xl font-medium leading-tight text-cream md:text-5xl">Fiyat listesi</h2>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted">Tüm fiyatlar açık. Süreler yaklaşık değerlerdir.</p>
           </div>
+          <Link to="/randevu" className={buttonStyles({ variant: 'secondary', className: 'hidden md:inline-flex' })}>
+            Randevu al
+          </Link>
+        </div>
 
-          <div className="min-w-0">
-            {services.isLoading ? (
-              <div className="space-y-4" role="status" aria-label="Hizmetler yükleniyor">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : services.isError ? (
-              <p className="text-sm text-muted">Hizmetler şu an yüklenemedi.</p>
-            ) : services.data && services.data.length > 0 ? (
-              <ul className="divide-y divide-line border-y border-line">
-                {services.data.map((s) => (
-                  <li key={s.id} className="flex items-baseline justify-between gap-4 py-5">
+        <div className="mt-10 min-w-0">
+          {services.isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Hizmetler yükleniyor">
+              {Array.from({ length: 3 }, (_, i) => (
+                <Skeleton key={i} className="h-64 w-full" />
+              ))}
+            </div>
+          ) : services.isError ? (
+            <p className="text-sm text-muted">Hizmetler şu an yüklenemedi.</p>
+          ) : services.data && services.data.length > 0 ? (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {services.data.map((s) => (
+                <li key={s.id} className="flex flex-col overflow-hidden rounded-md border border-line bg-surface-raised">
+                  <ServiceVisual id={s.id} name={s.name} image={s.image} className="aspect-[16/10] w-full" />
+                  <div className="flex flex-1 items-end justify-between gap-4 p-4">
                     <div className="min-w-0">
                       <h3 className="break-words font-display text-xl leading-snug text-cream">{s.name}</h3>
                       <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
@@ -184,13 +184,16 @@ export default function LandingPage() {
                       </p>
                     </div>
                     <p className="shrink-0 font-display text-xl text-copper-bright">{formatPrice(s.price)}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted">Hizmet listesi yakında burada olacak.</p>
-            )}
-          </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted">Hizmet listesi yakında burada olacak.</p>
+          )}
+          <Link to="/randevu" className={buttonStyles({ variant: 'secondary', className: 'mt-6 md:hidden' })}>
+            Randevu al
+          </Link>
         </div>
       </section>
 

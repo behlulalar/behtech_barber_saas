@@ -6,6 +6,9 @@ export type ImageType = 'image/png' | 'image/jpeg'
 /** Backend'in görseller için kabul ettiği en uzun data URL (karakter, ~1,5 MB). */
 export const MAX_IMAGE_CHARS = 2_000_000
 
+/** Hizmet görseli müşteri sitesinde tüm liste birlikte indirildiği için küçük tutulur (~250 KB; backend sınırı 400 bin karakter). */
+export const SERVICE_IMAGE_MAX_CHARS = 380_000
+
 /** Personel fotoğrafı da aynı sınırı kullanır; 1400px JPEG genelde 300-600 KB tutar. */
 export const STAFF_PHOTO_MAX_CHARS = MAX_IMAGE_CHARS
 

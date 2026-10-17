@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import String, func , ForeignKey, UniqueConstraint, Boolean, true
+from sqlalchemy import String, Text, func , ForeignKey, UniqueConstraint, Boolean, true
 from app.core.database import Base
 
 class Service(Base):
@@ -12,6 +12,8 @@ class Service(Base):
     price: Mapped[int]
     duration_min: Mapped[int]
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    # İsteğe bağlı hizmet görseli (küçültülmüş data URL; müşteri sitesinde kartta gösterilir).
+    image: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         UniqueConstraint("name", "tenant_id"),

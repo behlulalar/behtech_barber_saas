@@ -8,3 +8,4 @@ class ServiceOut(BaseModel):
     name: str
     price: int
     duration_min: int
+    image: str | None = None

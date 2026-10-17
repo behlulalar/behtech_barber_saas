@@ -50,7 +50,10 @@ export interface PublicStaff extends StaffBrief {
   /** Bu berberin verdiği hizmetlerin id'leri; hizmet seçilince berber listesi buna göre süzülür. */
   service_ids: number[]
 }
-export type PublicService = ServiceBrief
+export interface PublicService extends ServiceBrief {
+  /** İsteğe bağlı fotoğraf (data URL). */
+  image?: string | null
+}
 
 export interface AvailabilityParams {
   staff_id: number
@@ -257,6 +260,7 @@ export interface AdminAppointmentUpdate {
 
 export interface AdminService extends ServiceBrief {
   is_active: boolean
+  image?: string | null
   /** Bu hizmeti veren personel. */
   staff_ids: number[]
 }
@@ -266,6 +270,8 @@ export interface AdminServiceCreate {
   price: number
   duration_min: number
   is_active?: boolean
+  /** Fotoğraf (data URL); null/boş = kaldır. */
+  image?: string | null
   /** Verilmezse backend tüm personeli (teknik destek hariç) atar. */
   staff_ids?: number[]
 }

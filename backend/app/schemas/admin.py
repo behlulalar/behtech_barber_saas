@@ -72,6 +72,17 @@ def _check_image(value: str | None) -> str | None:
     return value
 
 
+# Hizmet görseli müşteri sitesinde TÜM hizmet listesiyle birlikte indirilir: sıkı sınır (tarayıcı ~900px JPEG'e küçültür, ~100-200 KB).
+_SERVICE_IMG_MAX_CHARS = 400_000
+
+
+def _check_service_image(value: str | None) -> str | None:
+    value = _check_image(value)
+    if value is not None and len(value) > _SERVICE_IMG_MAX_CHARS:
+        raise ValueError("Hizmet görseli çok büyük (en fazla ~300 KB); daha küçük bir görsel seçin")
+    return value
+
+
 # Personel fotoğrafı kartta büyük gösterildiği için (Retina'da ~1100x1350px) ayarlar
 # görselleriyle aynı sınırı kullanır; tarayıcı 1400px'e küçültüp gönderir.
 _check_photo = _check_image
@@ -190,6 +201,7 @@ class AdminServiceOut(_Orm):
     price: int
     duration_min: int
     is_active: bool
+    image: str | None = None
     staff_ids: list[int] = []
 
 
@@ -207,8 +219,11 @@ class ServiceCreate(BaseModel):
     price: int = Field(ge=0, le=10_000_000)
     duration_min: DurationMin
     is_active: bool = True
+    image: str | None = None
     # Verilmezse hizmeti tüm personel verir.
     staff_ids: IdList | None = None
+
+    _image = field_validator("image")(_check_service_image)
 
 
 class ServiceUpdate(BaseModel):
@@ -216,11 +231,15 @@ class ServiceUpdate(BaseModel):
     price: int | None = Field(default=None, ge=0, le=10_000_000)
     duration_min: DurationMin | None = None
     is_active: bool | None = None
+    # "" ya da null gönderilirse görsel kaldırılır.
+    image: str | None = None
     staff_ids: IdList | None = None
+
+    _image = field_validator("image")(_check_service_image)
 
     @model_validator(mode="after")
     def _no_nulls(self):
-        for f in self.model_fields_set:
+        for f in self.model_fields_set - {"image"}:
             if getattr(self, f) is None:
                 raise ValueError(f"{f} boş olamaz")
         return self

@@ -10,7 +10,7 @@ interface ImagePickerProps {
   value: string | null
   onChange: (v: string | null) => void
   /** square: logo (contain), wide: kapak, portrait: personel fotoğrafı (yuvarlak, cover). */
-  aspect: 'square' | 'wide' | 'portrait'
+  aspect: 'square' | 'wide' | 'portrait' | 'card'
   maxDim: number
   type: ImageType
   maxChars?: number
@@ -43,6 +43,7 @@ export function ImagePicker({ label, value, onChange, aspect, maxDim, type, maxC
           'flex w-full items-center justify-center overflow-hidden rounded-md border border-dashed border-line-strong bg-surface',
           aspect === 'square' && 'aspect-square max-w-48',
           aspect === 'wide' && 'aspect-[16/7]',
+          aspect === 'card' && 'aspect-[4/3] max-w-xs',
           aspect === 'portrait' && 'aspect-square max-w-28 rounded-full',
         )}
       >

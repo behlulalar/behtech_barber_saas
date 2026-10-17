@@ -15,6 +15,7 @@ import { OtpUnavailable } from '../../components/OtpUnavailable'
 import { useTenant } from '../../lib/queries'
 import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { SlotGrid, SlotGridSkeleton } from '../../components/booking/SlotGrid'
+import { ServiceVisual } from '../../components/booking/ServiceVisual'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button, buttonStyles } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -590,6 +591,7 @@ function ServiceStep({
             className={cn(optionBase, optionState(selected))}
           >
             <RadioMark selected={selected} />
+            <ServiceVisual id={s.id} name={s.name} image={s.image} className="size-16 shrink-0 rounded-sm" />
             <span className="min-w-0 flex-1">
               <span className="block break-words font-display text-lg leading-snug text-cream">{s.name}</span>
               <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
