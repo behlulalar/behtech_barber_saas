@@ -26,6 +26,7 @@ from app.schemas.service import ServiceOut
 from app.schemas.signup import SignupRequest, SignupResponse
 from app.services.admin_services import service_ids_by_staff
 from app.services.appointment_services import (
+    CANCEL_MIN_HOURS,
     SLOT_MINUTES,
     build_merged_slot_grid,
     build_slot_grid,
@@ -46,7 +47,6 @@ router = APIRouter()
 logger = logging.getLogger("evolution_webhook")
 
 CUSTOMER_TOKEN_MINUTES = 30
-CANCEL_MIN_HOURS = 2
 
 
 @router.get("/health")

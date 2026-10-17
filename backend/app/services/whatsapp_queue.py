@@ -45,7 +45,8 @@ def _after_quiet(now: datetime) -> datetime:
 # Bayat mesaj gitmesin: hat bir süre kopuk kalıp dönünce eski onay/hatırlatmalar toplu yağmasın.
 TTL = {"confirm": timedelta(hours=2), "confirm_manual": timedelta(hours=2), "cancel_customer": timedelta(hours=2), "cancel_shop": timedelta(hours=2),
        "staff_new": timedelta(hours=2), "staff_cancel": timedelta(hours=2),
-       "reschedule_customer": timedelta(hours=2), "staff_reschedule": timedelta(hours=2), "reminder": timedelta(minutes=30),
+       "reschedule_customer": timedelta(hours=2), "staff_reschedule": timedelta(hours=2),
+       "cancel_none": timedelta(minutes=30), "cancel_late": timedelta(minutes=30), "cancel_link": timedelta(minutes=30), "reminder": timedelta(minutes=30),
        "welcome": timedelta(minutes=10)}
 APPOINTMENT_KINDS = {"confirm", "confirm_manual", "reminder", "staff_new", "reschedule_customer", "staff_reschedule"}  # randevu iptal edildiyse gönderilmez
 

@@ -32,7 +32,7 @@ async def queued(kind=None):
 # ------------------------------------------------------------------ metinler
 @pytest.mark.parametrize("kind", ["otp", "password_reset", "confirm", "cancel_customer", "cancel_shop",
                                   "reminder", "staff_new", "staff_cancel", "welcome", "confirm_manual",
-                                  "reschedule_customer", "staff_reschedule"])
+                                  "reschedule_customer", "staff_reschedule", "cancel_none", "cancel_late", "cancel_link"])
 def test_every_kind_has_at_least_three_variants_and_renders_cleanly(kind):
     variants = texts._VARIANTS[kind]
     assert len(variants) >= 3 and len(set(variants)) == len(variants)
@@ -249,10 +249,10 @@ async def test_queue_drops_message_of_cancelled_appointment_and_expires_stale(sh
 
 
 # ------------------------------------------------------------------ karşılama (gelen mesaj)
-def inbound(instance, jid="905321112233@s.whatsapp.net", from_me=False, ts=None, mtype="conversation"):
+def inbound(instance, jid="905321112233@s.whatsapp.net", from_me=False, ts=None, mtype="conversation", text="merhaba"):
     return {"event": "messages.upsert", "instance": instance, "data": {
         "key": {"remoteJid": jid, "fromMe": from_me, "id": "ABC"}, "messageType": mtype,
-        "messageTimestamp": ts if ts is not None else int(_time.time()), "message": {"conversation": "merhaba"}}}
+        "messageTimestamp": ts if ts is not None else int(_time.time()), "message": {"conversation": text}}}
 
 
 async def post_inbound(api, shop, monkeypatch, **kw):

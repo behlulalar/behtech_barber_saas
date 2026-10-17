@@ -22,17 +22,17 @@ RESET = (
     "Sayın kullanıcımız,\n\n{shop} panel şifrenizi sıfırlamak için kodunuz: {code}.\n\nLütfen kodu başkasıyla paylaşmayınız.",
 )
 CONFIRM = (
-    "Sayın {customer},\n\n✅ Randevunuz onaylanmıştır.\n\n{shop}\n\n{details}\n\nSizi bekliyoruz.",
-    "✅ {shop} randevunuz oluşturulmuştur.\n\n{details}\n\nİyi günler dileriz.",
-    "Sayın {customer},\n\n{shop} randevunuz onaylanmıştır. ✅\n\n{details}",
-    "✅ Randevunuz onaylanmıştır.\n\n{shop}\n\n{details}\n\nİyi günler dileriz.",
+    "Sayın {customer},\n\n✅ Randevunuz onaylanmıştır.\n\n{shop}\n\n{details}\n\nSizi bekliyoruz.\n\nİptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.",
+    "✅ {shop} randevunuz oluşturulmuştur.\n\n{details}\n\nİyi günler dileriz.\n\nİptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.",
+    "Sayın {customer},\n\n{shop} randevunuz onaylanmıştır. ✅\n\n{details}\n\nİptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.",
+    "✅ Randevunuz onaylanmıştır.\n\n{shop}\n\n{details}\n\nİyi günler dileriz.\n\nİptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.",
 )
 # Randevuyu işletme/personel panelden (telefonla, yüz yüze) oluşturduğunda: müşteri kendisi almadı, bu belli olmalı.
 CONFIRM_MANUAL = (
-    "Sayın {customer},\n\n✅ {shop} tarafından adınıza randevu oluşturulmuştur.\n\n{details}",
-    "✅ {shop} sizin için randevu oluşturmuştur.\n\n{details}\n\nİyi günler dileriz.",
-    "Sayın {customer},\n\nRandevunuz {shop} tarafından kaydedilmiştir. ✅\n\n{details}",
-    "✅ {shop} tarafından adınıza randevu alınmıştır.\n\n{details}\n\nSizi bekliyoruz.",
+    "Sayın {customer},\n\n✅ {shop} tarafından adınıza randevu oluşturulmuştur.\n\n{details}\n\nİptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.",
+    "✅ {shop} sizin için randevu oluşturmuştur.\n\n{details}\n\nİyi günler dileriz.\n\nİptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.",
+    "Sayın {customer},\n\nRandevunuz {shop} tarafından kaydedilmiştir. ✅\n\n{details}\n\nİptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.",
+    "✅ {shop} tarafından adınıza randevu alınmıştır.\n\n{details}\n\nSizi bekliyoruz.\n\nİptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.",
 )
 CANCEL_CUSTOMER = (
     "Sayın {customer},\n\nAşağıdaki randevunuz iptal edilmiştir.\n\n{details}\n\nYeni randevu için:\n{link}",
@@ -59,6 +59,21 @@ STAFF_CANCEL = (
     "Aşağıdaki randevu iptal edilmiştir.\n\nTarih: {day} {date}\nSaat: {time}\nMüşteri: {customer}\nHizmet: {service}",
     "Randevu iptal bilgisi\n\nMüşteri: {customer}\nHizmet: {service}\nTarih: {day} {date}\nSaat: {time}",
 )
+CANCEL_NONE = (
+    "Sayın müşterimiz,\n\nBu numaraya ait iptal edilebilecek bir randevu bulunamamıştır.\n\nYeni randevu için:\n{link}",
+    "{shop} kayıtlarında bu numaraya ait yaklaşan bir randevu görünmemektedir.\n\nYeni randevu için:\n{link}",
+    "Sayın müşterimiz,\n\nİptal edilecek aktif bir randevunuz bulunamamıştır.\n\nRandevu almak için:\n{link}",
+)
+CANCEL_LATE = (
+    "Sayın müşterimiz,\n\nRandevunuza 2 saatten az kaldığı için iptal işlemi bu yolla yapılamamaktadır.\n\nLütfen işletmemizle doğrudan iletişime geçiniz.",
+    "{shop} olarak, randevunuza 2 saatten az kaldığı için iptalinizi gerçekleştiremedik.\n\nLütfen işletmemizle doğrudan iletişime geçiniz.",
+    "Sayın müşterimiz,\n\nRandevu saatine 2 saatten az kaldığından iptal talebiniz işleme alınamamıştır.\n\nLütfen işletmemizle doğrudan görüşünüz.",
+)
+CANCEL_LINK = (
+    "Sayın müşterimiz,\n\nRandevunuzu iptal etmek için lütfen aşağıdaki adresten telefon numaranızla giriş yapınız.\n{link}",
+    "{shop} randevu iptali için lütfen aşağıdaki adrese giriş yapınız.\n\n{link}\n\nGiriş telefon numaranızla yapılır.",
+    "Sayın müşterimiz,\n\nİptal işlemi için aşağıdaki adresten telefon numaranızla giriş yapmanız gerekmektedir.\n{link}",
+)
 RESCHEDULE_CUSTOMER = (
     "Sayın {customer},\n\nRandevunuz güncellenmiştir.\n\n{shop}\n\nYeni randevu bilgileriniz:\n{details}\n\nÖnceki randevu: {old_day} {old_date}, {old_time}",
     "{shop} randevunuzun saati değiştirilmiştir.\n\nYeni randevu bilgileriniz:\n{details}\n\nİyi günler dileriz.",
@@ -78,7 +93,7 @@ WELCOME = (
 
 _VARIANTS: dict[str, tuple[str, ...]] = {
     "otp": OTP, "password_reset": RESET, "confirm": CONFIRM, "confirm_manual": CONFIRM_MANUAL, "cancel_customer": CANCEL_CUSTOMER,
-    "cancel_shop": CANCEL_SHOP, "reschedule_customer": RESCHEDULE_CUSTOMER, "staff_reschedule": STAFF_RESCHEDULE, "reminder": REMINDER, "staff_new": STAFF_NEW, "staff_cancel": STAFF_CANCEL, "welcome": WELCOME,
+    "cancel_shop": CANCEL_SHOP, "reschedule_customer": RESCHEDULE_CUSTOMER, "cancel_none": CANCEL_NONE, "cancel_late": CANCEL_LATE, "cancel_link": CANCEL_LINK, "staff_reschedule": STAFF_RESCHEDULE, "reminder": REMINDER, "staff_new": STAFF_NEW, "staff_cancel": STAFF_CANCEL, "welcome": WELCOME,
 }
 _last: dict[tuple[int | None, str], int] = {}
 
@@ -127,6 +142,10 @@ def fmt_date(d: date) -> str:
 
 def fmt_time(t: time) -> str:
     return t.strftime("%H:%M")
+
+
+def my_appointments_url(slug: str) -> str:
+    return site_url(slug).replace("/randevu", "/randevularim")
 
 
 def site_url(slug: str) -> str:

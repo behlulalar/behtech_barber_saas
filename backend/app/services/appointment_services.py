@@ -30,6 +30,7 @@ async def lock_staff_schedule(db: Session, tenant_id: int, staff_id: int) -> Non
 
 
 SLOT_MINUTES = 30
+CANCEL_MIN_HOURS = 2  # randevuya bu kadar saatten az kalmışsa müşteri iptal/değişiklik yapamaz
 DAY_MINUTES = 24 * 60
 
 

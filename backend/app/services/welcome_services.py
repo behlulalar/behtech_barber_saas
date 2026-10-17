@@ -16,7 +16,7 @@ from app.models.outbound_message import OutboundMessage
 from app.models.tenant import Tenant
 from app.models.welcome_contact import WelcomeContact
 from app.models.whatsapp_connection import WhatsappConnection
-from app.services import whatsapp_queue as queue, whatsapp_texts as texts
+from app.services import cancel_by_message, whatsapp_queue as queue, whatsapp_texts as texts
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,9 @@ async def handle_inbound(db: AsyncSession, conn: WhatsappConnection, payload: di
                 continue
         except (TypeError, ValueError):
             pass
+        if cancel_by_message.is_cancel_request(cancel_by_message.message_text(item)):
+            await cancel_by_message.process(db, tenant, who, to)  # "iptal" yazan müşteriye karşılama değil iptal akışı
+            continue
         recent = (await db.execute(select(func.count()).select_from(OutboundMessage).where(
             OutboundMessage.tenant_id == conn.tenant_id, OutboundMessage.kind == "welcome",
             OutboundMessage.created_at > now - timedelta(hours=1)))).scalar_one()
