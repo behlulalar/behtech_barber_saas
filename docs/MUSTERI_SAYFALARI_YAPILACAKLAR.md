@@ -14,6 +14,11 @@ randevu akışı (`BookingPage`: Hizmet, Berber, Zaman, Bilgiler + telefon doğr
       - Teknik not: görseller DB'de data URL olarak tutuluyor (bilinen sınır, bkz. EKSIKLER.md). Liste API'sini şişirmemek için
         istemcide küçültme (kısa kenar ~800 px, JPEG/WebP) ve boyut sınırı şart.
 
+- [x] (2026-10-17 YAPILDI) **Randevu "Bilgiler" adımı:** numara üstte, ad-soyad altta. Bu cihazda daha önce randevu alınmış numara tam yazılınca ad-soyad otomatik dolar
+      (`lib/knownContacts.ts`, son 5 numara, yalnızca tarayıcıda). Sunucudan ad GETİRİLMEZ (doğrulanmamış numaradan ad sızdırmamak için, KVKK); başka numara yazılınca
+      otomatik dolan ad temizlenir. Numara sistemde kayıtlıysa ve yazılan ad farklıysa doğrulama sonrası "bu numara X adına kayıtlı; randevu bu adla oluşturuldu" uyarısı çıkar.
+      Not: kayıtlı müşterinin adı hâlâ ilk kayıttaki addır (randevuya özel ad saklanmıyor; baba/oğul durumu kritik görülmedi).
+
 ## Önerilenler (kullanıcı "güzel eklenebilir" dedi)
 1. [x] (2026-10-17 YAPILDI; randevu sonrası ekranda ve Randevularım'da yaklaşan randevu kartlarında; tarayıcıda görsel doğrulama yapılmadı) **Randevu sonrası "takvime ekle" (.ics) + "yol tarifi"** (onay ekranında; haritalar bağlantısı şu an yalnızca ana sayfada).
 2. [ ] **"Fark etmez, herhangi bir berber" seçeneği** (birden fazla berberi olan dükkânlarda; boş saatleri birleştirir).

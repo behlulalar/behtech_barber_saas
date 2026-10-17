@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { OtpUnavailable } from '../../components/OtpUnavailable'
+import { lookupContact, rememberContact } from '../../lib/knownContacts'
 import { useTenant } from '../../lib/queries'
 import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { SlotGrid, SlotGridSkeleton } from '../../components/booking/SlotGrid'
@@ -83,6 +84,7 @@ export default function BookingPage() {
   const [name, setName] = useState('')
   const [surname, setSurname] = useState('')
   const [phone, setPhone] = useState('')
+  const autoFilledFor = useRef<string | null>(null)
   const [errors, setErrors] = useState<{ name?: string; surname?: string; phone?: string; kvkk?: string }>({})
   const [devCode, setDevCode] = useState<string | null>(null)
   const [result, setResult] = useState<AppointmentPublicOut | null>(null)
@@ -125,10 +127,29 @@ export default function BookingPage() {
     }
     const known = me.data ?? auth.customer
     if (known) {
+      // Oturumdan dolan ad da "otomatik" sayılır: kullanıcı başka numara yazarsa temizlenir.
+      if (!name && !surname && auth.phone) autoFilledFor.current = auth.phone
       setName((n) => n || known.name)
       setSurname((n) => n || known.surname)
     }
   }, [auth.isAuthenticated, auth.phone, auth.customer, me.data])
+
+  // Numara tam yazılınca, bu cihaz o numarayla daha önce randevu aldıysa ad-soyadı doldur. Başka numara yazılırsa
+  // otomatik doldurulan ad temizlenir (kullanıcının kendi yazdığına dokunulmaz).
+  useEffect(() => {
+    const p = normalizePhone(phone)
+    if (autoFilledFor.current && autoFilledFor.current !== p) {
+      autoFilledFor.current = null
+      setName('')
+      setSurname('')
+    }
+    if (p.length !== 10 || autoFilledFor.current === p) return
+    const known = lookupContact(p)
+    if (!known || name || surname) return // kullanıcı kendi yazdıysa dokunma
+    autoFilledFor.current = p
+    setName(known.name)
+    setSurname(known.surname)
+  }, [phone])
 
   const availability = useQuery({
     queryKey: ['availability', 'slots', staffId, serviceId, date],
@@ -175,6 +196,7 @@ export default function BookingPage() {
       }),
     onSuccess: (res) => {
       auth.setCustomer({ name: name.trim(), surname: surname.trim() }) // sonraki "yeni randevu"da ad/soyad dolu gelsin
+      if (!lookupContact(normalizePhone(phone))) rememberContact(normalizePhone(phone), name, surname)
       queryClient.invalidateQueries({ queryKey: ['customer', 'me'] })
       setResult(res)
       setStep('done')
@@ -235,8 +257,13 @@ export default function BookingPage() {
   function onVerified(resp: VerifyCodeResponse) {
     auth.login(resp)
     if (resp.customer) {
+      // Numara kayıtlıysa sunucu kayıtlı adı kullanır; farklı bir ad yazıldıysa müşteri sessizce yanıltılmasın.
+      if (resp.customer.name.trim() !== name.trim() || resp.customer.surname.trim() !== surname.trim()) {
+        toast.warning(`Bu numara ${resp.customer.name} ${resp.customer.surname} adına kayıtlı; randevu bu adla oluşturuldu.`)
+      }
       setName(resp.customer.name)
       setSurname(resp.customer.surname)
+      rememberContact(normalizePhone(phone), resp.customer.name, resp.customer.surname)
     }
     // Kayıtlı müşteri adı doluysa doğrudan oluştur; token store'a yazıldıktan sonra istek gider.
     create.mutate()
@@ -336,6 +363,22 @@ export default function BookingPage() {
 
         {step === 'contact' && (
           <form id="contact-form" onSubmit={submitContact} noValidate className="space-y-4">
+            <Field
+              label="Cep telefonu"
+              required
+              error={errors.phone}
+              hint={
+                sessionPhoneMatches
+                  ? 'Bu numara doğrulandı, tekrar kod istemeyeceğiz.'
+                  : 'Numaranıza bir doğrulama kodu göndereceğiz.'
+              }
+            >
+              <PhoneInput
+                autoComplete="tel"
+                value={phone}
+                onValueChange={setPhone}
+              />
+            </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Ad" required error={errors.name}>
                 <Input
@@ -356,22 +399,6 @@ export default function BookingPage() {
                 />
               </Field>
             </div>
-            <Field
-              label="Cep telefonu"
-              required
-              error={errors.phone}
-              hint={
-                sessionPhoneMatches
-                  ? 'Bu numara doğrulandı, tekrar kod istemeyeceğiz.'
-                  : 'Numaranıza bir doğrulama kodu göndereceğiz.'
-              }
-            >
-              <PhoneInput
-                autoComplete="tel"
-                value={phone}
-                onValueChange={setPhone}
-              />
-            </Field>
             {otpBlocked && <OtpUnavailable info={tenant.data} />}
             {!sessionPhoneMatches && !otpBlocked && (
               <KvkkCheckbox
