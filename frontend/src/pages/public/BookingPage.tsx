@@ -15,6 +15,7 @@ import { OtpUnavailable } from '../../components/OtpUnavailable'
 import { useTenant } from '../../lib/queries'
 import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { SlotGrid, SlotGridSkeleton } from '../../components/booking/SlotGrid'
+import { AppointmentActions } from '../../components/booking/AppointmentActions'
 import { ServiceVisual } from '../../components/booking/ServiceVisual'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button, buttonStyles } from '../../components/ui/Button'
@@ -780,7 +781,9 @@ function SuccessView({ appointment, name }: { appointment: AppointmentPublicOut;
         Randevunuz onaylandı. Başka bir cihazdan görmek ya da iptal etmek için sitedeki “Giriş yap” bağlantısından telefon numaranızla giriş yapın; numaranıza doğrulama kodu göndereceğiz.
       </p>
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+      <AppointmentActions appointment={appointment} size="lg" className="mt-6 justify-center [&>*]:flex-1 sm:[&>*]:flex-none" />
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <Link to="/randevularim" className={buttonStyles({ size: 'lg', fullWidth: true })}>
           Randevularım
         </Link>

@@ -1,4 +1,5 @@
 import { OtpUnavailable } from '../../components/OtpUnavailable'
+import { AppointmentActions } from '../../components/booking/AppointmentActions'
 import { useTenant } from '../../lib/queries'
 import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -326,9 +327,12 @@ function AppointmentCard({ a, onCancel, muted }: { a: AppointmentPublicOut; onCa
           {fullName(a.staff)} · {formatPrice(a.service.price)}
         </p>
         {onCancel && (
-          <Button variant="danger" size="sm" className="mt-3" onClick={onCancel}>
-            İptal et
-          </Button>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <AppointmentActions appointment={a} size="sm" />
+            <Button variant="danger" size="sm" onClick={onCancel}>
+              İptal et
+            </Button>
+          </div>
         )}
       </div>
     </li>

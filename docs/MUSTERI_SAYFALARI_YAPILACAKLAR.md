@@ -15,7 +15,7 @@ randevu akışı (`BookingPage`: Hizmet, Berber, Zaman, Bilgiler + telefon doğr
         istemcide küçültme (kısa kenar ~800 px, JPEG/WebP) ve boyut sınırı şart.
 
 ## Önerilenler (kullanıcı "güzel eklenebilir" dedi)
-1. [ ] **Randevu sonrası "takvime ekle" (.ics) + "yol tarifi"** (onay ekranında; haritalar bağlantısı şu an yalnızca ana sayfada).
+1. [x] (2026-10-17 YAPILDI; randevu sonrası ekranda ve Randevularım'da yaklaşan randevu kartlarında; tarayıcıda görsel doğrulama yapılmadı) **Randevu sonrası "takvime ekle" (.ics) + "yol tarifi"** (onay ekranında; haritalar bağlantısı şu an yalnızca ana sayfada).
 2. [ ] **"Fark etmez, herhangi bir berber" seçeneği** (birden fazla berberi olan dükkânlarda; boş saatleri birleştirir).
 3. [ ] **Randevuyu değiştirme:** "Başka saate al" (aynı hizmet ve berber; yalnızca yeni saat seçtirir). Şu an yalnızca iptal var.
 4. [ ] **WhatsApp'tan iptal:** hatırlatmaya "iptal" yazan müşterinin randevusu iptal olsun; berbere bildirim (bkz. EKSIKLER.md).
