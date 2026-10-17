@@ -11,6 +11,8 @@ import { cn } from '../../lib/cn'
 import { useInbox, useMarkRead } from '../../lib/inbox'
 import { errorMessage } from '../../lib/api'
 import { formatDateTimeDMY } from '../platform/platformShared'
+import { MyTickets, SupportButton } from './SupportForm'
+import { useStaffAuth } from '../../lib/auth'
 
 const LEVEL: Record<string, { label: string; tone: BadgeTone }> = {
   info: { label: 'Bilgi', tone: 'neutral' },
@@ -21,6 +23,7 @@ const LEVEL: Record<string, { label: string; tone: BadgeTone }> = {
 export default function NotificationsPage() {
   const q = useInbox()
   const markRead = useMarkRead()
+  const { isManager } = useStaffAuth()
   const items = q.data?.items ?? []
   const unread = q.data?.unread ?? 0
 
@@ -30,12 +33,15 @@ export default function NotificationsPage() {
         title="Bildirimler"
         description="Bakım duyuruları, bizden gelen mesajlar ve sistem uyarıları burada saklanır."
         actions={
-          unread > 0 ? (
-            <Button variant="secondary" onClick={() => markRead.mutate('all')} loading={markRead.isPending}>
-              <CheckCheck className="size-4" aria-hidden="true" />
-              Tümünü okundu say
-            </Button>
-          ) : undefined
+          <>
+            {isManager && <SupportButton />}
+            {unread > 0 && (
+              <Button variant="secondary" onClick={() => markRead.mutate('all')} loading={markRead.isPending}>
+                <CheckCheck className="size-4" aria-hidden="true" />
+                Tümünü okundu say
+              </Button>
+            )}
+          </>
         }
       />
       {q.isError ? (
@@ -79,6 +85,7 @@ export default function NotificationsPage() {
           })}
         </ul>
       )}
+      {isManager && <MyTickets />}
     </>
   )
 }

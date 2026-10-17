@@ -12,7 +12,7 @@ from app.services import billing_services, system_services
 
 UNREAD_CRITICAL_AFTER = timedelta(hours=24)
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
-CATEGORY_ORDER = {"system": 0, "billing": 1, "whatsapp": 2, "notification": 3, "activity": 4, "signup": 5}
+CATEGORY_ORDER = {"system": 0, "support": 1, "billing": 2, "whatsapp": 3, "notification": 4, "activity": 5, "signup": 6}
 DISK_WARN_PCT = 85
 CERT_WARN_DAYS = 14
 ERRORS_WARN_PER_HOUR = 5
@@ -99,6 +99,17 @@ async def build(db: AsyncSession) -> ActionQueueOut:
     for tid, name, n in unread:
         items.append(ActionItem(key=f"notif:{tid}", severity="medium", category="notification", title="Acil bildirim 24 saattir okunmadı",
                                 detail=f"{n} bildirim", tenant_id=tid, tenant_name=name, link=f"/platform/isletmeler/{tid}"))
+
+    from app.models.support_ticket import SupportTicket  # noqa: PLC0415
+
+    for t, name in (await db.execute(
+        select(SupportTicket, Tenant.name).join(Tenant, Tenant.id == SupportTicket.tenant_id)
+        .where(SupportTicket.status == "open").order_by(SupportTicket.id)
+    )).all():
+        waiting_h = (datetime.now() - t.created_at).total_seconds() / 3600
+        items.append(ActionItem(key=f"support:{t.id}", severity="high" if waiting_h >= 24 else "medium", category="support",
+                                title="Destek talebi yanıt bekliyor", detail=t.message[:100],
+                                tenant_id=t.tenant_id, tenant_name=name, link="/platform/destek"))
 
     # Sistem sağlığı: yedek, disk, sertifika, sunucu hataları (Sistem sayfasıyla aynı veri kaynakları)
     sysstat = await system_services.get_status(db)

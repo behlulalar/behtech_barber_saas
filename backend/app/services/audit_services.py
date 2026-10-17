@@ -45,6 +45,8 @@ CATALOG: list[tuple[str, str, str]] = [
     ("whatsapp.pause", "İşletmenin WhatsApp gönderimi durduruldu", G_TENANT),
     ("whatsapp.resume", "İşletmenin WhatsApp gönderimi açıldı", G_TENANT),
     ("notification.send", "İşletmeye bildirim gönderildi", G_TENANT),
+    ("support.reply", "Destek talebi yanıtlandı", G_TENANT),
+    ("support.close", "Destek talebi kapatıldı", G_TENANT),
     ("announcement.create", "Duyuru yayınlandı", G_SETTINGS),
     ("announcement.update", "Duyuru güncellendi", G_SETTINGS),
     ("announcement.delete", "Duyuru silindi", G_SETTINGS),

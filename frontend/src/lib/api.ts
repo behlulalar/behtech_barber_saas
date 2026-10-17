@@ -90,6 +90,9 @@ import type {
   TimeOff,
   Closure,
   ActionQueue,
+  PlatformSupportTicket,
+  SupportCategory,
+  SupportTicket,
   SiteStats,
   SiteLink,
   TimeOffCreate,
@@ -339,6 +342,9 @@ const s = 'staff' as const
 export const adminApi = {
   getLoginUrl: () => request<{ path: string }>('/admin/login-url', { auth: s }),
   listAnnouncements: () => request<PanelAnnouncement[]>('/admin/announcements', { auth: s }),
+  createSupportTicket: (data: { category: SupportCategory; message: string }) =>
+    request<SupportTicket>('/admin/support', { method: 'POST', body: data, auth: s }),
+  listSupportTickets: () => request<SupportTicket[]>('/admin/support', { auth: s }),
   getInbox: () => request<InboxOut>('/admin/inbox', { auth: s }),
   markInboxRead: (keys: string[]) => request<void>('/admin/inbox/read', { method: 'POST', body: { keys }, auth: s }),
   markInboxReadAll: () => request<void>('/admin/inbox/read-all', { method: 'POST', auth: s }),
@@ -427,6 +433,10 @@ export const platformApi = {
   resetAdminTwoFactor: (id: number) => request<void>(`/platform/admins/${id}/reset-2fa`, { method: 'POST', auth: p }),
   me: () => request<PlatformMe>('/platform/me', { auth: p }),
   getStats: () => request<PlatformStats>('/platform/stats', { auth: p }),
+  listSupport: (status?: 'open' | 'closed') => request<PlatformSupportTicket[]>('/platform/support', { auth: p, query: { status } }),
+  replySupport: (id: number, message: string) =>
+    request<SupportTicket>(`/platform/support/${id}/reply`, { method: 'POST', body: { message }, auth: p }),
+  closeSupport: (id: number) => request<SupportTicket>(`/platform/support/${id}/close`, { method: 'POST', auth: p }),
   getActions: () => request<ActionQueue>('/platform/actions', { auth: p }),
   getSiteStats: (days = 30) => request<SiteStats>('/platform/site-stats', { auth: p, query: { days } }),
   getMetrics: () => request<MetricsOverview>('/platform/metrics/overview', { auth: p }),

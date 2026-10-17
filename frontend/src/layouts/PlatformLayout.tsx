@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Building2, HeartPulse, Megaphone, LayoutDashboard, Package, Receipt, ScrollText, Settings, ShieldCheck, UserPlus } from 'lucide-react'
+import { Building2, HeartPulse, LifeBuoy, Megaphone, LayoutDashboard, Package, Receipt, ScrollText, Settings, ShieldCheck, UserPlus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useMatch } from 'react-router-dom'
 import { MFA_SETUP_EVENT, platformApi } from '../lib/api'
@@ -17,6 +17,7 @@ const BASE_NAV: NavItem[] = [
   { to: '/platform/odemeler', label: 'Ödemeler', icon: Receipt, tab: true },
   { to: '/platform/basvurular', label: 'Başvurular', icon: UserPlus, tab: true },
   { to: '/platform/isletmeler', label: 'İşletmeler', icon: Building2, tab: true },
+  { to: '/platform/destek', label: 'Destek', icon: LifeBuoy, tab: false },
   { to: '/platform/paketler', label: 'Paketler', icon: Package },
   { to: '/platform/duyurular', label: 'Duyurular', icon: Megaphone },
   { to: '/platform/ayarlar', label: 'Ayarlar', icon: Settings },
@@ -61,7 +62,12 @@ export default function PlatformLayout() {
     enabled: !mfaGate,
   })
   const pending = pendingQ.data?.total ?? 0
-  const NAV = useMemo(() => BASE_NAV.map((n) => (n.to === '/platform/basvurular' ? { ...n, badge: pending } : n)), [pending])
+  const supportQ = useQuery({ queryKey: ['platform', 'support', 'open-count'], queryFn: () => platformApi.listSupport('open'), refetchInterval: 60_000, enabled: !mfaGate })
+  const supportOpen = supportQ.data?.length ?? 0
+  const NAV = useMemo(
+    () => BASE_NAV.map((n) => (n.to === '/platform/basvurular' ? { ...n, badge: pending } : n.to === '/platform/destek' ? { ...n, badge: supportOpen } : n)),
+    [pending, supportOpen],
+  )
   usePlatformManifest()
   useRegisterServiceWorker() // 'Uygulamayı yükle' (kurulabilirlik) için sayfa açılışında kayıtlı olmalı; bildirim izni ayrıca Ayarlar'dan
   useEffect(() => prefetchPanel('platform'), [])

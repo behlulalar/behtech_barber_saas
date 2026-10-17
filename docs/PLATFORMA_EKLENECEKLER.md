@@ -34,7 +34,7 @@ Genel kapsam kararları ve eksikler: `EKSIKLER.md`. İşletme (admin) paneli iç
 
 ## 5. Uyum ve iletişim
 - [ ] **KVKK araçları:** işletme verisini dışa aktar; işletmeyi silme/arşivleme akışı (silme sonrası saklama süresi). İlk gerçek müşteride gerekir.
-- [ ] **İşletmeden platforma mesaj ("destek talebi"):** bildirim kutusu tek yönlü; basit bir talep formu panelde toplansın.
+- [x] (2026-10-17 YAPILDI: işletme panelinde Bildirimler > "Bize yazın" [yalnızca yönetici], platformda "Destek" sayfası + menü rozeti + aksiyon kuyruğu; yanıt işletmenin bildirim kutusuna düşer ve talep kapanır; açık talep sınırı 5, günlük 10; yeni talepte platform sahibine push/e-posta) **İşletmeden platforma mesaj ("destek talebi"):** bildirim kutusu tek yönlü; basit bir talep formu panelde toplansın.
 - [ ] **Toplu işlemler:** İşletmeler listesinde çoklu seçimle toplu bildirim / etiketleme.
 - [ ] **Etiketler:** işletmeye serbest etiket ("pilot", "sorunlu", "VIP") ve etikete göre filtre.
 

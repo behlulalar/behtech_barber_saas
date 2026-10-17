@@ -49,7 +49,7 @@ from app.schemas.auth import PanelKeyVerify, PanelLoginUrlOut, ForgotReset, Forg
 from app.schemas.public import SendCodeResponse
 from app.schemas.reports import ReportPeriod, RevenueReport
 from app.services import admin_services as svc
-from app.services import whatsapp_texts
+from app.services import support_services, whatsapp_texts
 from app.services import impersonation_services
 from app.services import login_throttle, otp_services, panel_key
 from app.core.net import client_ip
@@ -64,6 +64,7 @@ from app.models.message_log import MessageLog
 from app.schemas.tenant import SetupOut
 from app.schemas.announcement import AnnouncementPublic
 from app.schemas.notification import InboxOut, InboxRead
+from app.schemas.support import TicketIn, TicketOut
 from app.services.appointment_services import get_available_slots, lock_staff_schedule
 from app.services.customer_services import get_or_create_customer
 
@@ -873,6 +874,19 @@ async def admin_inbox_read(data: InboxRead, staff: Staff = Depends(get_current_s
 async def admin_inbox_read_all(staff: Staff = Depends(get_current_staff), db: AsyncSession = Depends(get_db)):
     await notification_services.mark_read(db, staff.tenant_id, None)
     return Response(status_code=204)
+
+
+@router.post("/admin/support", response_model=TicketOut, status_code=201)
+async def admin_support_create(
+    data: TicketIn, current: Staff = Depends(require_manager), tenant: Tenant = Depends(get_current_tenant), db: AsyncSession = Depends(get_db),
+):
+    """İşletme sahibi/yöneticisi platforma yazar ("Bize yazın"). Yanıt Bildirimler'e düşer."""
+    return await support_services.create(db, tenant, current, data)
+
+
+@router.get("/admin/support", response_model=list[TicketOut])
+async def admin_support_list(current: Staff = Depends(require_manager), db: AsyncSession = Depends(get_db)):
+    return await support_services.list_for_tenant(db, current.tenant_id)
 
 
 @router.get("/admin/setup", response_model=SetupOut)

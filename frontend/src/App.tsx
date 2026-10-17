@@ -30,6 +30,7 @@ const AdminRevenuePage = lazy(() => import('./pages/admin/RevenuePage'))
 const PlatformLoginPage = lazy(() => import('./pages/platform/LoginPage'))
 const PlatformDashboardPage = lazy(() => import('./pages/platform/DashboardPage'))
 const PlatformApplicationsPage = lazy(() => import('./pages/platform/ApplicationsPage'))
+const PlatformSupportPage = lazy(() => import('./pages/platform/SupportPage'))
 const PlatformTenantsPage = lazy(() => import('./pages/platform/TenantsPage'))
 const PlatformTenantDetailPage = lazy(() => import('./pages/platform/TenantDetailPage'))
 const PlatformPaymentsPage = lazy(() => import('./pages/platform/PaymentsPage'))
@@ -69,6 +70,7 @@ const platformRoutes = (
         <Route path="yoneticiler" element={<PlatformAdminsPage />} />
         <Route path="denetim" element={<PlatformAuditPage />} />
         <Route path="duyurular" element={<PlatformAnnouncementsPage />} />
+        <Route path="destek" element={<PlatformSupportPage />} />
         <Route path="sistem" element={<PlatformSystemPage />} />
       </Route>
     </Route>

@@ -26,6 +26,7 @@ from app.models.announcement import Announcement, AnnouncementTarget
 from app.models.notification import AnnouncementRead, Notification
 from app.models.site_stat import SiteStat
 from app.models.error_event import ErrorEvent
+from app.models.support_ticket import SupportTicket
 from app.models.whatsapp_connection import WhatsappConnection
 from app.models.outbound_message import OutboundMessage
 from app.models.platform_admin import PlatformBackupCode

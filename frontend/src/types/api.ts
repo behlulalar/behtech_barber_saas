@@ -465,10 +465,29 @@ export interface TwoFactorConfirmOut {
   access_token: string
 }
 
+export type SupportCategory = 'whatsapp' | 'appointments' | 'payment' | 'other'
+
+export interface SupportTicket {
+  id: number
+  category: SupportCategory
+  message: string
+  status: 'open' | 'closed'
+  reply: string | null
+  created_at: string
+  closed_at: string | null
+}
+
+export interface PlatformSupportTicket extends SupportTicket {
+  tenant_id: number
+  tenant_name: string
+  staff_name: string | null
+  staff_phone: string | null
+}
+
 export interface ActionItem {
   key: string
   severity: 'high' | 'medium' | 'low'
-  category: 'signup' | 'billing' | 'whatsapp' | 'notification' | 'system' | 'activity'
+  category: 'signup' | 'billing' | 'whatsapp' | 'notification' | 'system' | 'activity' | 'support'
   title: string
   detail: string | null
   tenant_id: number | null

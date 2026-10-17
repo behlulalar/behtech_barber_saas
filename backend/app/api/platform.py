@@ -50,6 +50,7 @@ from app.schemas.platform import (
 from app.schemas.announcement import AnnouncementIn, AnnouncementOut, AnnouncementUpdate
 from app.schemas.notification import NotificationIn, NotificationOut
 from app.schemas.actions import ActionQueueOut
+from app.schemas.support import PlatformTicketOut, TicketOut, TicketReplyIn
 from app.schemas.site_stats import SiteStatsOut
 from app.schemas.whatsapp import PlatformWhatsappOut, WhatsappPauseIn
 from app.schemas.tenant import TenantDetailOut, TenantOption, TenantOut, TenantPage
@@ -60,6 +61,7 @@ from app.services import (
     notification_services,
     site_stats_services,
     action_services,
+    support_services,
     audit_services,
     job_services,
     metrics_services,
@@ -295,6 +297,30 @@ async def job_runs(
 @router.get("/system/status", response_model=SystemStatus)
 async def system_status(admin: PlatformAdmin = Depends(get_current_platform_admin), db: AsyncSession = Depends(get_db)):
     return await system_services.get_status(db)
+
+
+@router.get("/support", response_model=list[PlatformTicketOut])
+async def platform_support_list(
+    status: str | None = Query(default=None, pattern="^(open|closed)$"),
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    return await support_services.list_all(db, status)
+
+
+@router.post("/support/{ticket_id}/reply", response_model=TicketOut)
+async def platform_support_reply(
+    ticket_id: int, data: TicketReplyIn, request: Request,
+    admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    """Yanıtı işletmenin bildirim kutusuna gönderir ve talebi kapatır."""
+    return await support_services.reply(db, ticket_id, data, admin, request)
+
+
+@router.post("/support/{ticket_id}/close", response_model=TicketOut)
+async def platform_support_close(
+    ticket_id: int, request: Request, admin: PlatformAdmin = Depends(get_current_platform_admin), db: Session = Depends(get_db),
+):
+    return await support_services.close(db, ticket_id, admin, request)
 
 
 @router.get("/actions", response_model=ActionQueueOut)
