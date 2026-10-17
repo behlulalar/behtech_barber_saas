@@ -27,15 +27,15 @@ modeli korunur (SSS'deki "Fiyat nedir?" cevabı bu haliyle kalır).
 - [x] (2026-10-17 KARAR: YAPILMAYACAK) **Dükkân alt alanları için kişiye özel/büyük paylaşım önizlemesi:** kullanıcı berber linki paylaşılınca büyük önizleme kartı çıkmasını istemiyor. Bu yüzden önizleme (Open Graph/Twitter) etiketleri YALNIZCA tanıtım alanında: derleme `dist/product.html` (etiketli) ve `dist/index.html` (etiketsiz) üretir, nginx tanıtım alanında product.html'i, dükkân alt alanlarında index.html'i sunar.
 
 ### 2. İkna eden içerik
-- [ ] **İşletme panelinden gerçek ekran görüntüsü** (takvim / günün randevuları): şu an yalnızca müşteri tarafı telefon taslağı var; berberin
+- [x] (2026-10-17 KARŞILANDI: sayfada zaten çizim olarak panel görünümleri var — `PanelMockup`, `PhonePanelMockup`; gerçek ekran görüntüsü eklenmedi) **İşletme panelinden gerçek ekran görüntüsü** (takvim / günün randevuları): şu an yalnızca müşteri tarafı telefon taslağı var; berberin
       kendi tarafında ne göreceği gösterilmeli.
-- [ ] **WhatsApp vurgusu güçlendirilsin:** müşteriye onay + hatırlatma WhatsApp'tan gider, gelmeyen müşteri azalır (güçlü satış cümlesi).
+- [x] (2026-10-17 YAPILDI: "Müşteri unutmaz." bölümü, onay/hatırlatma/"iptal" yanıtı sohbet çizimi) **WhatsApp vurgusu güçlendirilsin:** müşteriye onay + hatırlatma WhatsApp'tan gider, gelmeyen müşteri azalır (güçlü satış cümlesi).
 - [ ] **QR afiş vaadi:** işletme panelindeki QR + PVC afiş fikri ("anlaşmalı işletmelere afiş") somut bir vaat olarak eklenebilir
       (ürün kararı kullanıcıda; afiş henüz yapılmadı — bkz. `ISLETME_PANELI_YAPILACAKLAR.md`).
 - [ ] **Sosyal kanıt alanı:** ilk pilot berberden bir cümle + dükkân adı gelince eklenecek. SAHTE yorum/sayı KONMAZ.
 
 ### 3. Küçük pürüzler
-- [ ] Üst menüye "Demo" bağlantısı (şu an demo yalnızca hero ve alttaki başlayın bölümünde).
+- [x] (2026-10-17 YAPILDI) Üst menüye "Demo" bağlantısı (şu an demo yalnızca hero ve alttaki başlayın bölümünde).
 - [ ] Yeni içerik eklenirken sayfa uzunluğu kontrol edilir; gerekirse bir bölüm kısaltılır.
 
 ## Öncelik önerisi

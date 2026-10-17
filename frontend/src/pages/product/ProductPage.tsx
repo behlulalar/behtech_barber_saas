@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ArrowRight, ArrowUpRight, CalendarCheck, CalendarX2, Check, Gift, KeyRound, Link2, Menu, MessageCircle, Minus,
+  ArrowRight, ArrowUpRight, Bell, CalendarCheck, CalendarX2, Check, Gift, KeyRound, Link2, Menu, MessageCircle, Minus,
   Mail, MousePointerClick, PhoneMissed, Plus, RotateCcw, Scissors, Share2, ShieldCheck, Smartphone, UserPlus, Users, Wallet, X,
 } from 'lucide-react'
 import { ThemeToggle } from '../../lib/theme'
@@ -101,9 +101,10 @@ function Pole({ className = '', anim = false }: { className?: string; anim?: boo
   return <span aria-hidden className={`pole block ${anim ? 'pole-anim' : ''} ${className}`} />
 }
 
-const NAV = [
+const NAV: { href: string; label: string; external?: boolean }[] = [
   { href: '#ozellikler', label: 'Özellikler' },
   { href: '#nasil', label: 'Nasıl çalışır' },
+  { href: DEMO_SITE_URL, label: 'Demo', external: true },
   { href: '#sss', label: 'SSS' },
   { href: '#iletisim', label: 'İletişim' },
 ]
@@ -118,7 +119,12 @@ function Header() {
         </a>
         <nav aria-label="Sayfa bölümleri" className="hidden items-center gap-8 md:flex">
           {NAV.map((n) => (
-            <a key={n.href} href={n.href} className="text-sm text-muted-strong transition-colors hover:text-cream">
+            <a
+              key={n.href}
+              href={n.href}
+              {...(n.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              className="text-sm text-muted-strong transition-colors hover:text-cream"
+            >
               {n.label}
             </a>
           ))}
@@ -144,6 +150,7 @@ function Header() {
             <a
               key={n.href}
               href={n.href}
+              {...(n.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               onClick={() => setOpen(false)}
               className="flex min-h-14 items-center justify-between border-b border-line font-display text-xl text-cream"
             >
@@ -324,6 +331,59 @@ function Features() {
           </Rv>
         ))}
       </ul>
+    </section>
+  )
+}
+
+/** WhatsApp bildirimleri: onay + hatırlatma + "iptal" yanıtı. Metinler gerçek mesaj şablonlarıyla aynı üsluptadır. */
+function WhatsappBand() {
+  const bullets = [
+    { icon: Check, t: 'Randevu onayı', d: 'Alınır alınmaz müşterinize' },
+    { icon: Bell, t: 'Hatırlatma', d: 'Randevudan 1 saat önce' },
+    { icon: RotateCcw, t: '“İptal” yazması yeter', d: 'Boşalan saat yeniden satışa çıkar' },
+  ]
+  return (
+    <section aria-labelledby="whatsapp" className="border-t border-line">
+      <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 md:grid-cols-12 md:py-28">
+        <Rv className="md:col-span-6">
+          <p className="eyebrow">WhatsApp</p>
+          <h2 id="whatsapp" className="mt-4 font-display text-4xl font-light leading-[1.08] tracking-tight md:text-6xl">
+            Müşteri <span className="italic text-copper-bright">unutmaz.</span>
+          </h2>
+          <p className="mt-5 max-w-md text-lg text-muted-strong">Onay ve hatırlatma, kendi WhatsApp numaranızdan gider.</p>
+          <ul className="mt-8 grid gap-3">
+            {bullets.map(({ icon: Icon, t, d }) => (
+              <li key={t} className="flex items-center gap-4 rounded-md border border-line bg-surface px-4 py-3">
+                <Icon className="size-5 shrink-0 text-copper" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-cream">{t}</span>
+                  <span className="block text-sm text-muted-strong">{d}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Rv>
+        <Rv delay={120} className="md:col-span-6">
+          <div aria-hidden className="mx-auto flex w-full max-w-sm flex-col gap-3 rounded-lg border border-line bg-surface-raised p-4 md:p-5">
+            <div className="max-w-[88%] self-start rounded-md rounded-tl-none border border-line bg-surface px-4 py-3 text-sm leading-relaxed text-cream shadow-sm">
+              <p>Sayın Ali,</p>
+              <p className="mt-2">✅ Randevunuz onaylanmıştır.</p>
+              <p className="mt-2 text-muted-strong">
+                Tarih: Cumartesi 24 Ekim
+                <br />
+                Saat: 14:30
+                <br />
+                Hizmet: Saç + Sakal
+              </p>
+              <p className="mt-2 text-xs text-muted-strong">İptal etmek için bu mesaja “iptal” yazarak yanıt verebilirsiniz.</p>
+            </div>
+            <div className="max-w-[60%] self-end rounded-md rounded-tr-none bg-copper px-4 py-2.5 text-sm font-medium text-on-accent">iptal</div>
+            <div className="max-w-[88%] self-start rounded-md rounded-tl-none border border-line bg-surface px-4 py-3 text-sm leading-relaxed text-cream shadow-sm">
+              Randevunuz iptal edilmiştir. Yeni randevu için bağlantı aşağıdadır.
+            </div>
+          </div>
+        </Rv>
+      </div>
     </section>
   )
 }
@@ -586,6 +646,7 @@ export default function ProductPage() {
         <Hero />
         <BeforeAfter />
         <Features />
+        <WhatsappBand />
         <HowItWorks />
         <Mobile />
         <Faq />
