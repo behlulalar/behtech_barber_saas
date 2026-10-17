@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { customerApi, errorMessage, publicApi, ApiError } from '../../lib/api'
+import { LIVE_SLOTS_QUERY, useDropStaleSelection } from '../../lib/useLiveSlots'
 import { formatDateLong, formatTimeRange, nextDaysISO, todayLocalISO } from '../../lib/format'
 import type { AppointmentPublicOut } from '../../types/api'
 import { Button } from '../ui/Button'
@@ -21,7 +22,9 @@ export function RescheduleModal({ appointment, onClose }: { appointment: Appoint
   const slots = useQuery({
     queryKey: ['availability', 'slots', appointment.staff.id, appointment.service.id, date],
     queryFn: () => publicApi.getSlots({ staff_id: appointment.staff.id, service_id: appointment.service.id, date }),
+    ...LIVE_SLOTS_QUERY,
   })
+  useDropStaleSelection(slots.data, time, () => setTime(null))
 
   const move = useMutation({
     mutationFn: () => customerApi.rescheduleAppointment(appointment.id, { appointment_date: date, appointment_time: time!.slice(0, 5) }),

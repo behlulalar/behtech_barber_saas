@@ -91,3 +91,16 @@ async def test_notifications_replace_stale_messages(api, shop):
     assert {m.kind for m in new} == {"reschedule_customer", "staff_reschedule"}
     cust = next(m for m in new if m.kind == "reschedule_customer")
     assert "14:30" in cust.body  # yeni saat her alternatifte yazar (eski saat yalnızca bazılarında)
+
+
+async def test_booking_and_reschedule_racing_for_same_slot_only_one_wins(api, shop):
+    import asyncio
+    for round_, at in enumerate(("14:00", "15:00", "16:00")):
+        a = await create(api, shop, "09:00" if round_ == 0 else ("09:30" if round_ == 1 else "10:00"), phone=f"55500100{round_:02d}")
+        res = await asyncio.gather(
+            move(api, shop, a["id"], at, phone=f"55500100{round_:02d}"),
+            api.post("/api/appointments", slug=shop.slug, token=tok(shop, f"55500200{round_:02d}"), json={
+                "name": "Yeni", "surname": "Kisi", "staff_id": shop.staff.id, "service_id": shop.cut.id,
+                "appointment_date": DAY.isoformat(), "appointment_time": at}),
+        )
+        assert sorted(r.status_code for r in res) == [200, 409], [r.text for r in res]

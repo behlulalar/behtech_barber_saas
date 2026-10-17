@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { Link } from 'react-router-dom'
 import { OtpUnavailable } from '../../components/OtpUnavailable'
 import { lookupContact, rememberContact } from '../../lib/knownContacts'
+import { LIVE_SLOTS_QUERY, useDropStaleSelection } from '../../lib/useLiveSlots'
 import { useTenant } from '../../lib/queries'
 import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { LoadError } from '../../components/booking/LoadError'
@@ -161,6 +162,7 @@ export default function BookingPage() {
     queryKey: ['availability', 'slots', staffId, serviceId, date],
     queryFn: () => publicApi.getSlots({ staff_id: staffId === ANY_STAFF ? undefined : staffId!, service_id: serviceId!, date }),
     enabled: step === 'time' && staffId != null && serviceId != null,
+    ...LIVE_SLOTS_QUERY,
     staleTime: 15_000,
   })
 
@@ -185,6 +187,8 @@ export default function BookingPage() {
       if (top < window.scrollY) window.scrollTo({ top: Math.max(0, top) })
     }
   }, [step])
+
+  useDropStaleSelection(availability.data, time, () => setTime(null))
 
   const tenant = useTenant()
   const sessionPhoneMatches = auth.isAuthenticated && auth.phone === normalizePhone(phone)

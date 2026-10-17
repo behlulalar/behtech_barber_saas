@@ -19,6 +19,10 @@ randevu akışı (`BookingPage`: Hizmet, Berber, Zaman, Bilgiler + telefon doğr
       otomatik dolan ad temizlenir. Numara sistemde kayıtlıysa ve yazılan ad farklıysa doğrulama sonrası "bu numara X adına kayıtlı; randevu bu adla oluşturuldu" uyarısı çıkar.
       Not: kayıtlı müşterinin adı hâlâ ilk kayıttaki addır (randevuya özel ad saklanmıyor; baba/oğul durumu kritik görülmedi).
 
+- [x] (2026-10-17 YAPILDI) **Saat çakışması / canlı gölgeleme:** randevu alma ve saat değiştirme aynı berberin kaydını kilitler (testli: biri alırken biri değiştirirse tek kazanan, diğeri 409).
+      Saat seçim ekranı ve "Saati değiştir" penceresi 15 sn'de bir ve sekmeye dönünce yenilenir; başkası saati alırsa "Dolu" görünür, seçili saat dolduysa seçim kalkar + uyarı.
+      Bilerek YAPILMADI: "başkası şu an seçiyor" geçici rezervasyon (kötüye kullanımla tüm saatler kilitlenebilir, karmaşık).
+
 ## Önerilenler (kullanıcı "güzel eklenebilir" dedi)
 1. [x] (2026-10-17 YAPILDI; randevu sonrası ekranda ve Randevularım'da yaklaşan randevu kartlarında; tarayıcıda görsel doğrulama yapılmadı) **Randevu sonrası "takvime ekle" (.ics) + "yol tarifi"** (onay ekranında; haritalar bağlantısı şu an yalnızca ana sayfada).
 2. [x] (2026-10-17 YAPILDI; 2+ berber varsa "Berber" adımının başında; birleşik saatler + sunucu o gün en az randevusu olanı atar, eşitlikte küçük id; eşzamanlı isteklerde berber satırları id sırasıyla kilitlenir) **"Fark etmez, herhangi bir berber" seçeneği** (birden fazla berberi olan dükkânlarda; boş saatleri birleştirir).
