@@ -62,15 +62,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <div
                 key={t.id}
                 role={t.kind === 'error' ? 'alert' : 'status'}
-                className="pointer-events-auto flex w-full max-w-sm animate-toast-in items-start gap-3 rounded-md border border-line-strong bg-surface-raised px-4 py-3 shadow-pop"
+                className="pointer-events-auto flex w-full max-w-sm animate-toast-in items-center gap-3 rounded-md border border-line-strong bg-surface-raised px-4 py-3 shadow-pop"
               >
-                <Icon className={cn('mt-0.5 size-5 shrink-0', COLORS[t.kind])} aria-hidden="true" />
+                <Icon className={cn('size-5 shrink-0', COLORS[t.kind])} aria-hidden="true" />
                 <p className="min-w-0 flex-1 break-words text-sm text-cream">{t.message}</p>
                 <button
                   type="button"
                   onClick={() => dismiss(t.id)}
                   aria-label="Bildirimi kapat"
-                  className="-mr-1 -mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted hover:text-cream"
+                  className="-mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted hover:text-cream"
                 >
                   <X className="size-4" />
                 </button>
