@@ -22,7 +22,7 @@ randevu akışı (`BookingPage`: Hizmet, Berber, Zaman, Bilgiler + telefon doğr
 ## Önerilenler (kullanıcı "güzel eklenebilir" dedi)
 1. [x] (2026-10-17 YAPILDI; randevu sonrası ekranda ve Randevularım'da yaklaşan randevu kartlarında; tarayıcıda görsel doğrulama yapılmadı) **Randevu sonrası "takvime ekle" (.ics) + "yol tarifi"** (onay ekranında; haritalar bağlantısı şu an yalnızca ana sayfada).
 2. [x] (2026-10-17 YAPILDI; 2+ berber varsa "Berber" adımının başında; birleşik saatler + sunucu o gün en az randevusu olanı atar, eşitlikte küçük id; eşzamanlı isteklerde berber satırları id sırasıyla kilitlenir) **"Fark etmez, herhangi bir berber" seçeneği** (birden fazla berberi olan dükkânlarda; boş saatleri birleştirir).
-3. [ ] **Randevuyu değiştirme:** "Başka saate al" (aynı hizmet ve berber; yalnızca yeni saat seçtirir). Şu an yalnızca iptal var.
+3. [x] (2026-10-17 YAPILDI; Randevularım'da "Saati değiştir"; aynı hizmet + berber, iptal kuralıyla aynı 2 saat sınırı, eski bekleyen WhatsApp mesajları iptal edilip müşteriye/berbere "güncellendi" mesajı gider; kalan: kendi saatiyle örtüşen kaydırma arayüzde "Dolu" görünür, API izin verir) **Randevuyu değiştirme:** "Başka saate al" (aynı hizmet ve berber; yalnızca yeni saat seçtirir). Şu an yalnızca iptal var.
 4. [ ] **WhatsApp'tan iptal:** hatırlatmaya "iptal" yazan müşterinin randevusu iptal olsun; berbere bildirim (bkz. EKSIKLER.md).
 5. [ ] **Hizmet süresi + çalışma saatleri / "şu an açık-kapalı"** ana sayfada görünür mü kontrol edilip eksikse eklenir.
 

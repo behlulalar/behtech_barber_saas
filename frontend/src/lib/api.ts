@@ -296,6 +296,8 @@ export const customerApi = {
     request<AppointmentPublicOut>('/appointments', { method: 'POST', body: data, auth: 'customer' }),
   me: () => request<CustomerName | null>('/customer/me', { auth: 'customer' }),
   listAppointments: () => request<AppointmentPublicOut[]>('/customer/appointments', { auth: 'customer' }),
+  rescheduleAppointment: (id: number, data: { appointment_date: string; appointment_time: string }) =>
+    request<AppointmentPublicOut>(`/customer/appointments/${id}/reschedule`, { method: 'POST', body: data, auth: 'customer' }),
   cancelAppointment: (id: number) =>
     request<AppointmentPublicOut>(`/customer/appointments/${id}/cancel`, { method: 'POST', auth: 'customer' }),
 }

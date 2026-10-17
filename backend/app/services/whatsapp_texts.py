@@ -59,6 +59,16 @@ STAFF_CANCEL = (
     "Aşağıdaki randevu iptal edilmiştir.\n\nTarih: {day} {date}\nSaat: {time}\nMüşteri: {customer}\nHizmet: {service}",
     "Randevu iptal bilgisi\n\nMüşteri: {customer}\nHizmet: {service}\nTarih: {day} {date}\nSaat: {time}",
 )
+RESCHEDULE_CUSTOMER = (
+    "Sayın {customer},\n\nRandevunuz güncellenmiştir.\n\n{shop}\n\nYeni randevu bilgileriniz:\n{details}\n\nÖnceki randevu: {old_day} {old_date}, {old_time}",
+    "{shop} randevunuzun saati değiştirilmiştir.\n\nYeni randevu bilgileriniz:\n{details}\n\nİyi günler dileriz.",
+    "Sayın {customer},\n\nTalebiniz üzerine randevunuz yeni tarihe alınmıştır.\n\n{shop}\n\n{details}\n\nÖnceki randevu: {old_day} {old_date}, {old_time}",
+)
+STAFF_RESCHEDULE = (
+    "Randevu değişikliği\n\nMüşteri: {customer}\nHizmet: {service}\nYeni: {day} {date}, {time}\nÖnceki: {old_day} {old_date}, {old_time}",
+    "Aşağıdaki randevunun saati değiştirilmiştir.\n\nMüşteri: {customer}\nHizmet: {service}\nYeni tarih: {day} {date}\nYeni saat: {time}",
+    "Randevu güncellendi\n\nMüşteri: {customer}\nHizmet: {service}\nÖnceki: {old_day} {old_date}, {old_time}\nYeni: {day} {date}, {time}",
+)
 WELCOME = (
     "Sayın müşterimiz,\n\n{shop} işletmesine hoş geldiniz.\n\nRandevu almak için:\n{link}\n\nSorularınız için bu numaradan yazabilirsiniz.",
     "{shop} olarak sizi ağırlamaktan memnuniyet duyarız.\n\nOnline randevu için:\n{link}\n\nBaşka bir konuda yazabilirsiniz.",
@@ -68,7 +78,7 @@ WELCOME = (
 
 _VARIANTS: dict[str, tuple[str, ...]] = {
     "otp": OTP, "password_reset": RESET, "confirm": CONFIRM, "confirm_manual": CONFIRM_MANUAL, "cancel_customer": CANCEL_CUSTOMER,
-    "cancel_shop": CANCEL_SHOP, "reminder": REMINDER, "staff_new": STAFF_NEW, "staff_cancel": STAFF_CANCEL, "welcome": WELCOME,
+    "cancel_shop": CANCEL_SHOP, "reschedule_customer": RESCHEDULE_CUSTOMER, "staff_reschedule": STAFF_RESCHEDULE, "reminder": REMINDER, "staff_new": STAFF_NEW, "staff_cancel": STAFF_CANCEL, "welcome": WELCOME,
 }
 _last: dict[tuple[int | None, str], int] = {}
 

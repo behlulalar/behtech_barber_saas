@@ -19,7 +19,7 @@ from app.models.service import Service
 from app.models.staff import RoleType, Staff
 from app.models.tenant import Tenant
 from app.models.tenant_settings import TenantSettings
-from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut, SlotOut, SlotsResponse
+from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut, RescheduleIn, SlotOut, SlotsResponse
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
 from app.schemas.public import CustomerBrief, SendCodeResponse, StaffPublicOut, TenantPublicOut, VerifyCodeResponse
 from app.schemas.service import ServiceOut
@@ -360,6 +360,63 @@ async def customer_cancel_appointment(
     await db.commit()
     await db.refresh(appointment)
     await appointment_notifications.on_cancelled(db, tenant, appointment, by="customer")
+    return _to_public(appointment, service, staff)
+
+
+@router.post("/customer/appointments/{appointment_id}/reschedule", response_model=AppointmentPublicOut)
+async def customer_reschedule_appointment(
+    appointment_id: int,
+    data: RescheduleIn,
+    identity: CustomerIdentity = Depends(get_current_customer),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+):
+    """Müşteri kendi randevusunu aynı hizmet + berberde başka saate alır. İptal kuralıyla aynı süre sınırı geçerlidir."""
+    row = (await db.execute(
+        _public_query(tenant.id)
+        .join(Customers, Appointment.customer_id == Customers.id)
+        .where(Appointment.id == appointment_id, Customers.phone == identity.phone, Customers.tenant_id == tenant.id)
+    )).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Randevu bulunamadı")
+    appointment, service, staff = row
+    if appointment.status not in (AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED):
+        raise HTTPException(status_code=400, detail="Bu randevunun saati değiştirilemez")
+    now = datetime.now()
+    old_date, old_time = appointment.appointment_date, appointment.appointment_time
+    if datetime.combine(old_date, old_time) - now < timedelta(hours=CANCEL_MIN_HOURS):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Randevuya {CANCEL_MIN_HOURS} saatten az kaldığı için saati değiştirilemez, lütfen işletmeyle iletişime geçin",
+        )
+    new_date, new_time = data.appointment_date, data.appointment_time
+    if (new_date, new_time.replace(second=0, microsecond=0)) == (old_date, old_time.replace(second=0, microsecond=0)):
+        raise HTTPException(status_code=400, detail="Yeni saat mevcut randevunuzla aynı")
+    if datetime.combine(new_date, new_time) <= now:
+        raise HTTPException(status_code=400, detail="Geçmiş bir saate randevu alınamaz")
+    if new_date != old_date:
+        await check_daily_limit(db, tenant.id, appointment.customer_id, new_date)
+
+    # Berberin takvimini kilitle; mevcut randevu kendi yeni saatini engellemesin diye geçici olarak iptal sayılır.
+    # Saat müsait değilse işlem geri alınır (rollback) ve randevu olduğu gibi kalır.
+    await lock_staff_schedule(db, tenant.id, staff.id)
+    appointment.status = AppointmentStatus.CANCELLED
+    await db.flush()
+    slots = await get_available_slots(db, tenant.id, staff.id, service.id, new_date)
+    if new_time.replace(second=0, microsecond=0) not in {s.replace(second=0, microsecond=0) for s in slots}:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Bu saat müsait değil, lütfen başka bir saat seçin")
+    appointment.status = AppointmentStatus.CONFIRMED
+    appointment.appointment_date, appointment.appointment_time = new_date, new_time
+    # Yeni saate 90 dk'dan az kaldıysa yeni değişiklik mesajı yeterli, ayrıca hatırlatma gitmesin.
+    appointment.reminder_sent = datetime.combine(new_date, new_time) - now < appointment_notifications.REMINDER_MIN_NOTICE
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Bu saat artık müsait değil, lütfen başka bir saat seçin")
+    await db.refresh(appointment)
+    await appointment_notifications.on_rescheduled(db, tenant, appointment, old_date, old_time)
     return _to_public(appointment, service, staff)
 
 

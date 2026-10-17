@@ -1,5 +1,6 @@
 import { OtpUnavailable } from '../../components/OtpUnavailable'
 import { AppointmentActions } from '../../components/booking/AppointmentActions'
+import { RescheduleModal } from '../../components/booking/RescheduleModal'
 import { useTenant } from '../../lib/queries'
 import { KVKK_REQUIRED_MESSAGE, KvkkCheckbox, useKvkkConsent } from '../../components/KvkkConsent'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -149,6 +150,7 @@ function AppointmentList() {
   const toast = useToast()
   const queryClient = useQueryClient()
   const [target, setTarget] = useState<AppointmentPublicOut | null>(null)
+  const [moving, setMoving] = useState<AppointmentPublicOut | null>(null)
 
   const query = useQuery({
     queryKey: ['customer', 'appointments', auth.phone],
@@ -255,7 +257,7 @@ function AppointmentList() {
             ) : (
               <ul className="space-y-3">
                 {upcoming.map((a) => (
-                  <AppointmentCard key={a.id} a={a} onCancel={() => setTarget(a)} />
+                  <AppointmentCard key={a.id} a={a} onCancel={() => setTarget(a)} onReschedule={() => setMoving(a)} />
                 ))}
               </ul>
             )}
@@ -276,6 +278,8 @@ function AppointmentList() {
         </>
       )}
 
+      {moving && <RescheduleModal appointment={moving} onClose={() => setMoving(null)} />}
+
       <ConfirmDialog
         open={target != null}
         onClose={() => !cancel.isPending && setTarget(null)}
@@ -295,7 +299,7 @@ function AppointmentList() {
   )
 }
 
-function AppointmentCard({ a, onCancel, muted }: { a: AppointmentPublicOut; onCancel?: () => void; muted?: boolean }) {
+function AppointmentCard({ a, onCancel, onReschedule, muted }: { a: AppointmentPublicOut; onCancel?: () => void; onReschedule?: () => void; muted?: boolean }) {
   const d = parseISODateLocal(a.appointment_date)
   return (
     <li
@@ -329,6 +333,11 @@ function AppointmentCard({ a, onCancel, muted }: { a: AppointmentPublicOut; onCa
         {onCancel && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <AppointmentActions appointment={a} size="sm" />
+            {onReschedule && (
+              <Button variant="secondary" size="sm" onClick={onReschedule}>
+                Saati değiştir
+              </Button>
+            )}
             <Button variant="danger" size="sm" onClick={onCancel}>
               İptal et
             </Button>

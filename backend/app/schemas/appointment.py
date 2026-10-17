@@ -30,6 +30,12 @@ class AppointmentCreate(BaseModel):
     appointment_time: NormalizedTime
 
 
+class RescheduleIn(BaseModel):
+    """Müşteri randevusunu aynı hizmet ve berberde başka güne/saate alır."""
+    appointment_date: date
+    appointment_time: NormalizedTime
+
+
 class AppointmentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

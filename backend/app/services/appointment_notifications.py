@@ -7,11 +7,12 @@ Bildirim hataları randevuyu ASLA bozmaz (loglanır). Dükkânın WhatsApp'ı hi
 import logging
 from datetime import datetime, time, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.customer import Customers
+from app.models.outbound_message import OutboundMessage
 from app.models.service import Service
 from app.models.staff import Staff
 from app.models.tenant import Tenant
@@ -87,6 +88,31 @@ async def on_cancelled(db: AsyncSession, tenant: Tenant, appt: Appointment, by: 
         await db.commit()
     except Exception:
         logger.exception("Randevu iptal bildirimi kuyruğa alınamadı (iptal etkilenmedi)")
+        await db.rollback()
+
+
+async def on_rescheduled(db: AsyncSession, tenant: Tenant, appt: Appointment, old_date, old_time, actor: Staff | None = None) -> None:
+    """Randevu başka saate alındı. Henüz gitmemiş eski onay/hatırlatma/berber mesajları iptal edilir (eski saati yazmasınlar);
+    müşteriye ve atanan berbere yeni bilgi gider."""
+    try:
+        await db.execute(
+            update(OutboundMessage)
+            .where(OutboundMessage.appointment_id == appt.id, OutboundMessage.status == "pending",
+                   OutboundMessage.kind.in_(("confirm", "confirm_manual", "reminder", "staff_new", "reschedule_customer", "staff_reschedule")))
+            .values(status="cancelled", error="rescheduled", to_phone=None, body=None)
+        )
+        if appt.status == AppointmentStatus.CONFIRMED and _start(appt) > datetime.now() and await _connected(db, tenant.id):
+            customer, staff, service = await _load(db, appt)
+            v = _common(tenant, appt, customer, staff, service)
+            v.update(old_day=texts.fmt_day(old_date), old_date=texts.fmt_date(old_date), old_time=texts.fmt_time(old_time))
+            await queue.enqueue(db, tenant.id, "reschedule_customer", customer.phone,
+                                texts.render("reschedule_customer", tenant.id, **v), appointment_id=appt.id)
+            if staff.is_active and (actor is None or actor.id != staff.id):
+                await queue.enqueue(db, tenant.id, "staff_reschedule", staff.phone,
+                                    texts.render("staff_reschedule", tenant.id, **v), appointment_id=appt.id)
+        await db.commit()
+    except Exception:
+        logger.exception("Randevu değişikliği bildirimi kuyruğa alınamadı (değişiklik etkilenmedi)")
         await db.rollback()
 
 

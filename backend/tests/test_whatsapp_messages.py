@@ -18,7 +18,8 @@ from tests.helpers import *  # noqa
 
 TOMORROW = date.today() + timedelta(days=1)
 SAMPLE = dict(shop="Alfa Berber", day="Cuma", date="16 Ekim", time="14:30", staff="Kerem", service="Saç Kesimi",
-              first="Ali", customer="Ali Veli", link="https://alfa.behtechlabs.com/randevu", code="123456")
+              first="Ali", customer="Ali Veli", link="https://alfa.behtechlabs.com/randevu", code="123456",
+              old_day="Perşembe", old_date="15 Ekim", old_time="10:00")
 
 
 async def queued(kind=None):
@@ -30,7 +31,8 @@ async def queued(kind=None):
 
 # ------------------------------------------------------------------ metinler
 @pytest.mark.parametrize("kind", ["otp", "password_reset", "confirm", "cancel_customer", "cancel_shop",
-                                  "reminder", "staff_new", "staff_cancel", "welcome", "confirm_manual"])
+                                  "reminder", "staff_new", "staff_cancel", "welcome", "confirm_manual",
+                                  "reschedule_customer", "staff_reschedule"])
 def test_every_kind_has_at_least_three_variants_and_renders_cleanly(kind):
     variants = texts._VARIANTS[kind]
     assert len(variants) >= 3 and len(set(variants)) == len(variants)
