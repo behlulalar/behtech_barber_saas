@@ -124,13 +124,17 @@ export function WhatsappCard() {
                 {s.connected_at && <p className="text-xs text-muted">Bağlanma: {formatConnectedAt(s.connected_at)}</p>}
               </div>
 
-              <div className="grid gap-3 border-t border-line pt-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div className="border-t border-line pt-4">
                 <Field label="Test mesajı gönder" hint="Bu numaraya deneme mesajı gider.">
-                  <PhoneInput value={testPhone} onValueChange={setTestPhone} autoComplete="off" />
+                  {(a11y) => (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                      <PhoneInput {...a11y} value={testPhone} onValueChange={setTestPhone} autoComplete="off" className="sm:min-w-0 sm:flex-1" />
+                      <Button variant="secondary" onClick={() => test.mutate()} loading={test.isPending} disabled={!isValidPhone(testPhone)} className="sm:shrink-0">
+                        Gönder
+                      </Button>
+                    </div>
+                  )}
                 </Field>
-                <Button variant="secondary" onClick={() => test.mutate()} loading={test.isPending} disabled={!isValidPhone(testPhone)}>
-                  Gönder
-                </Button>
               </div>
 
               <div>
