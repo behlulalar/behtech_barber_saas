@@ -15,7 +15,7 @@ import { Textarea } from '../../components/ui/Textarea'
 import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
 import { tenantOrigin, tenantSiteUrl } from '../../lib/site'
-import { formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
+import { formatAgo, formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
 import type { PlatformTenantDetail } from '../../types/api'
 import { SetupList } from './SetupParts'
 
@@ -35,6 +35,30 @@ export function SetupCard({ tenant }: { tenant: PlatformTenantDetail }) {
         </p>
       )}
       <SetupList setup={setup} />
+    </Card>
+  )
+}
+
+/* ------------------------------ Etkinlik ------------------------------ */
+
+export function ActivityCard({ tenant }: { tenant: PlatformTenantDetail }) {
+  return (
+    <Card>
+      <CardHeader title="Son etkinlik" description="İşletmenin sistemi ne kadar kullandığı." />
+      <dl className="divide-y divide-panel-line text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+          <dt className="text-muted">Son giriş (personel)</dt>
+          <dd className="text-cream">{formatAgo(tenant.last_login_at)}</dd>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+          <dt className="text-muted">Son randevu alınması</dt>
+          <dd className="text-cream">{formatAgo(tenant.last_booking_at)}</dd>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+          <dt className="text-muted">Toplam randevu</dt>
+          <dd className="tabular-nums text-cream">{tenant.appointment_count}</dd>
+        </div>
+      </dl>
     </Card>
   )
 }

@@ -1,6 +1,6 @@
 // Genel Bakış'ın en üstü: "Bugün ne yapmalıyım?" — başvuru, ödeme, WhatsApp ve okunmayan acil bildirimler tek listede.
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckCircle2, CreditCard, HeartPulse, MessageCircle, UserPlus } from 'lucide-react'
+import { Bell, CheckCircle2, CreditCard, HeartPulse, MessageCircle, Moon, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
@@ -11,7 +11,7 @@ import { cn } from '../../lib/cn'
 import { errorMessage, platformApi } from '../../lib/api'
 import type { ActionItem } from '../../types/api'
 
-const ICONS = { signup: UserPlus, billing: CreditCard, whatsapp: MessageCircle, notification: Bell, system: HeartPulse } as const
+const ICONS = { signup: UserPlus, billing: CreditCard, whatsapp: MessageCircle, notification: Bell, system: HeartPulse, activity: Moon } as const
 const SHOWN = 6
 
 function Row({ item }: { item: ActionItem }) {
@@ -33,7 +33,7 @@ function Row({ item }: { item: ActionItem }) {
           </span>
           {item.detail && <span className="block break-words text-xs text-muted-strong">{item.detail}</span>}
         </span>
-        <Badge tone={high ? 'danger' : 'warning'}>{high ? 'Acil' : 'Yakında'}</Badge>
+        <Badge tone={high ? 'danger' : item.severity === 'low' ? 'neutral' : 'warning'}>{high ? 'Acil' : item.severity === 'low' ? 'Bilgi' : 'Yakında'}</Badge>
       </Link>
     </li>
   )

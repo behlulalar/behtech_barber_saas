@@ -468,7 +468,7 @@ export interface TwoFactorConfirmOut {
 export interface ActionItem {
   key: string
   severity: 'high' | 'medium' | 'low'
-  category: 'signup' | 'billing' | 'whatsapp' | 'notification' | 'system'
+  category: 'signup' | 'billing' | 'whatsapp' | 'notification' | 'system' | 'activity'
   title: string
   detail: string | null
   tenant_id: number | null
@@ -543,6 +543,8 @@ export interface PlatformTenant {
   setup: TenantSetup | null
   /** Self-servis kayıt başvurusu durumu; elle açılan işletmelerde null. */
   signup_status: SignupStatus | null
+  last_login_at: string | null
+  last_booking_at: string | null
   /** Gizli personel giriş adresi ("/panel/g/<key>"). */
   panel_login_path: string | null
 }

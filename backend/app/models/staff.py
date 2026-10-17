@@ -29,6 +29,8 @@ class Staff(Base):
         default=RoleType.STAFF,
     )
     photo_image: Mapped[str | None] = mapped_column(Text)
+    # Son başarılı giriş (platform "son etkinlik" göstergesi; destek girişi sayılmaz).
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # İşten ayrılan personel silinmez (geçmiş randevu/gelir kalsın); pasife alınır.
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true(), default=True)
     left_at: Mapped[date | None] = mapped_column(Date)

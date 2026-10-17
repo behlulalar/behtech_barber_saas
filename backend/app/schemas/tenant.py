@@ -41,6 +41,8 @@ class TenantOut(BaseModel):
     panel_login_path: str | None = None  # "/panel/g/<gizli>" (yalnızca platform uçlarında dolu)
     signup_status: str | None = None
     setup: SetupOut | None = None
+    last_login_at: datetime | None = None  # işletme personelinin son başarılı girişi
+    last_booking_at: datetime | None = None  # en son randevu alınma/oluşturulma zamanı
 
 
 class TenantDetailOut(TenantOut):

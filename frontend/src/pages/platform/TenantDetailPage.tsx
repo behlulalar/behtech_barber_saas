@@ -19,7 +19,7 @@ import { EditPeriodModal, PaymentModal, RenewModal, useSubscriptions } from './B
 import { NotificationTenantCard } from './NotificationTenantCard'
 import { WhatsappTenantCard } from './WhatsappTenantCard'
 import { SignupReviewCard } from './SignupReviewCard'
-import { NoteCard, OwnerCard, PanelLoginCard, RecentEventsCard, SetupCard, SupportCard } from './TenantDetailParts'
+import { ActivityCard, NoteCard, OwnerCard, PanelLoginCard, RecentEventsCard, SetupCard, SupportCard } from './TenantDetailParts'
 import { BillingStatusBadge, Money, PaymentStatusBadge, RemindButton, RemindedNote, useBillingSettings, useRemind } from './BillingParts'
 
 export default function TenantDetailPage() {
@@ -257,6 +257,7 @@ export default function TenantDetailPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 md:mb-8 lg:grid-cols-2">
         <SetupCard tenant={tenant} />
+        <ActivityCard tenant={tenant} />
         <OwnerCard tenant={tenant} />
         <NoteCard key={tenant.note ?? ''} tenant={tenant} />
         <RecentEventsCard tenantId={tenant.id} />

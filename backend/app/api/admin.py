@@ -105,6 +105,8 @@ async def login(
     # Parola doğrulandıktan SONRA bakılır: yanlış parolayla pasif hesap varlığı öğrenilemez.
     if not staff.is_active:
         raise HTTPException(status_code=403, detail="Bu hesap pasif. İşletme sahibiyle görüşün")
+    staff.last_login_at = datetime.now()  # platform "son etkinlik" göstergesi
+    await db.commit()
     return TokenResponse(access_token=_staff_token(staff, remember=data.remember), token_type="bearer")
 
 

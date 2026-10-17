@@ -12,8 +12,8 @@ Genel kapsam kararları ve eksikler: `EKSIKLER.md`. İşletme (admin) paneli iç
       (altyapı var: `notifications.read_at`, `announcement_reads`; yalnızca gösterim eksik).
 
 ## 2. İşletme sağlığı ve kullanım
-- [ ] **Son etkinlik:** her işletme için son giriş ve son randevu zamanı; "14 gündür randevu yok" listesi (vazgeçme riski).
-- [ ] **Kurulum ilerlemesi:** işletme panelindeki kurulum rehberi adımlarının platformda görünmesi (demo'da takılanlar, WhatsApp'ı bağlamayanlar).
+- [x] (2026-10-17 YAPILDI: `staff.last_login_at` + son randevu oluşturma; İşletmeler listesinde "Son etkinlik" sütunu, detayda "Son etkinlik" kartı, 14 gündür sessiz faturalı işletme aksiyon kuyruğunda "Bilgi"; giriş verisi canlıya geçişten sonra dolmaya başlar) **Son etkinlik:** her işletme için son giriş ve son randevu zamanı; "14 gündür randevu yok" listesi (vazgeçme riski).
+- [x] (ZATEN VARDI: işletme detayında "Kurulum durumu" kartı ve listede "Kurulum" sütunu; platform bunu `SetupOut` ile gösteriyor) **Kurulum ilerlemesi:** işletme panelindeki kurulum rehberi adımlarının platformda görünmesi (demo'da takılanlar, WhatsApp'ı bağlamayanlar).
 - [ ] **Dönüşüm hunisi:** kayıt -> onay -> kurulum tamam -> ilk randevu -> ilk ödeme; hangi aşamada kayıp var.
 - [ ] **Kullanım sayıları:** işletme başına aylık randevu ve WhatsApp mesajı (fiyatlandırma + kötüye kullanım tespiti).
 

@@ -18,7 +18,7 @@ import { Table, type Column } from '../../components/ui/Table'
 import { Tabs } from '../../components/ui/Tabs'
 import { useToast } from '../../components/ui/Toast'
 import { errorMessage, platformApi } from '../../lib/api'
-import { formatNumber, formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
+import { formatAgo, formatNumber, formatPhone, formatTimestamp, isValidPhone, normalizePhone } from '../../lib/format'
 import type { PlatformTenant, TenantSort, TenantStatusFilter } from '../../types/api'
 import { BillingStatusBadge } from './BillingParts'
 import { SetupChip } from './SetupParts'
@@ -512,6 +512,15 @@ export default function TenantsPage() {
       },
     },
     { key: 'setup', header: 'Kurulum', cell: (t) => <SetupChip setup={t.setup} /> },
+    {
+      key: 'activity',
+      header: 'Son etkinlik',
+      className: 'hidden xl:table-cell',
+      cell: (t) => {
+        const last = [t.last_login_at, t.last_booking_at].filter(Boolean).sort().pop() ?? null
+        return <span className="whitespace-nowrap text-muted-strong" title={`Giriş: ${formatAgo(t.last_login_at)} · Randevu: ${formatAgo(t.last_booking_at)}`}>{formatAgo(last)}</span>
+      },
+    },
     {
       key: 'counts',
       header: 'Kadro/Randevu',

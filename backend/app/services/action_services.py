@@ -12,10 +12,11 @@ from app.services import billing_services, system_services
 
 UNREAD_CRITICAL_AFTER = timedelta(hours=24)
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
-CATEGORY_ORDER = {"system": 0, "billing": 1, "whatsapp": 2, "notification": 3, "signup": 4}
+CATEGORY_ORDER = {"system": 0, "billing": 1, "whatsapp": 2, "notification": 3, "activity": 4, "signup": 5}
 DISK_WARN_PCT = 85
 CERT_WARN_DAYS = 14
 ERRORS_WARN_PER_HOUR = 5
+INACTIVE_DAYS = 14  # ücretli/deneme işletmede bu kadar gündür giriş ve randevu yoksa uyarı
 
 _STATUS_TITLE = {
     "expired": ("high", "Abonelik bitti"),
@@ -35,7 +36,8 @@ async def build(db: AsyncSession) -> ActionQueueOut:
         items.append(ActionItem(key="signup", severity="medium", category="signup",
                                 title=f"{len(pending)} kayıt başvurusu onay bekliyor", detail=names, link="/platform/basvurular"))
 
-    for b in await billing_services.list_tenant_billing(db):
+    billings = await billing_services.list_tenant_billing(db)
+    for b in billings:
         link = f"/platform/isletmeler/{b.tenant_id}"
         if b.status in _STATUS_TITLE:
             sev, title = _STATUS_TITLE[b.status]
@@ -56,6 +58,22 @@ async def build(db: AsyncSession) -> ActionQueueOut:
         elif b.outstanding > 0:
             items.append(ActionItem(key=f"billing:{b.tenant_id}", severity="medium", category="billing", title="Ödenmemiş bakiye var",
                                     detail=f"{b.outstanding} ₺", tenant_id=b.tenant_id, tenant_name=b.tenant_name, link=link))
+
+    # Sessiz kalan işletmeler: faturalanan (takip dışı olmayan, süresi dolmamış) ama uzun süredir giriş/randevu olmayanlar.
+    live = {b.tenant_id: b for b in billings if b.status in ("trial", "active", "due_soon", "grace") and b.is_active}
+    if live:
+        from app.services import platform_services
+
+        acts = await platform_services._activity_for(db, list(live))
+        created = dict((await db.execute(select(Tenant.id, Tenant.created_at).where(Tenant.id.in_(list(live))))).all())
+        limit = datetime.now() - timedelta(days=INACTIVE_DAYS)
+        for tid, b in live.items():
+            seen = [x for x in (*acts.get(tid, (None, None)), created.get(tid)) if x]
+            last = max(seen) if seen else None
+            if last is not None and last < limit:
+                items.append(ActionItem(key=f"idle:{tid}", severity="low", category="activity", title="Uzun süredir etkinlik yok",
+                                        detail=f"Son giriş/randevu {(datetime.now() - last).days} gün önce",
+                                        tenant_id=tid, tenant_name=b.tenant_name, link=f"/platform/isletmeler/{tid}"))
 
     wa = (await db.execute(
         select(WhatsappConnection, Tenant.name).join(Tenant, Tenant.id == WhatsappConnection.tenant_id)

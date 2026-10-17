@@ -115,6 +115,19 @@ export function formatTimestamp(ts: string): string {
   return Number.isNaN(d.getTime()) ? '' : dateFmt.format(d)
 }
 
+/** ISO zaman damgası -> "bugün" / "dün" / "5 gün önce" / "3 hafta önce" / "2 ay önce"; boşsa "—". */
+export function formatAgo(ts: string | null | undefined): string {
+  if (!ts) return '—'
+  const d = new Date(ts)
+  if (Number.isNaN(d.getTime())) return '—'
+  const days = Math.floor((Date.now() - d.getTime()) / 86_400_000)
+  if (days <= 0) return 'bugün'
+  if (days === 1) return 'dün'
+  if (days < 14) return `${days} gün önce`
+  if (days < 60) return `${Math.floor(days / 7)} hafta önce`
+  return `${Math.floor(days / 30)} ay önce`
+}
+
 /** "09:00:00" -> "09:00" */
 export function formatTime(time: string): string {
   return time.slice(0, 5)

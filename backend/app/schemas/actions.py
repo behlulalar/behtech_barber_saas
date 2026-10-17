@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class ActionItem(BaseModel):
     key: str
     severity: Literal["high", "medium", "low"]
-    category: Literal["signup", "billing", "whatsapp", "notification", "system"]
+    category: Literal["signup", "billing", "whatsapp", "notification", "system", "activity"]
     title: str
     detail: str | None = None
     tenant_id: int | None = None

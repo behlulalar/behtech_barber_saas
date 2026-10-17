@@ -68,7 +68,7 @@ def _tenant_out_query():
     )
 
 
-def _row_to_out(row, setup: SetupOut | None = None) -> TenantOut:
+def _row_to_out(row, setup: SetupOut | None = None, activity: tuple | None = None) -> TenantOut:
     tenant, staff_count, appointment_count, owner_name, owner_surname, owner_phone = row
     return TenantOut(
         id=tenant.id,
@@ -85,6 +85,8 @@ def _row_to_out(row, setup: SetupOut | None = None) -> TenantOut:
         panel_login_path=f"/panel/g/{tenant.login_token}",
         signup_status=tenant.signup_status,
         setup=setup,
+        last_login_at=activity[0] if activity else None,
+        last_booking_at=activity[1] if activity else None,
     )
 
 
@@ -98,6 +100,19 @@ SETUP_CHECKS = (
     ("first_appointment", "İlk randevu alınmış", "Henüz randevu alınmadı"),
 )
 _BLOCKING = {"services", "staff", "working_hours", "staff_services", "whatsapp"}  # müşterinin randevu alabilmesini belirler
+
+
+async def _activity_for(db: Session, tenant_ids: list[int]) -> dict[int, tuple]:
+    """İşletme başına (son giriş, son randevu oluşturma): iki gruplu sorgu (N+1 yok)."""
+    if not tenant_ids:
+        return {}
+    logins = dict((await db.execute(
+        select(Staff.tenant_id, func.max(Staff.last_login_at)).where(Staff.tenant_id.in_(tenant_ids)).group_by(Staff.tenant_id)
+    )).all())
+    bookings = dict((await db.execute(
+        select(Appointment.tenant_id, func.max(Appointment.created_at)).where(Appointment.tenant_id.in_(tenant_ids)).group_by(Appointment.tenant_id)
+    )).all())
+    return {t: (logins.get(t), bookings.get(t)) for t in tenant_ids}
 
 
 async def _setup_for(db: Session, tenant_ids: list[int]) -> dict[int, SetupOut]:
@@ -217,8 +232,10 @@ async def list_tenants(
     }[key]
     q = q.order_by(col.desc() if desc else col.asc(), Tenant.id.desc() if desc else Tenant.id.asc())
     rows = (await db.execute(q.limit(limit).offset(offset))).all()
-    setups = await _setup_for(db, [r[0].id for r in rows])
-    return TenantPage(items=[_row_to_out(r, setups[r[0].id]) for r in rows], total=total, limit=limit, offset=offset)
+    ids = [r[0].id for r in rows]
+    setups = await _setup_for(db, ids)
+    acts = await _activity_for(db, ids)
+    return TenantPage(items=[_row_to_out(r, setups[r[0].id], acts.get(r[0].id)) for r in rows], total=total, limit=limit, offset=offset)
 
 
 async def list_options(db: Session) -> list[TenantOption]:
@@ -236,7 +253,7 @@ async def get_tenant_out(db: Session, tenant_id: int) -> TenantOut:
     row = (await db.execute(_tenant_out_query().where(Tenant.id == tenant_id))).first()
     if row is None:
         raise HTTPException(status_code=404, detail="İşletme bulunamadı")
-    return _row_to_out(row, (await _setup_for(db, [tenant_id]))[tenant_id])
+    return _row_to_out(row, (await _setup_for(db, [tenant_id]))[tenant_id], (await _activity_for(db, [tenant_id])).get(tenant_id))
 
 
 async def get_tenant_detail(db: Session, tenant_id: int) -> TenantDetailOut:
