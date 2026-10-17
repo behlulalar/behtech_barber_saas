@@ -79,3 +79,22 @@ async def test_panel_manifest_is_public_named_and_has_no_secret(api, shop):
     assert m["name"].endswith("Yönetim") and m["start_url"] == "/panel" and m["display"] == "standalone"
     assert await key_of(shop) not in r.text  # giriş adresi/anahtar manifest'te YOK
     assert (await api.get("/api/public/panel-manifest")).status_code == 400  # dükkân adresi olmadan çözülmez
+
+
+async def test_manifest_carries_key_only_when_a_valid_key_is_presented(api, shop):
+    key = await key_of(shop)
+    # anahtarsız (herkese açık): start_url /panel, anahtar YOK
+    plain = (await api.get("/api/public/panel-manifest", slug="alfa")).json()
+    assert plain["start_url"] == "/panel"
+    # geçerli anahtar sunulursa kurulan uygulama anahtarı alır
+    ok = await api.get(f"/api/public/panel-manifest?k={key}", slug="alfa")
+    assert ok.json()["start_url"] == f"/panel?k={key}"
+    # yanlış anahtar: genel manifest (sızıntı yok) ve tahmin sınırına SAYILIR
+    for _ in range(5):
+        bad = (await api.get("/api/public/panel-manifest?k=yanlis", slug="alfa")).json()
+        assert bad["start_url"] == "/panel" and "yanlis" not in str(bad)
+    locked = (await api.get(f"/api/public/panel-manifest?k={key}", slug="alfa")).json()
+    assert locked["start_url"] == "/panel"  # kilitliyken doğru anahtar bile verilmez (tahmin ödüllendirilmez)
+    # başka dükkânın anahtarı bu dükkânda işe yaramaz
+    other = await make_shop("gama", phone_offset=70)
+    assert (await api.get(f"/api/public/panel-manifest?k={await key_of(other)}", slug="alfa")).json()["start_url"] == "/panel"

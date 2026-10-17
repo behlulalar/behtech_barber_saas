@@ -32,7 +32,7 @@ from app.services.appointment_services import (
     get_available_slots,
     lock_staff_schedule,
 )
-from app.services import appointment_notifications, signup_services, whatsapp_connection_services
+from app.services import appointment_notifications, panel_key, signup_services, whatsapp_connection_services
 from app.services.consent_services import require_customer_consent
 from app.services.customer_services import get_or_create_customer
 from app.core.net import client_ip
@@ -60,13 +60,25 @@ async def public_signup_route(data: SignupRequest, request: Request, db: Session
 
 
 @router.get("/public/panel-manifest")
-async def public_panel_manifest(request: Request, tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)):
+async def public_panel_manifest(
+    request: Request, k: str = "", tenant: Tenant = Depends(get_current_tenant), db: Session = Depends(get_db)
+):
     """Yönetim panelinin PWA manifest'i (dükkân adıyla). Gerçek bir adresten verilir: blob: manifest'ler bazı tarayıcılarda
-    'uygulamayı yükle' ölçütünü sağlamaz. İçinde gizli bilgi yok (giriş adresi/anahtar YOK); start_url /panel'dir."""
+    'uygulamayı yükle' ölçütünü sağlamaz. Herkese açıktır, bu yüzden gizli anahtar varsayılan olarak İÇERMEZ (start_url /panel).
+    İSTİSNA: istek geçerli anahtarı `?k=` ile sunarsa (yalnızca anahtarı zaten bilen, panele girmiş kullanıcının sayfası sunar)
+    start_url `/panel?k=<anahtar>` olur: kurulan uygulama (özellikle iOS'ta Safari'den ayrı depolamasıyla) anahtarı kendi
+    depolamasına yazıp giriş ekranına gidebilir, "sayfa bulunamadı" görmez. Yanlış anahtar IP başına sayılır (tahmin sınırı)."""
+    start_url = "/panel"
+    if k:
+        try:
+            await panel_key.require(db, tenant, k, request)
+            start_url = f"/panel?k={k}"
+        except HTTPException:
+            pass  # yanlış/kilitli: genel manifest (anahtar sızmaz); başarısızlık zaten sayıldı
     ts = (await db.execute(select(TenantSettings).where(TenantSettings.tenant_id == tenant.id))).scalar_one_or_none()
     name = (ts.business_name if ts and ts.business_name else tenant.name).strip()
     manifest = {
-        "id": "/panel", "name": f"{name} Yönetim", "short_name": name[:12], "start_url": "/panel", "scope": "/panel",
+        "id": "/panel", "name": f"{name} Yönetim", "short_name": name[:12], "start_url": start_url, "scope": "/panel",
         "display": "standalone", "lang": "tr", "background_color": "#F6F1E9", "theme_color": "#F6F1E9",
         "icons": [
             {"src": "/icons/platform-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},

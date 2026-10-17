@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from 'react'
+import { getPanelKey } from './panelKey'
 import { isIOS, isStandalone, registerServiceWorker } from './push'
 
 /* ------------------------------------------------------------------ */
@@ -12,7 +13,10 @@ export function useTenantPanelManifest(enabled: boolean) {
     if (!enabled) return
     const link = document.createElement('link')
     link.rel = 'manifest'
-    link.href = '/api/public/panel-manifest'
+    // Bu cihazda bilinen giriş anahtarı manifest isteğine eklenir: kurulan uygulamanın başlangıç adresi anahtarı taşır, böylece
+    // uygulamanın (iOS'ta ayrı) depolaması anahtarı öğrenir ve "sayfa bulunamadı" yerine giriş ekranı açılır.
+    const key = getPanelKey()
+    link.href = key ? `/api/public/panel-manifest?k=${encodeURIComponent(key)}` : '/api/public/panel-manifest'
     document.head.appendChild(link)
     return () => link.remove()
   }, [enabled])

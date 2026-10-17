@@ -14,7 +14,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AUTH_EVENT, authApi, platformApi, tokenExpiresAt, tokenStore, type TokenKind } from './api'
 import type { CustomerName, PlatformLoginResponse, PlatformMe, StaffMe, VerifyCodeResponse } from '../types/api'
 import { Spinner } from '../components/ui/Spinner'
-import { getPanelKey, panelLoginPath } from './panelKey'
+import { getPanelKey, panelLoginPath, setPanelKey } from './panelKey'
 
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'))
 
@@ -124,6 +124,15 @@ export function useStaffAuth(): StaffAuthValue {
 export function RequireStaff({ children, managerOnly }: { children?: ReactNode; managerOnly?: boolean }) {
   const { status, isManager } = useStaffAuth()
   const location = useLocation()
+  // Kurulu uygulamanın başlangıç adresi `/panel?k=<anahtar>`: anahtarı bu cihazın depolamasına yaz, adresten sil, devam et.
+  const params = new URLSearchParams(location.search)
+  const handedKey = params.get('k')
+  if (handedKey && /^[A-Za-z0-9]{6,40}$/.test(handedKey)) {
+    setPanelKey(handedKey)
+    params.delete('k')
+    const rest = params.toString()
+    return <Navigate to={location.pathname + (rest ? `?${rest}` : '')} replace />
+  }
   if (status === 'loading') return <FullScreenLoader />
   if (status === 'unauthenticated') {
     // Panelin varlığı sızmasın: gizli giriş anahtarı bu cihazda yoksa 404 gösterilir.
