@@ -2,14 +2,15 @@ import { useEffect, useRef, useState, type CSSProperties, type ElementType, type
 import { Link } from 'react-router-dom'
 import {
   ArrowRight, ArrowUpRight, CalendarCheck, CalendarX2, Check, Gift, KeyRound, Link2, Menu, MessageCircle, Minus,
-  MousePointerClick, PhoneMissed, Plus, RotateCcw, Scissors, Share2, ShieldCheck, Smartphone, UserPlus, Users, Wallet, X,
+  Mail, MousePointerClick, PhoneMissed, Plus, RotateCcw, Scissors, Share2, ShieldCheck, Smartphone, UserPlus, Users, Wallet, X,
 } from 'lucide-react'
 import { ThemeToggle } from '../../lib/theme'
 import { BrandCredit } from '../../components/BrandCredit'
 import { LegalLink } from '../../components/LegalModal'
 import { BASE_DOMAIN } from '../../lib/site'
 import type { LegalSlug } from '../../lib/legal'
-import { CONTACT, DEMO_SITE_URL, PRODUCT_NAME } from './content'
+import { InstagramIcon } from '../../components/ContactLinks'
+import { CONTACT, DEMO_SITE_URL, instagramHandle, PRODUCT_NAME } from './content'
 import { PanelMockup, PhoneBookingMockup, PhonePanelMockup, TenantSiteMockup } from './mockups'
 import './product.css'
 
@@ -104,6 +105,7 @@ const NAV = [
   { href: '#ozellikler', label: 'Özellikler' },
   { href: '#nasil', label: 'Nasıl çalışır' },
   { href: '#sss', label: 'SSS' },
+  { href: '#iletisim', label: 'İletişim' },
 ]
 
 function Header() {
@@ -457,10 +459,9 @@ function Faq() {
 
 function Contact() {
   const wa = CONTACT.whatsapp.replace(/\D/g, '')
-  const email = CONTACT.email.trim()
   const msg = encodeURIComponent('Merhaba, BehTech Randevu hakkında bilgi almak istiyorum.')
   return (
-    <section id="iletisim" className="relative overflow-hidden border-t border-line bg-surface">
+    <section id="baslayin" className="relative overflow-hidden border-t border-line bg-surface">
       <Pole className="absolute inset-x-0 top-0 h-1.5 opacity-80" />
       <div className="mx-auto max-w-6xl px-5 py-20 text-center md:py-28">
         <Rv>
@@ -480,12 +481,52 @@ function Contact() {
               WhatsApp ile yazın
             </a>
           )}
-          {email && (
-            <a href={`mailto:${email}`} className={btnGhost}>
-              E-posta gönderin
-            </a>
-          )}
         </Rv>
+      </div>
+    </section>
+  )
+}
+
+/** İletişim kanalları: kısa, ikonlu kartlar. Boş kanal gösterilmez. */
+function ContactChannels() {
+  const email = CONTACT.email.trim()
+  const ig = CONTACT.instagram.trim()
+  const wa = CONTACT.whatsapp.replace(/\D/g, '')
+  const items = [
+    email && { href: `mailto:${email}`, icon: <Mail className="size-6" aria-hidden="true" />, label: 'E-posta', value: email, external: false },
+    ig && { href: ig, icon: <InstagramIcon className="size-6" aria-hidden="true" />, label: 'Instagram', value: instagramHandle(ig), external: true },
+    wa && { href: `https://wa.me/${wa}`, icon: <MessageCircle className="size-6" aria-hidden="true" />, label: 'WhatsApp', value: 'Mesaj yazın', external: true },
+  ].filter(Boolean) as { href: string; icon: ReactNode; label: string; value: string; external: boolean }[]
+  if (items.length === 0) return null
+  return (
+    <section id="iletisim" className="border-t border-line">
+      <div className="mx-auto max-w-6xl px-5 py-16 md:py-24">
+        <Rv className="max-w-xl">
+          <p className="eyebrow">İletişim</p>
+          <h2 className="mt-4 font-display text-4xl font-light leading-[1.08] md:text-5xl">
+            Bize <span className="italic text-copper-bright">ulaşın.</span>
+          </h2>
+        </Rv>
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((c, i) => (
+            <Rv as="li" key={c.label} delay={i * 80}>
+              <a
+                href={c.href}
+                {...(c.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                className="group flex min-h-20 items-center gap-4 rounded-lg border border-line bg-surface p-5 transition-colors hover:border-copper"
+              >
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-copper/40 bg-copper/10 text-copper-bright">
+                  {c.icon}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs uppercase tracking-[0.14em] text-muted">{c.label}</span>
+                  <span className="block truncate font-display text-xl text-cream group-hover:text-copper-bright">{c.value}</span>
+                </span>
+                <ArrowUpRight className="ml-auto size-5 shrink-0 text-muted transition-colors group-hover:text-copper-bright" aria-hidden="true" />
+              </a>
+            </Rv>
+          ))}
+        </ul>
       </div>
     </section>
   )
@@ -496,6 +537,21 @@ function Footer() {
     <footer className="border-t border-line pb-safe">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
         <BrandCredit />
+        <nav aria-label="İletişim" className="flex items-center gap-1">
+          <a href="#iletisim" className="mr-2 inline-flex min-h-11 items-center hover:text-cream">
+            İletişim
+          </a>
+          {CONTACT.email && (
+            <a href={`mailto:${CONTACT.email}`} aria-label={`E-posta: ${CONTACT.email}`} title={CONTACT.email} className="inline-flex size-11 items-center justify-center rounded-full hover:text-cream">
+              <Mail className="size-[18px]" aria-hidden="true" />
+            </a>
+          )}
+          {CONTACT.instagram && (
+            <a href={CONTACT.instagram} target="_blank" rel="noopener noreferrer" aria-label={`Instagram: ${instagramHandle(CONTACT.instagram)}`} title={instagramHandle(CONTACT.instagram)} className="inline-flex size-11 items-center justify-center rounded-full hover:text-cream">
+              <InstagramIcon className="size-[18px]" aria-hidden="true" />
+            </a>
+          )}
+        </nav>
         <nav aria-label="Yasal" className="flex flex-wrap gap-x-5">
           {[
             ['gizlilik', 'Gizlilik'],
@@ -534,6 +590,7 @@ export default function ProductPage() {
         <Mobile />
         <Faq />
         <Contact />
+        <ContactChannels />
       </main>
       <Footer />
     </div>

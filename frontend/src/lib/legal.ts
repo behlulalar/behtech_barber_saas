@@ -9,7 +9,7 @@ export const COMPANY = {
   name: '', // Ünvan (şahıs şirketiyse ad-soyad)
   taxNo: '', // Vergi kimlik numarası
   address: '',
-  email: '', // Genel iletişim
+  email: 'info@behtechlabs.com', // Genel iletişim
   kvkkEmail: '', // KVKK başvuru adresi
   phone: '',
 }
