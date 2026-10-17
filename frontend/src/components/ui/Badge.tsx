@@ -43,8 +43,10 @@ export const STATUS_TONES: Record<AppointmentStatus, BadgeTone> = {
 
 export const STATUS_ORDER: AppointmentStatus[] = ['confirmed', 'completed', 'cancelled', 'no_show']
 
-/** Randevu durumu rozeti (Türkçe etiket + renk). */
-export function StatusBadge({ status, className }: { status: AppointmentStatus; className?: string }) {
+/** Randevu durumu rozeti (Türkçe etiket + renk). `hideConfirmed`: işletme panelinde "Onaylandı" gösterilmez
+ * (randevular zaten onaylı gelir; yalnızca sapmalar — tamamlandı, iptal, gelmedi — etiketlenir, ekran sade kalır). */
+export function StatusBadge({ status, className, hideConfirmed }: { status: AppointmentStatus; className?: string; hideConfirmed?: boolean }) {
+  if (hideConfirmed && status === 'confirmed') return null
   return (
     <Badge tone={STATUS_TONES[status]} className={className}>
       <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />

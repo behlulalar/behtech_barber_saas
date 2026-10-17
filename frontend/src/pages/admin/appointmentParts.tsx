@@ -158,7 +158,7 @@ export function AppointmentRow({ appt, showStaff, showDate, flow }: RowProps) {
 
           <div className="col-start-2 flex min-w-0 items-center justify-between gap-2 @5xl:col-start-3">
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-              <StatusBadge status={appt.status} />
+              <StatusBadge status={appt.status} hideConfirmed />
               {showStaff && <span className="truncate text-xs text-muted">{fullName(appt.staff)}</span>}
               {showDate && <span className="text-xs text-muted">{formatDateLong(appt.appointment_date)}</span>}
               {appt.status === 'completed' && appt.payment_method && <span className="text-xs text-muted">{appt.payment_method}</span>}
@@ -306,7 +306,7 @@ function AppointmentSheet({ appt, initialStep, busy, onClose, onSetStatus, onSet
       onClose={onClose}
       dismissible={!busy}
       title={fullName(appt.customer)}
-      description={<StatusBadge status={appt.status} />}
+      description={appt.status === 'confirmed' ? undefined : <StatusBadge status={appt.status} />}
       footer={
         <a href={telHref(appt.customer.phone)} className={buttonStyles({ variant: 'secondary', fullWidth: true })}>
           <Phone className="size-4" aria-hidden="true" />

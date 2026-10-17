@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import { CalendarDays, CalendarPlus, CheckCircle2, Clock, Coins, Scissors, Users, type LucideIcon } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { CalendarDays, CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Clock, Coins, Scissors, Users, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Card, CardHeader } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { StatCard } from '../../components/ui/StatCard'
-import { StatusBadge } from '../../components/ui/Badge'
 import { adminApi } from '../../lib/api'
 import { useStaffAuth } from '../../lib/auth'
 import { cn } from '../../lib/cn'
-import { formatDateLong, formatDateShort, formatNumber, formatPrice, formatTime, fullName, todayLocalISO } from '../../lib/format'
+import { addDaysISO, formatDateLong, formatNumber, formatPrice, todayLocalISO } from '../../lib/format'
 import { AppointmentRow, useAppointmentFlow } from './appointmentParts'
 import { SetupGuide } from './SetupGuide'
 import { ErrorBlock, qk } from './shared'
@@ -36,13 +36,35 @@ export default function DashboardPage() {
   const flow = useAppointmentFlow()
 
   const dash = useQuery({ queryKey: [...qk.dashboard, today], queryFn: () => adminApi.getDashboard(today) })
+  // En yakın günün programı: bugünden itibaren 14 gün taranır; bugün bekleyen (onaylı) randevu varsa bugün, yoksa randevusu olan ilk gün.
   const agenda = useQuery({
-    queryKey: [...qk.appointments, 'today', today],
-    queryFn: () => adminApi.listAppointments({ date_from: today, date_to: today }),
+    queryKey: [...qk.appointments, 'dashboard', today],
+    queryFn: () => adminApi.listAppointments({ date_from: today, date_to: addDaysISO(today, 14) }),
   })
 
   const d = dash.data
-  const open = (agenda.data ?? []).filter((a) => a.status === 'confirmed').length
+  const upcoming = useMemo(() => {
+    const live = (agenda.data ?? []).filter((a) => a.status !== 'cancelled') // iptaller programda kalabalık yapmasın
+    const hasPending = (day: string) => live.some((a) => a.appointment_date === day && a.status === 'confirmed')
+    const days = Array.from(new Set(live.map((a) => a.appointment_date))).sort()
+    const day = days.find((x) => hasPending(x)) ?? days[0] ?? null
+    const items = live
+      .filter((a) => a.appointment_date === day)
+      .sort((x, y) => x.appointment_time.localeCompare(y.appointment_time))
+    return { day, items }
+  }, [agenda.data])
+  // Üst açıklama yalnızca BUGÜN bekleyen randevuyu sayar (program başka bir günü gösterse bile).
+  const todayPending = (agenda.data ?? []).filter((a) => a.appointment_date === today && a.status === 'confirmed').length
+
+  // Sayfalama: 4'erli. Gün değişirse ilk sayfaya dön.
+  const PAGE = 4
+  const [pageState, setPageState] = useState<{ day: string | null; page: number }>({ day: null, page: 0 })
+  const page = pageState.day === upcoming.day ? pageState.page : 0
+  const lastPage = Math.max(0, Math.ceil(upcoming.items.length / PAGE) - 1)
+  const shown = upcoming.items.slice(page * PAGE, page * PAGE + PAGE)
+  const goto = (p: number) => setPageState({ day: upcoming.day, page: Math.min(lastPage, Math.max(0, p)) })
+  const isToday = upcoming.day === today
+  const dayTitle = upcoming.day == null ? 'Bugünün programı' : isToday ? 'Bugünün programı' : upcoming.day === addDaysISO(today, 1) ? 'Yarının programı' : formatDateLong(upcoming.day)
 
   return (
     <>
@@ -51,8 +73,8 @@ export default function DashboardPage() {
         title={`${greeting()}${me ? `, ${me.name}` : ''}`}
         description={
           agenda.data
-            ? open > 0
-              ? `Bugün sırada ${open} randevu var.`
+            ? todayPending > 0
+              ? `Bugün sırada ${todayPending} randevu var.`
               : 'Bugün bekleyen randevu kalmadı.'
             : undefined
         }
@@ -99,9 +121,14 @@ export default function DashboardPage() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* Bugünün programı */}
-        <section aria-label="Bugünün programı" className="min-w-0">
+        <section aria-label="Yaklaşan program" className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2 className="font-display text-xl font-medium text-cream">Bugünün programı</h2>
+            <div className="min-w-0">
+              <h2 className="font-display text-xl font-medium text-cream">{dayTitle}</h2>
+              {upcoming.day && !isToday && (
+                <p className="text-xs text-muted">Bugün bekleyen randevu yok; en yakın randevulu gün gösteriliyor.</p>
+              )}
+            </div>
             <Link to="/panel/randevular" className="inline-flex min-h-11 min-w-11 items-center justify-end text-sm font-medium text-copper-bright hover:underline">
               Tümü
             </Link>
@@ -114,54 +141,45 @@ export default function DashboardPage() {
                 <Skeleton key={i} className="h-[6.5rem] w-full" />
               ))}
             </div>
-          ) : (agenda.data ?? []).length === 0 ? (
+          ) : upcoming.items.length === 0 ? (
             <div className="rounded-md border border-dashed border-panel-line">
-              <EmptyState icon={<CalendarDays />} title="Bugün randevu yok" description="Yeni bir randevu eklediğinizde burada görünür." />
+              <EmptyState icon={<CalendarDays />} title="Yaklaşan randevu yok" description="Yeni bir randevu eklediğinizde burada görünür." />
             </div>
           ) : (
-            <ul className="flex flex-col gap-2.5">
-              {(agenda.data ?? []).map((a) => (
-                <li key={a.id} className="min-w-0">
-                  <AppointmentRow appt={a} showStaff={isManager} flow={flow} />
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="flex flex-col gap-2.5">
+                {shown.map((a) => (
+                  <li key={a.id} className="min-w-0">
+                    <AppointmentRow appt={a} showStaff={isManager} flow={flow} />
+                  </li>
+                ))}
+              </ul>
+              {upcoming.items.length > PAGE && (
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  {page > 0 ? (
+                    <Button variant="secondary" leftIcon={<ChevronLeft className="size-4" />} onClick={() => goto(page - 1)}>
+                      Önceki
+                    </Button>
+                  ) : (
+                    <span aria-hidden="true" />
+                  )}
+                  <span className="text-xs tabular-nums text-muted" aria-live="polite">
+                    {page * PAGE + 1}–{Math.min(upcoming.items.length, page * PAGE + PAGE)} / {upcoming.items.length}
+                  </span>
+                  {page < lastPage ? (
+                    <Button variant="secondary" rightIcon={<ChevronRight className="size-4" />} onClick={() => goto(page + 1)}>
+                      Devamı
+                    </Button>
+                  ) : (
+                    <span aria-hidden="true" />
+                  )}
+                </div>
+              )}
+            </>
           )}
         </section>
 
         <aside className="flex min-w-0 flex-col gap-6">
-          {/* Sıradakiler */}
-          <Card padding="sm">
-            <CardHeader title="Sıradakiler" description="Yaklaşan ilk 5 randevu" className="mb-3" />
-            {dash.isLoading ? (
-              <div className="flex flex-col gap-3">
-                {Array.from({ length: 3 }, (_, i) => (
-                  <Skeleton key={i} className="h-11 w-full" />
-                ))}
-              </div>
-            ) : (d?.upcoming ?? []).length === 0 ? (
-              <p className="py-2 text-sm text-muted">Yaklaşan randevu yok.</p>
-            ) : (
-              <ul className="divide-y divide-panel-line">
-                {d?.upcoming.map((a) => (
-                  <li key={a.id}>
-                    <button type="button" onClick={() => flow.open(a)} className="flex min-h-14 w-full min-w-0 items-center gap-3 py-2 text-left">
-                      <div className="w-14 shrink-0">
-                        <p className="font-display text-lg leading-none tabular-nums text-cream">{formatTime(a.appointment_time)}</p>
-                        <p className="mt-1 text-xs text-muted">{a.appointment_date === today ? 'Bugün' : formatDateShort(a.appointment_date)}</p>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-cream">{fullName(a.customer)}</p>
-                        <p className="truncate text-xs text-muted">{a.service.name}</p>
-                      </div>
-                      <StatusBadge status={a.status} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
           {/* Kısayollar */}
           <nav aria-label="Kısayollar" className="grid grid-cols-2 gap-2.5">
             {SHORTCUTS.filter((s) => isManager || !s.managerOnly).map((s) => (
