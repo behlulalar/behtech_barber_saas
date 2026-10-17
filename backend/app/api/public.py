@@ -19,7 +19,7 @@ from app.models.service import Service
 from app.models.staff import RoleType, Staff
 from app.models.tenant import Tenant
 from app.models.tenant_settings import TenantSettings
-from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut, RescheduleIn, SlotOut, SlotsResponse
+from app.schemas.appointment import AppointmentCreate, AppointmentPublicOut, AppointmentServiceBrief, RescheduleIn, SlotOut, SlotsResponse
 from app.schemas.otp import SendCodeRequest, VerifyCodeRequest
 from app.schemas.public import CustomerBrief, SendCodeResponse, StaffPublicOut, TenantPublicOut, VerifyCodeResponse
 from app.schemas.service import ServiceOut
@@ -226,7 +226,11 @@ def _to_public(appointment: Appointment, service: Service, staff: Staff) -> Appo
         appointment_date=appointment.appointment_date,
         appointment_time=appointment.appointment_time,
         status=appointment.status,
-        service=service,
+        # Fiyat: randevu anında kaydedilen (hizmet fiyatı sonradan değişmiş olabilir); eski kayıtta hizmetin güncel fiyatı.
+        service=AppointmentServiceBrief(
+            id=service.id, name=service.name, duration_min=service.duration_min,
+            price=appointment.price if appointment.price is not None else service.price,
+        ),
         staff=staff,
     )
 
@@ -281,6 +285,7 @@ async def appointment_create(
         customer_id=customer.id,
         staff_id=staff.id,
         service_id=data.service_id,
+        price=service.price,  # randevu anındaki fiyat saklanır
         appointment_date=data.appointment_date,
         appointment_time=data.appointment_time,
         status=AppointmentStatus.CONFIRMED,  # işletme onayı beklenmez

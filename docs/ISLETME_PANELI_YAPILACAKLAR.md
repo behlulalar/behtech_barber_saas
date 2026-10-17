@@ -34,4 +34,4 @@ berberin ayar yapması gerekmez. Genel eksikler: `EKSIKLER.md`. Platform paneli 
 ## Sonraya / gözden geçirilecek
 
 - Sayfa sayfa sadeleştirme turu (ör. Ayarlar'da gereksiz alanlar) — ayrıca ele alınacak.
-- Teknik not: randevuda fiyat saklanmıyor (gelir raporu hizmet fiyatı değişince geçmişi de değiştirir) — bkz. EKSIKLER.md.
+- [x] (2026-10-17 ÇÖZÜLDÜ) Randevu fiyatı artık randevu anında `appointments.price` olarak saklanır; hizmet fiyatı değişince geçmiş rapor/ciro değişmez. Eski kayıtlar migration'da hizmetin o günkü (güncel) fiyatıyla dolduruldu; NULL kalan satır olursa raporlar hizmetin güncel fiyatına düşer.

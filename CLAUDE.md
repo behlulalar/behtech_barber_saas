@@ -449,7 +449,7 @@ iyi bir çalışma malzemesi.
       ayarlarından.
       2026-10-14: panelde "Gelir Raporu" (`/panel/gelir`, `GET /api/admin/reports/revenue`):
       günlük/aylık/yıllık, açılışta bu ay; gelir = yalnızca "tamamlandı" randevuların hizmet
-      fiyatı (randevuda fiyat saklanmıyor → hizmet fiyatı değişirse geçmiş rapor da değişir);
+      fiyatı (2026-10-17'den beri randevu anındaki fiyat `appointments.price`'ta saklanır; eski NULL kayıtlar hizmetin güncel fiyatına düşer);
       önceki dönemle karşılaştırma, zaman serisi grafiği, hizmet/ödeme yöntemi/personel
       kırılımı. Personel yalnızca kendini görür. Gider takibi yok (net = iptal/gelmedi/
       tamamlanmamış hariç gerçekleşen gelir).

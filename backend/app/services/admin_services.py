@@ -25,6 +25,10 @@ SLOT_TAKEN = "Bu saat dolu, lütfen başka bir saat seçin"
 
 
 # ---------- genel yardımcılar ----------
+# Randevu anındaki fiyat (eski kayıtta NULL ise hizmetin güncel fiyatı): hizmet fiyatı değişince geçmiş ciro değişmesin.
+PRICE = func.coalesce(Appointment.price, Service.price)
+
+
 async def commit_or_409(db: AsyncSession, message: str) -> None:
     """commit eder; unique ihlali olursa rollback + 409."""
     try:
@@ -161,7 +165,8 @@ def _to_out(appt: Appointment, staff: Staff, service: Service, customer: Custome
         payment_method=appt.payment_method,
         created_at=appt.created_at,
         staff=StaffRef.model_validate(staff),
-        service=ServiceRef.model_validate(service),
+        # Fiyat: randevu anında kaydedilen (eski kayıtta hizmetin güncel fiyatı).
+        service=ServiceRef.model_validate(service).model_copy(update={"price": appt.price if appt.price is not None else service.price}),
         customer=CustomerRef.model_validate(customer),
     )
 
@@ -255,7 +260,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: int, day: date, only_staf
             func.count(case((Appointment.status == S.COMPLETED, 1))),
             func.count(case((Appointment.status == S.CANCELLED, 1))),
             func.coalesce(
-                func.sum(case((Appointment.status.not_in(revenue_statuses), Service.price), else_=0)), 0
+                func.sum(case((Appointment.status.not_in(revenue_statuses), PRICE), else_=0)), 0
             ),
         )
         .join(Service, Appointment.service_id == Service.id)

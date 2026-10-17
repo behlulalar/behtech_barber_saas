@@ -346,6 +346,7 @@ async def create_appointment(
         customer_id=customer.id,
         staff_id=data.staff_id,
         service_id=data.service_id,
+        price=(await db.execute(select(Service.price).where(Service.id == data.service_id, Service.tenant_id == tid))).scalar_one_or_none(),
         appointment_date=data.appointment_date,
         appointment_time=data.appointment_time,
         status=data.status,

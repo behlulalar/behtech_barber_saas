@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import Date, Time, String, func , ForeignKey, DateTime, Boolean, false, Index, text
+from sqlalchemy import Date, Integer, Time, String, func , ForeignKey, DateTime, Boolean, false, Index, text
 from app.core.database import Base
 from datetime import datetime, date, time
 from sqlalchemy import Enum as SAEnum
@@ -28,6 +28,9 @@ class Appointment(Base):
         SAEnum(AppointmentStatus, name="appointment_status", values_callable=lambda enum_class: [member.value for member in enum_class])
     )
     payment_method: Mapped[str | None] = mapped_column(String)
+    # Randevu alındığı andaki hizmet fiyatı (₺). Hizmet fiyatı sonradan değişse de geçmiş randevu/rapor değişmez.
+    # NULL = eski kayıt: raporlar hizmetin güncel fiyatına düşer (COALESCE).
+    price: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reminder_sent: Mapped[bool] = mapped_column(Boolean, server_default=false())
     created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())
      

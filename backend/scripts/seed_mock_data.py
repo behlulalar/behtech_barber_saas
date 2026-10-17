@@ -217,7 +217,7 @@ async def seed_shop(db, slug: str, password_hash: str) -> str:
         if status != AppointmentStatus.CANCELLED:
             slots.append((start_min, end_min))
         db.add(Appointment(
-            tenant_id=tid, customer_id=rng.choice(customers).id, staff_id=s.id, service_id=v.id,
+            tenant_id=tid, customer_id=rng.choice(customers).id, staff_id=s.id, service_id=v.id, price=v.price,
             appointment_date=day, appointment_time=start_dt.time(), status=status,
             payment_method=rng.choice(pay_names) if status == AppointmentStatus.COMPLETED else None,
         ))

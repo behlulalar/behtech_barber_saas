@@ -147,6 +147,7 @@ async def seed() -> None:
                 customer_id=rng.choice(customer_rows).id,
                 staff_id=staff.id,
                 service_id=service.id,
+                price=service.price,
                 appointment_date=day,
                 appointment_time=start_dt.time(),
                 status=status,

@@ -25,6 +25,10 @@ from app.schemas.reports import (
 S = AppointmentStatus
 
 
+# Randevu anındaki fiyat (eski kayıtta NULL ise hizmetin güncel fiyatı): hizmet fiyatı değişince geçmiş ciro değişmesin.
+PRICE = func.coalesce(Appointment.price, Service.price)
+
+
 def period_range(period: ReportPeriod, anchor: date) -> tuple[date, date]:
     if period == "day":
         return anchor, anchor
@@ -56,7 +60,7 @@ def _completed_only(conds: list) -> list:
 async def _totals(db: AsyncSession, tenant_id: int, start: date, end: date, staff_id: int | None) -> PeriodTotals:
     row = (
         await db.execute(
-            select(func.coalesce(func.sum(Service.price), 0), func.count(Appointment.id))
+            select(func.coalesce(func.sum(PRICE), 0), func.count(Appointment.id))
             .join(Service, Appointment.service_id == Service.id)
             .where(*_completed_only(_base(tenant_id, start, end, staff_id)))
         )
@@ -75,13 +79,13 @@ async def build_revenue_report(
     row = (
         await db.execute(
             select(
-                func.coalesce(func.sum(case((Appointment.status == S.COMPLETED, Service.price), else_=0)), 0),
+                func.coalesce(func.sum(case((Appointment.status == S.COMPLETED, PRICE), else_=0)), 0),
                 func.count(case((Appointment.status == S.COMPLETED, 1))),
                 func.count(case((Appointment.status == S.CANCELLED, 1))),
                 func.count(case((Appointment.status == S.NO_SHOW, 1))),
                 func.count(case((Appointment.status.in_((S.PENDING, S.CONFIRMED)), 1))),
                 func.coalesce(
-                    func.sum(case((Appointment.status.in_((S.PENDING, S.CONFIRMED)), Service.price), else_=0)), 0
+                    func.sum(case((Appointment.status.in_((S.PENDING, S.CONFIRMED)), PRICE), else_=0)), 0
                 ),
             )
             .join(Service, Appointment.service_id == Service.id)
@@ -99,7 +103,7 @@ async def build_revenue_report(
         bucket = func.extract("month", Appointment.appointment_date)
     rows = (
         await db.execute(
-            select(bucket, func.coalesce(func.sum(Service.price), 0), func.count(Appointment.id))
+            select(bucket, func.coalesce(func.sum(PRICE), 0), func.count(Appointment.id))
             .join(Service, Appointment.service_id == Service.id)
             .where(*done)
             .group_by(bucket)
@@ -119,11 +123,11 @@ async def build_revenue_report(
     # --- hizmet bazlı
     rows = (
         await db.execute(
-            select(Service.id, Service.name, func.count(Appointment.id), func.coalesce(func.sum(Service.price), 0))
+            select(Service.id, Service.name, func.count(Appointment.id), func.coalesce(func.sum(PRICE), 0))
             .join(Service, Appointment.service_id == Service.id)
             .where(*done)
             .group_by(Service.id, Service.name)
-            .order_by(func.sum(Service.price).desc(), Service.name)
+            .order_by(func.sum(PRICE).desc(), Service.name)
         )
     ).all()
     by_service = [
@@ -137,11 +141,11 @@ async def build_revenue_report(
     # --- ödeme yöntemi bazlı
     rows = (
         await db.execute(
-            select(Appointment.payment_method, func.count(Appointment.id), func.coalesce(func.sum(Service.price), 0))
+            select(Appointment.payment_method, func.count(Appointment.id), func.coalesce(func.sum(PRICE), 0))
             .join(Service, Appointment.service_id == Service.id)
             .where(*done)
             .group_by(Appointment.payment_method)
-            .order_by(func.sum(Service.price).desc())
+            .order_by(func.sum(PRICE).desc())
         )
     ).all()
     by_payment = [PaymentMethodRevenue(method=m or None, count=int(c), revenue=int(r)) for m, c, r in rows]
@@ -151,12 +155,12 @@ async def build_revenue_report(
     if include_staff:
         rows = (
             await db.execute(
-                select(Staff.id, Staff.name, Staff.surname, Staff.is_active, func.count(Appointment.id), func.coalesce(func.sum(Service.price), 0))
+                select(Staff.id, Staff.name, Staff.surname, Staff.is_active, func.count(Appointment.id), func.coalesce(func.sum(PRICE), 0))
                 .join(Service, Appointment.service_id == Service.id)
                 .join(Staff, Appointment.staff_id == Staff.id)
                 .where(*done)
                 .group_by(Staff.id, Staff.name, Staff.surname, Staff.is_active)
-                .order_by(func.sum(Service.price).desc())
+                .order_by(func.sum(PRICE).desc())
             )
         ).all()
         by_staff = [StaffRevenue(staff_id=i, name=n, surname=s, is_active=a, count=int(c), revenue=int(r)) for i, n, s, a, c, r in rows]
