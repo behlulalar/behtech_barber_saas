@@ -5,6 +5,7 @@ import AdminLayout from './layouts/AdminLayout'
 import PlatformLayout from './layouts/PlatformLayout'
 import PublicLayout from './layouts/PublicLayout'
 import { RequirePlatform, RequireStaff } from './lib/auth'
+import { useClampScroll } from './lib/clampScroll'
 import { isProductHost } from './lib/site'
 
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
@@ -74,6 +75,7 @@ const platformRoutes = (
 )
 
 function App() {
+  useClampScroll()
   // Ürünün tanıtım sitesi (randevu.behtechlabs.com): dükkân rotaları yok.
   if (isProductHost()) {
     return (
